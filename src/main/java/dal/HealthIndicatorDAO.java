@@ -38,7 +38,7 @@ public class HealthIndicatorDAO extends DBContext {
             rs = stm.executeQuery();
             if (rs.next()) return mapRow(rs);
         } catch (SQLException e) {
-            System.out.println("HealthIndicatorDAO.getByRecordId: " + e.getMessage());
+            throw databaseError("load health indicators", e);
         }
         return null;
     }
@@ -69,7 +69,7 @@ public class HealthIndicatorDAO extends DBContext {
                 stm.setDouble(15, h.getLdlC());
                 stm.executeUpdate();
             } catch (SQLException e) {
-                System.out.println("HealthIndicatorDAO.insert: " + e.getMessage());
+                throw databaseError("create health indicators", e);
             }
         } else {
             String sql = "UPDATE HealthIndicators SET height=?,weight=?,bmi=?,systolic_bp=?,diastolic_bp=?,"
@@ -93,7 +93,7 @@ public class HealthIndicatorDAO extends DBContext {
                 stm.setInt(14, h.getRecordId());
                 stm.executeUpdate();
             } catch (SQLException e) {
-                System.out.println("HealthIndicatorDAO.update: " + e.getMessage());
+                throw databaseError("update health indicators", e);
             }
         }
         return h;

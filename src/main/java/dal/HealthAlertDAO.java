@@ -46,7 +46,7 @@ public class HealthAlertDAO extends DBContext {
             stm.executeUpdate();
             rs = stm.getGeneratedKeys();
             if (rs.next()) alert.setAlertId(rs.getInt(1));
-        } catch (SQLException e) { System.out.println("HealthAlertDAO.save: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("save health alert", e); }
         return alert;
     }
 
@@ -59,7 +59,7 @@ public class HealthAlertDAO extends DBContext {
             stm.setInt(1, patientId);
             rs = stm.executeQuery();
             while (rs.next()) list.add(mapRow(rs));
-        } catch (SQLException e) { System.out.println("HealthAlertDAO.getUnacknowledged: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("load health alerts", e); }
         return list;
     }
 
@@ -71,7 +71,7 @@ public class HealthAlertDAO extends DBContext {
             stm.setInt(1, patientId); stm.setInt(2, limit);
             rs = stm.executeQuery();
             while (rs.next()) list.add(mapRow(rs));
-        } catch (SQLException e) { System.out.println("HealthAlertDAO.getRecent: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("load recent health alerts", e); }
         return list;
     }
 
@@ -81,7 +81,7 @@ public class HealthAlertDAO extends DBContext {
                 "UPDATE HealthAlerts SET is_acknowledged=TRUE,acknowledged_at=CURRENT_TIMESTAMP WHERE alert_id=?");
             stm.setInt(1, alertId);
             stm.executeUpdate();
-        } catch (SQLException e) { System.out.println("HealthAlertDAO.acknowledge: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("acknowledge health alert", e); }
     }
 
     public boolean acknowledgeForPatient(int alertId, int patientId) {
@@ -99,7 +99,7 @@ public class HealthAlertDAO extends DBContext {
             stm.setInt(1, patientId);
             rs = stm.executeQuery();
             if (rs.next()) return rs.getInt(1);
-        } catch (SQLException e) { System.out.println("HealthAlertDAO.countUnacknowledged: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("count health alerts", e); }
         return 0;
     }
 }

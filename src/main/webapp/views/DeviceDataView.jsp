@@ -185,7 +185,6 @@
 
         <div style="margin-top:12px;text-align:center;">
             <a href="${pageContext.request.contextPath}/PatientDashboard" class="btn btn-primary btn-sm">← Về trang chủ</a>
-            <a href="${pageContext.request.contextPath}/PatientAI" class="btn btn-sm" style="background:#f1f5f9;margin-left:6px;">🤖 AI Tư vấn</a>
         </div>
     </div>
     </div><%-- end grid --%>
@@ -232,7 +231,7 @@ function showResult(msg,type){
 }
 
 function ackAlertDev(id){
-    fetch(CTX+'/PatientAI',{method:'POST',body:new URLSearchParams({action:'acknowledgeAlert',alertId:id})})
+    fetch(CTX+'/PatientHealth',{method:'POST',body:new URLSearchParams({action:'acknowledgeAlert',alertId:id})})
     .then(r=>r.json()).then(d=>{if(d.success){var el=document.getElementById('alert-'+id);if(el)el.style.opacity='0.35';}});
 }
 </script>

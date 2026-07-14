@@ -24,7 +24,6 @@ public class RecordDetailController extends HttpServlet {
         PatientDAO       patDAO  = new PatientDAO();
         DoctorDAO        docDAO  = new DoctorDAO();
         HealthIndicatorDAO hiDAO = new HealthIndicatorDAO();
-        AIWarningDAO     warnDAO = new AIWarningDAO();
 
         MedicalRecord rec = recDAO.getById(recordId);
         if (rec == null) { response.sendRedirect("PatientList"); return; }
@@ -49,7 +48,7 @@ public class RecordDetailController extends HttpServlet {
         detail.setPatient(patDAO.getById(rec.getPatientId()));
         detail.setDoctor(docDAO.getById(rec.getDoctorId()));
         detail.setIndicator(hiDAO.getByRecordId(recordId));
-        detail.setWarning(warnDAO.getByRecordId(recordId));
+        request.setAttribute("prescriptionItems", recDAO.getPrescriptionItems(recordId));
 
         request.setAttribute("detail", detail);
         request.getRequestDispatcher("views/RecordDetail.jsp").forward(request, response);

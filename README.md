@@ -84,7 +84,7 @@ Không chạy `upgrade_v3.sql` vì script legacy đó xóa bảng `AIWarnings` t
 3. **Medical record** — `MedicalRecordForm`, `RecordDetail`, dashboard bác sĩ.
 4. **Device data** — chuyển upload thành `@RestController`, DTO và HTTP status; giữ URL `/api/device-data/upload`.
 5. **Admin/doctor profile** — file upload lưu ngoài source tree qua `UPLOAD_DIR`.
-6. **AI advice** — API key chỉ đọc từ biến môi trường/server; không nhận hoặc render key ở browser.
+6. **AI mở rộng sau** — dữ liệu tự theo dõi nằm riêng trong `PatientHealth`; hiện không gọi dịch vụ AI bên ngoài.
 7. Sau mỗi nhóm controller, bỏ `@WebServlet` tương ứng. Khi không còn servlet legacy, xóa `@ServletComponentScan`.
 8. Chuyển JSP từng trang sang `src/main/resources/templates/*.html` bằng Thymeleaf. Khi hết JSP, đổi packaging `war` thành `jar` và bỏ Jasper/JSTL.
 

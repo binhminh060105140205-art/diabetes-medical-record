@@ -20,13 +20,10 @@ public class PatientDAO extends DBContext {
         p.setPhone(rs.getString("phone"));
         p.setAddress(rs.getString("address"));
         p.setHealthInsuranceNo(rs.getString("health_insurance_no"));
-        // Căn cước (có thể chưa có cột nếu chưa chạy migration)
-        try {
-            p.setNationalId(rs.getString("national_id"));
-            Date ndate = rs.getDate("national_id_date");
-            if (ndate != null) p.setNationalIdDate(ndate.toLocalDate());
-            p.setNationalIdPlace(rs.getString("national_id_place"));
-        } catch (SQLException ignored) {}
+        p.setNationalId(rs.getString("national_id"));
+        Date ndate = rs.getDate("national_id_date");
+        if (ndate != null) p.setNationalIdDate(ndate.toLocalDate());
+        p.setNationalIdPlace(rs.getString("national_id_place"));
         p.setCreatedBy(rs.getInt("created_by"));
         return p;
     }
@@ -37,7 +34,7 @@ public class PatientDAO extends DBContext {
             stm = connection.prepareStatement("SELECT * FROM Patients ORDER BY created_at DESC");
             rs = stm.executeQuery();
             while (rs.next()) list.add(mapRow(rs));
-        } catch (SQLException e) { System.out.println("PatientDAO.getAll: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("load patients", e); }
         return list;
     }
 
@@ -61,7 +58,7 @@ public class PatientDAO extends DBContext {
             stm.setString(3, kw); stm.setString(4, kw);
             rs = stm.executeQuery();
             while (rs.next()) list.add(mapRow(rs));
-        } catch (SQLException e) { System.out.println("PatientDAO.search: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("search patients", e); }
         return list;
     }
 
@@ -71,7 +68,7 @@ public class PatientDAO extends DBContext {
             stm.setInt(1, id);
             rs = stm.executeQuery();
             if (rs.next()) return mapRow(rs);
-        } catch (SQLException e) { System.out.println("PatientDAO.getById: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("load patient", e); }
         return null;
     }
 
@@ -81,7 +78,7 @@ public class PatientDAO extends DBContext {
             stm.setInt(1, userId);
             rs = stm.executeQuery();
             if (rs.next()) return mapRow(rs);
-        } catch (SQLException e) { System.out.println("PatientDAO.getByUserId: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("load patient account", e); }
         return null;
     }
 
@@ -107,7 +104,7 @@ public class PatientDAO extends DBContext {
                 rs = stm.getGeneratedKeys();
                 if (rs.next()) p.setPatientId(rs.getInt(1));
             }
-        } catch (SQLException e) { System.out.println("PatientDAO.create: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("create patient", e); }
         return p;
     }
 
@@ -128,7 +125,7 @@ public class PatientDAO extends DBContext {
             stm.setString(9,  p.getNationalIdPlace());
             stm.setInt(10,    p.getPatientId());
             stm.executeUpdate();
-        } catch (SQLException e) { System.out.println("PatientDAO.update: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("update patient", e); }
     }
 
     public void updateBasicProfile(Patient p) throws SQLException {
@@ -142,22 +139,7 @@ public class PatientDAO extends DBContext {
             stm.setString(5,  p.getNationalId());
             stm.setInt(6,    p.getPatientId());
             stm.executeUpdate();
-        } catch (SQLException e) {
-            System.out.println("PatientDAO.updateBasicProfile failed with national_id: " + e.getMessage());
-            try {
-                String sqlFallback = "UPDATE Patients SET full_name=?,date_of_birth=?,gender=?,phone=? WHERE patient_id=?";
-                stm = connection.prepareStatement(sqlFallback);
-                stm.setString(1,  p.getFullName());
-                stm.setDate(2,    p.getDateOfBirth() != null ? Date.valueOf(p.getDateOfBirth()) : null);
-                stm.setString(3,  p.getGender());
-                stm.setString(4,  p.getPhone());
-                stm.setInt(5,    p.getPatientId());
-                stm.executeUpdate();
-            } catch (SQLException ex) {
-                System.out.println("PatientDAO.updateBasicProfile fallback failed: " + ex.getMessage());
-                throw ex; // Ném ra ngoại lệ để Controller bắt được
-            }
-        }
+        } catch (SQLException e) { throw e; }
     }
 
     public int countAll() {
@@ -165,7 +147,7 @@ public class PatientDAO extends DBContext {
             stm = connection.prepareStatement("SELECT COUNT(*) FROM Patients");
             rs = stm.executeQuery();
             if (rs.next()) return rs.getInt(1);
-        } catch (SQLException e) { System.out.println("PatientDAO.countAll: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("count patients", e); }
         return 0;
     }
 
@@ -178,7 +160,7 @@ public class PatientDAO extends DBContext {
             stm.setInt(2, (pageIndex - 1) * pageSize);
             rs = stm.executeQuery();
             while (rs.next()) list.add(mapRow(rs));
-        } catch (SQLException e) { System.out.println("PatientDAO.getWithPaging: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("load patient page", e); }
         return list;
     }
 }

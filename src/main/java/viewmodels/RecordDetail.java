@@ -7,7 +7,6 @@ public class RecordDetail {
     private Patient patient;
     private Doctor doctor;
     private HealthIndicator indicator;
-    private AIWarning warning;
 
     public RecordDetail() {}
 
@@ -23,6 +22,4 @@ public class RecordDetail {
     public HealthIndicator getIndicator()          { return indicator; }
     public void setIndicator(HealthIndicator v)    { this.indicator = v; }
 
-    public AIWarning getWarning()                  { return warning; }
-    public void setWarning(AIWarning v)            { this.warning = v; }
 }

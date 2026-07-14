@@ -57,6 +57,7 @@ public class MedicalRecordFormController extends HttpServlet {
             HealthIndicatorDAO hiDAO = new HealthIndicatorDAO();
             HealthIndicator indicator = hiDAO.getByRecordId(recordId);
             request.setAttribute("indicator", indicator);
+            request.setAttribute("prescriptionItems", recDAO.getPrescriptionItems(recordId));
 
             // [V3] Không còn load AIWarning cho Doctor dashboard
             // AIWarningDAO warnDAO = new AIWarningDAO();
@@ -186,7 +187,11 @@ public class MedicalRecordFormController extends HttpServlet {
             String fup = request.getParameter("followUpDate");
             if (fup != null && !fup.isEmpty()) rec.setFollowUpDate(java.time.LocalDate.parse(fup));
             if (request.getParameter("doctorNote")      != null) rec.setDoctorNote(request.getParameter("doctorNote"));
-            recDAO.updateConclusion(rec);
+            recDAO.completeWithPrescription(rec,
+                    request.getParameterValues("medicineName"),
+                    request.getParameterValues("dosage"),
+                    request.getParameterValues("frequency"),
+                    request.getParameterValues("durationDays"));
             if (rec.getEncounterId() > 0) new ClinicWorkflowDAO().setEncounterStatus(rec.getEncounterId(), "COMPLETED", user.getUserId());
             // [V3] Bỏ AIWarningDAO.markReviewed() — bảng đã xóa
             response.sendRedirect(request.getContextPath() + "/RecordDetail?id=" + rec.getRecordId());

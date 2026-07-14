@@ -132,5 +132,6 @@
 </div>
 
 <jsp:include page="footer.jsp"/>
+<script src="${pageContext.request.contextPath}/static/js/main.js"></script>
 </body>
 </html>

@@ -28,10 +28,7 @@ public class UserDAO extends DBContext {
         u.setGender(rs.getString("gender"));
         u.setAddress(rs.getString("address"));
         
-        try {
-            u.setCccd(rs.getString("cccd"));
-        } catch (SQLException ignored) {
-        }
+        u.setCccd(rs.getString("cccd"));
         
         return u;
     }
@@ -47,7 +44,7 @@ public class UserDAO extends DBContext {
                 return mapRow(rs);
             }
         } catch (SQLException e) {
-            System.out.println("UserDAO.login ERROR: " + e.getMessage());
+            throw databaseError("login", e);
         }
         return null;
     }
@@ -60,7 +57,7 @@ public class UserDAO extends DBContext {
             rs = stm.executeQuery();
             if (rs.next()) return mapRow(rs);
         } catch (SQLException e) {
-            System.out.println("UserDAO.getById: " + e.getMessage());
+            throw databaseError("load user", e);
         }
         return null;
     }
@@ -73,9 +70,8 @@ public class UserDAO extends DBContext {
             rs = stm.executeQuery();
             return rs.next();
         } catch (SQLException e) {
-            System.out.println("UserDAO.usernameExists: " + e.getMessage());
+            throw databaseError("check username", e);
         }
-        return false;
     }
 
     public User create(User u) {
@@ -108,7 +104,7 @@ public class UserDAO extends DBContext {
                 }
             }
         } catch (SQLException e) {
-            System.out.println("UserDAO.create ERROR: " + e.getMessage());
+            throw databaseError("create user", e);
         }
         return u;
     }
@@ -124,7 +120,7 @@ public class UserDAO extends DBContext {
             stm.setInt(5, u.getUserId());
             stm.executeUpdate();
         } catch (SQLException e) {
-            System.out.println("UserDAO.update: " + e.getMessage());
+            throw databaseError("update user", e);
         }
     }
 
@@ -147,7 +143,6 @@ public class UserDAO extends DBContext {
             stm.setInt(9, u.getUserId());
             stm.executeUpdate();
         } catch (SQLException e) {
-            System.out.println("UserDAO.updateProfile: " + e.getMessage());
             throw e;
         }
     }
@@ -160,7 +155,7 @@ public class UserDAO extends DBContext {
             rs = stm.executeQuery();
             while (rs.next()) list.add(mapRow(rs));
         } catch (SQLException e) {
-            System.out.println("UserDAO.getAll: " + e.getMessage());
+            throw databaseError("load users", e);
         }
         return list;
     }
@@ -174,7 +169,7 @@ public class UserDAO extends DBContext {
             rs = stm.executeQuery();
             while (rs.next()) list.add(mapRow(rs));
         } catch (SQLException e) {
-            System.out.println("UserDAO.getByRole: " + e.getMessage());
+            throw databaseError("load users by role", e);
         }
         return list;
     }
@@ -189,7 +184,7 @@ public class UserDAO extends DBContext {
             rs = stm.executeQuery();
             if (rs.next()) return rs.getInt(1);
         } catch (SQLException e) {
-            System.out.println("UserDAO.countWithFilter: " + e.getMessage());
+            throw databaseError("count users", e);
         }
         return 0;
     }
@@ -212,7 +207,7 @@ public class UserDAO extends DBContext {
             rs = stm.executeQuery();
             while (rs.next()) list.add(mapRow(rs));
         } catch (SQLException e) {
-            System.out.println("UserDAO.getWithPagingAndFilter: " + e.getMessage());
+            throw databaseError("load user page", e);
         }
         return list;
     }
@@ -231,7 +226,7 @@ public class UserDAO extends DBContext {
             }
             rs = stm.executeQuery();
             if (rs.next()) return rs.getInt(1);
-        } catch (SQLException e) { System.out.println("UserDAO.countWithFilter2: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("count filtered users", e); }
         return 0;
     }
 
@@ -253,7 +248,7 @@ public class UserDAO extends DBContext {
             stm.setInt(idx,   (pageIndex - 1) * pageSize);
             rs = stm.executeQuery();
             while (rs.next()) list.add(mapRow(rs));
-        } catch (SQLException e) { System.out.println("UserDAO.getWithPaging2: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("load filtered users", e); }
         return list;
     }
 }

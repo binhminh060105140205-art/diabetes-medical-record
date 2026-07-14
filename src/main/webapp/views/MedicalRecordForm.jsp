@@ -237,7 +237,6 @@
         <div class="card">
             <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
                 <span>III. Chỉ số xét nghiệm <span style="font-size:13px;color:#0dcaf0;">(Nhân viên nhập từ kết quả lab)</span></span>
-                <button type="button" class="btn btn-sm btn-outline-info" onclick="importLabData()" style="padding: 4px 12px; border-radius: 6px;">📥 Import</button>
             </div>
             <div class="alert alert-success" style="margin-bottom:14px;font-size:13px;">
                 🩺 Bác sĩ nhập kết quả xét nghiệm từ phòng lab. AI sẽ tự phân tích ngay sau khi lưu.
@@ -348,9 +347,24 @@
                         placeholder="Điều chỉnh lối sống, thuốc uống, insulin...">${record.treatmentPlan}</textarea>
                 </div>
                 <div class="form-group">
-                    <label>Đơn thuốc</label>
-                    <textarea name="prescriptionNote" class="form-control"
-                        placeholder="VD: Metformin 500mg x 2 lần/ngày...">${record.prescriptionNote}</textarea>
+                    <label>Đơn thuốc cơ bản</label>
+                    <p class="text-muted">Chỉ nhập các thuốc cần thiết. Để trống dòng không sử dụng.</p>
+                    <table class="prescription-table">
+                        <thead><tr><th>Tên thuốc</th><th>Liều dùng</th><th>Số lần/ngày</th><th>Số ngày</th></tr></thead>
+                        <tbody>
+                        <c:forEach begin="0" end="2" var="i">
+                            <tr>
+                                <td><input name="medicineName" class="form-control" maxlength="150" value="${prescriptionItems[i].medicineName}" placeholder="Metformin 500mg"></td>
+                                <td><input name="dosage" class="form-control" maxlength="100" value="${prescriptionItems[i].dosage}" placeholder="1 viên/lần"></td>
+                                <td><input name="frequency" class="form-control" maxlength="100" value="${prescriptionItems[i].frequency}" placeholder="2 lần/ngày"></td>
+                                <td><input name="durationDays" type="number" min="1" max="365" class="form-control" value="${prescriptionItems[i].durationDays}" placeholder="30"></td>
+                            </tr>
+                        </c:forEach>
+                        </tbody>
+                    </table>
+                    <label style="margin-top:10px">Ghi chú chung</label>
+                    <textarea name="prescriptionNote" class="form-control" maxlength="500"
+                        placeholder="Ví dụ: uống sau ăn">${record.prescriptionNote}</textarea>
                 </div>
                 <div class="form-group">
                     <label>Lời dặn bệnh nhân</label>
@@ -444,54 +458,6 @@ function hintHba1c(el) {
     else if (v < 5.7) hint.innerHTML = '<span style="color:#16a34a">✓ Bình thường</span>';
     else if (v < 6.5) hint.innerHTML = '<span style="color:#d97706">⚠ Tiền tiểu đường</span>';
     else hint.innerHTML = '<span style="color:#dc2626">⛔ Tiểu đường — cần điều trị</span>';
-}
-
-function importLabData() {
-    fetch('${pageContext.request.contextPath}/importData.jsp')
-        .then(res => res.json())
-        .then(data => {
-            // Kiểm tra số âm
-            const values = Object.values(data).filter(val => typeof val === 'number' || (typeof val === 'string' && !isNaN(val)));
-            for (let v of values) {
-                if (parseFloat(v) < 0) {
-                    alert('Lỗi: Số liệu không hợp lệ (không được âm)!');
-                    return;
-                }
-            }
-
-            if (data.bloodGlucose) {
-                let el = document.querySelector('input[name="bloodGlucose"]');
-                if (el) { el.value = data.bloodGlucose; hintBG(el); }
-            }
-            if (data.hba1c) {
-                let el = document.querySelector('input[name="hba1c"]');
-                if (el) { el.value = data.hba1c; hintHba1c(el); }
-            }
-            if (data.cholesterol) {
-                let el = document.querySelector('input[name="cholesterol"]');
-                if (el) el.value = data.cholesterol;
-            }
-            if (data.triglyceride) {
-                let el = document.querySelector('input[name="triglyceride"]');
-                if (el) el.value = data.triglyceride;
-            }
-            if (data.hdlC) {
-                let el = document.querySelector('input[name="hdlC"]');
-                if (el) el.value = data.hdlC;
-            }
-            if (data.ldlC) {
-                let el = document.querySelector('input[name="ldlC"]');
-                if (el) el.value = data.ldlC;
-            }
-            
-            // Ẩn nút import sau khi thành công
-            let btn = document.querySelector('button[onclick="importLabData()"]');
-            if(btn) btn.style.display = 'none';
-        })
-        .catch(err => {
-            console.error("Error importing data:", err);
-            alert("Lỗi khi import dữ liệu: " + err);
-        });
 }
 
 var urlTab = new URLSearchParams(window.location.search).get('tab');

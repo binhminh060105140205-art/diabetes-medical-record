@@ -34,7 +34,6 @@ public class PatientDashboardController extends HttpServlet {
 
         MedicalRecordDAO   recDAO    = new MedicalRecordDAO();
         PatientDailyLogDAO logDAO    = new PatientDailyLogDAO();
-        AIAdviceHistoryDAO adviceDAO = new AIAdviceHistoryDAO();
         // [NEW V3]
         HealthAlertDAO   alertDAO  = new HealthAlertDAO();
         DeviceReadingDAO deviceDAO = new DeviceReadingDAO();
@@ -43,8 +42,6 @@ public class PatientDashboardController extends HttpServlet {
         PatientDailyLog todayLog   = logDAO.getTodayLog(patient.getPatientId());
         List<PatientDailyLog> recentLogs = logDAO.getRecent(patient.getPatientId(), 7);
         double[] avg7 = logDAO.getAvg7Days(patient.getPatientId());
-        AIAdviceHistory todayAdvice = adviceDAO.getTodayAdvice(patient.getPatientId());
-        List<AIAdviceHistory> adviceHistory = adviceDAO.getRecent(patient.getPatientId(), 5);
 
         // [NEW V3] HealthAlerts thay AIWarnings
         List<HealthAlert> unacknowledgedAlerts = alertDAO.getUnacknowledged(patient.getPatientId());
@@ -58,8 +55,6 @@ public class PatientDashboardController extends HttpServlet {
         request.setAttribute("recentLogs",            recentLogs);
         request.setAttribute("avg7BG",                avg7[0] > 0 ? String.format("%.1f", avg7[0]) : null);
         request.setAttribute("avg7BP",                avg7[1] > 0 ? String.format("%.0f", avg7[1]) : null);
-        request.setAttribute("todayAdvice",           todayAdvice);
-        request.setAttribute("adviceHistory",         adviceHistory);
         // [NEW V3]
         request.setAttribute("unacknowledgedAlerts",  unacknowledgedAlerts);
         request.setAttribute("alertCount",            alertCount);

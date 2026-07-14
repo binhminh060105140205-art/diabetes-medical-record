@@ -12,7 +12,7 @@ import java.util.List;
  * Thay thế AIEngine trong Doctor workflow (AIEngine vẫn giữ cho Patient AI prompt).
  *
  * Gọi sau khi:
- *   - Bệnh nhân nhập chỉ số hằng ngày (PatientAIController)
+ *   - Bệnh nhân nhập chỉ số hằng ngày (PatientHealthController)
  *   - Thiết bị gửi dữ liệu lên (DeviceDataUploadController)
  */
 public class AlertEngine {

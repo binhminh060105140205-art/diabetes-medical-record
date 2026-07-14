@@ -11,6 +11,7 @@ import javax.sql.DataSource;
 
 /** Temporary compatibility base for legacy DAOs during repository migration. */
 public class DBContext {
+    private static final Logger LOGGER = Logger.getLogger(DBContext.class.getName());
     protected Connection connection;
     private static final ThreadLocal<List<Connection>> REQUEST_CONNECTIONS =
             ThreadLocal.withInitial(ArrayList::new);
@@ -61,6 +62,12 @@ public class DBContext {
 
     public static void setDataSource(DataSource configuredDataSource) {
         dataSource = configuredDataSource;
+    }
+
+    /** Log the technical cause and fail the request instead of returning fake empty data. */
+    protected IllegalStateException databaseError(String operation, SQLException cause) {
+        LOGGER.log(Level.SEVERE, "Database operation failed: " + operation, cause);
+        return new IllegalStateException("Không thể xử lý dữ liệu. Vui lòng thử lại sau.", cause);
     }
 
     private static String value(String environmentName, String propertyName, String defaultValue) {

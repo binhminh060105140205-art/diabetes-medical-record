@@ -30,7 +30,7 @@ public class DoctorDAO extends DBContext {
             rs = stm.executeQuery();
             if (rs.next()) return mapRow(rs);
         } catch (SQLException e) {
-            System.out.println("DoctorDAO.getByUserId: " + e.getMessage());
+            throw databaseError("load doctor account", e);
         }
         return null;
     }
@@ -43,7 +43,7 @@ public class DoctorDAO extends DBContext {
             rs = stm.executeQuery();
             if (rs.next()) return mapRow(rs);
         } catch (SQLException e) {
-            System.out.println("DoctorDAO.getById: " + e.getMessage());
+            throw databaseError("load doctor", e);
         }
         return null;
     }
@@ -56,7 +56,7 @@ public class DoctorDAO extends DBContext {
             rs = stm.executeQuery();
             while (rs.next()) list.add(mapRow(rs));
         } catch (SQLException e) {
-            System.out.println("DoctorDAO.getAll: " + e.getMessage());
+            throw databaseError("load doctors", e);
         }
         return list;
     }
@@ -74,7 +74,7 @@ public class DoctorDAO extends DBContext {
                 if (rs.next()) d.setDoctorId(rs.getInt(1));
             }
         } catch (SQLException e) {
-            System.out.println("DoctorDAO.create ERROR: " + e.getMessage());
+            throw databaseError("create doctor", e);
         }
         return d;
     }
@@ -95,8 +95,7 @@ public class DoctorDAO extends DBContext {
             stm.setInt(4, doctorId);
             return stm.executeUpdate() > 0;
         } catch (SQLException e) {
-            System.out.println("DoctorDAO.updateImages ERROR: " + e.getMessage());
+            throw databaseError("update doctor documents", e);
         }
-        return false;
     }
 }

@@ -47,7 +47,7 @@
             <span>TỔNG QUAN SỨC KHỎE</span><div>Theo dõi đều đặn, kiểm soát chủ động</div>
             <p>Cập nhật đường huyết, huyết áp và cân nặng để tạo nhật ký liên tục cho lần tái khám.</p>
         </div>
-        <a href="${pageContext.request.contextPath}/PatientAI" class="patient-overview-action">Mở nhật ký sức khỏe →
+        <a href="#daily-health" class="patient-overview-action">Mở nhật ký sức khỏe →
             <c:if test="${alertCount > 0}">
                 <span style="background:#dc2626;border-radius:50%;padding:1px 6px;font-size:11px;margin-left:6px;">${alertCount}</span>
             </c:if>
@@ -81,7 +81,7 @@
                 <div class="card-title" style="margin:0;">📊 Nhập chỉ số hôm nay</div>
                 <c:if test="${not empty todayLog}"><span class="readonly-badge">✅ Đã nhập hôm nay</span></c:if>
             </div>
-            <p class="text-muted" style="font-size:13px;margin-bottom:14px;">Đo bằng máy tại nhà, nhập vào để AI theo dõi xu hướng sức khỏe của bạn mỗi ngày.</p>
+            <p class="text-muted" style="font-size:13px;margin-bottom:14px;">Đo bằng máy tại nhà và nhập chỉ số để theo dõi xu hướng sức khỏe mỗi ngày.</p>
 
             <div class="form-group">
                 <label class="log-inp-label">🩸 Đường huyết (mg/dL) <span style="font-size:11px;color:#888;font-weight:400;">BT: 70–99</span></label>
@@ -236,17 +236,6 @@
             </table>
         </div>
 
-        <%-- Lời khuyên AI hôm nay --%>
-        <c:if test="${not empty todayAdvice}">
-        <div class="card" style="margin-top:16px;background:linear-gradient(135deg,#f0fff4,#ecfdf5);border:1.5px solid #86efac;">
-            <div class="card-title">🤖 Lời khuyên AI hôm nay
-                <c:if test="${not empty todayAdvice.riskLevel}">
-                    <span style="font-size:12px;font-weight:400;margin-left:8px;">${todayAdvice.riskLevelIcon} ${todayAdvice.riskLevel}</span>
-                </c:if>
-            </div>
-            <div style="font-size:14px;line-height:1.8;color:#14532d;white-space:pre-wrap;">${todayAdvice.adviceContent}</div>
-        </div>
-        </c:if>
     </div>
     </div>
 </div>
@@ -273,7 +262,7 @@ async function saveLog() {
         symptoms:document.getElementById('log_symptoms').value||'',
         note:document.getElementById('log_note').value||''});
     try {
-        var r=await fetch(CTX+'/PatientAI',{method:'POST',body});
+        var r=await fetch(CTX+'/PatientHealth',{method:'POST',body});
         var data=await r.json();
         if(data.success){
             res.innerHTML='<span style="color:#16a34a;font-weight:600;">✅ '+data.message+'</span>';
@@ -287,7 +276,7 @@ async function saveLog() {
 }
 // [NEW V3] Đánh dấu cảnh báo đã xem
 function ackAlert(alertId) {
-    fetch(CTX+'/PatientAI',{method:'POST',body:new URLSearchParams({action:'acknowledgeAlert',alertId})})
+    fetch(CTX+'/PatientHealth',{method:'POST',body:new URLSearchParams({action:'acknowledgeAlert',alertId})})
     .then(r=>r.json()).then(data=>{
         if(data.success){var el=document.getElementById('alert-'+alertId);if(el){el.style.opacity='0.35';el.style.pointerEvents='none';}}
     });

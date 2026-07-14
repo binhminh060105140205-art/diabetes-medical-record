@@ -656,3 +656,5 @@ th{background:#123f67;font-size:12px;letter-spacing:.65px}td{padding:13px 14px}.
 body.is-navigating:after{content:'';position:fixed;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#00a5df,#25bc79);z-index:9999;animation:navprogress .8s infinite}@keyframes navprogress{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
 @media(max-width:1050px){.app-sidebar{transform:translateX(-105%);transition:.2s}.sidebar-open .app-sidebar{transform:translateX(0)}.sidebar-toggle{display:block}.header-brand{margin-left:46px}.page-wrapper,.site-footer{margin-left:0;width:100%}.dashboard-layout{grid-template-columns:1fr}.patient-dashboard-grid{grid-template-columns:1fr}}
 @media(max-width:700px){.workspace-heading{align-items:flex-start;flex-direction:column}.heading-actions{width:100%;flex-wrap:wrap}.metric-grid{grid-template-columns:1fr}.patient-overview{align-items:flex-start;flex-direction:column}.sidebar-context{padding-top:38px}.site-header .header-title{display:none}}
+.prescription-table input { min-width: 120px; }
+.prescription-table th { white-space: nowrap; }

@@ -53,7 +53,7 @@ public class DeviceReadingDAO extends DBContext {
             stm.executeUpdate();
             rs = stm.getGeneratedKeys();
             if (rs.next()) dr.setId(rs.getInt(1));
-        } catch (SQLException e) { System.out.println("DeviceReadingDAO.save: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("save device reading", e); }
         return dr;
     }
 
@@ -65,7 +65,7 @@ public class DeviceReadingDAO extends DBContext {
             stm.setInt(1, patientId); stm.setInt(2, limit);
             rs = stm.executeQuery();
             while (rs.next()) list.add(mapRow(rs));
-        } catch (SQLException e) { System.out.println("DeviceReadingDAO.getRecent: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("load device readings", e); }
         return list;
     }
 
@@ -77,7 +77,7 @@ public class DeviceReadingDAO extends DBContext {
             stm.setInt(1, patientId);
             rs = stm.executeQuery();
             while (rs.next()) list.add(mapRow(rs));
-        } catch (SQLException e) { System.out.println("DeviceReadingDAO.getAbnormal: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("load abnormal device readings", e); }
         return list;
     }
 
@@ -89,7 +89,7 @@ public class DeviceReadingDAO extends DBContext {
             stm.setInt(1, patientId);
             rs = stm.executeQuery();
             if (rs.next()) { double v = rs.getDouble(1); if (!rs.wasNull()) return v; }
-        } catch (SQLException e) { System.out.println("DeviceReadingDAO.getAvgGlucose7Days: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("calculate device glucose average", e); }
         return 0.0;
     }
 

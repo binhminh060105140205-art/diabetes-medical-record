@@ -26,12 +26,9 @@ public class PatientDailyLogDAO extends DBContext {
         l.setSymptoms(rs.getString("symptoms"));
         l.setNote(rs.getString("note"));
         Timestamp t = rs.getTimestamp("created_at"); if (t != null) l.setCreatedAt(t.toLocalDateTime());
-        // [NEW V3] — tương thích DB chưa migrate
-        try {
-            int hr = rs.getInt("heart_rate");        if (!rs.wasNull()) l.setHeartRate(hr);
-            double spo2 = rs.getDouble("spo2");      if (!rs.wasNull()) l.setSpo2(spo2);
-            l.setMealType(rs.getString("meal_type"));
-        } catch (SQLException ignored) {}
+        int hr = rs.getInt("heart_rate");        if (!rs.wasNull()) l.setHeartRate(hr);
+        double spo2 = rs.getDouble("spo2");      if (!rs.wasNull()) l.setSpo2(spo2);
+        l.setMealType(rs.getString("meal_type"));
         return l;
     }
 
@@ -50,7 +47,7 @@ public class PatientDailyLogDAO extends DBContext {
                 stm.setString(9, log.getMealType()); stm.setInt(10, today.getLogId());
                 stm.executeUpdate();
                 log.setLogId(today.getLogId());
-            } catch (SQLException e) { System.out.println("PDL.update: " + e.getMessage()); }
+            } catch (SQLException e) { throw databaseError("update patient daily log", e); }
         } else {
             // [MODIFIED V3] thêm heart_rate, spo2, meal_type vào INSERT
             String sql = "INSERT INTO PatientDailyLogs(patient_id,log_date,blood_glucose," +
@@ -67,7 +64,7 @@ public class PatientDailyLogDAO extends DBContext {
                 stm.executeUpdate();
                 rs = stm.getGeneratedKeys();
                 if (rs.next()) log.setLogId(rs.getInt(1));
-            } catch (SQLException e) { System.out.println("PDL.insert: " + e.getMessage()); }
+            } catch (SQLException e) { throw databaseError("create patient daily log", e); }
         }
         return log;
     }
@@ -80,7 +77,7 @@ public class PatientDailyLogDAO extends DBContext {
             stm.setInt(1, patientId); stm.setInt(2, days);
             rs = stm.executeQuery();
             while (rs.next()) list.add(mapRow(rs));
-        } catch (SQLException e) { System.out.println("PDL.getRecent: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("load patient daily logs", e); }
         return list;
     }
 
@@ -91,7 +88,7 @@ public class PatientDailyLogDAO extends DBContext {
             stm.setInt(1, patientId);
             rs = stm.executeQuery();
             if (rs.next()) return mapRow(rs);
-        } catch (SQLException e) { System.out.println("PDL.getTodayLog: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("load today's patient log", e); }
         return null;
     }
 
@@ -103,7 +100,7 @@ public class PatientDailyLogDAO extends DBContext {
             stm.setInt(1, patientId);
             rs = stm.executeQuery();
             if (rs.next()) return mapRow(rs);
-        } catch (SQLException e) { System.out.println("PDL.getYesterdayLog: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("load yesterday's patient log", e); }
         return null;
     }
 
@@ -121,7 +118,7 @@ public class PatientDailyLogDAO extends DBContext {
                 double bg = rs.getDouble("avg_bg");   if (!rs.wasNull()) result[0] = bg;
                 double sbp = rs.getDouble("avg_sbp"); if (!rs.wasNull()) result[1] = sbp;
             }
-        } catch (SQLException e) { System.out.println("PDL.getAvg7Days: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("calculate patient health average", e); }
         return result;
     }
 
@@ -138,8 +135,7 @@ public class PatientDailyLogDAO extends DBContext {
                 else break;
             }
             return count;
-        } catch (SQLException e) { System.out.println("PDL.countSymptom: " + e.getMessage()); }
-        return 0;
+        } catch (SQLException e) { throw databaseError("count patient symptoms", e); }
     }
 
     private void setND(PreparedStatement s, int i, Double v) throws SQLException {

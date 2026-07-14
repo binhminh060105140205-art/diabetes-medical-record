@@ -113,12 +113,8 @@ public class AdminCreateUserController extends HttpServlet {
             }
         }
 
-        if (email != null && !email.trim().isEmpty()) {
-            dal.EmailUtility.sendAccountDetails(email, fullName, username, password, role);
-        }
-
         HttpSession currentSession = request.getSession();
-        currentSession.setAttribute("toastMessage", "Khởi tạo tài khoản " + role + " thành công! Thông tin đã gửi về: " + email);
+        currentSession.setAttribute("toastMessage", "Khởi tạo tài khoản " + role + " thành công!");
         currentSession.setAttribute("toastType", "success");
 
         if ("DOCTOR".equals(role) && newUser.getUserId() > 0) {

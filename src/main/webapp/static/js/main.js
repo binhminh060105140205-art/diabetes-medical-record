@@ -1,4 +1,31 @@
 // ================================================
+
+// Add the session CSRF token to every same-origin form and AJAX mutation.
+(function () {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    const token = meta && meta.content;
+    if (!token) return;
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('form').forEach(function (form) {
+            if ((form.method || 'get').toLowerCase() !== 'post' || form.querySelector('[name="_csrf"]')) return;
+            const input = document.createElement('input');
+            input.type = 'hidden'; input.name = '_csrf'; input.value = token;
+            form.appendChild(input);
+        });
+    });
+    const originalFetch = window.fetch;
+    window.fetch = function (input, init) {
+        init = init || {};
+        const method = (init.method || 'GET').toUpperCase();
+        const url = typeof input === 'string' ? input : input.url;
+        if (!['GET', 'HEAD', 'OPTIONS'].includes(method) && new URL(url, location.href).origin === location.origin) {
+            const headers = new Headers(init.headers || {});
+            headers.set('X-CSRF-Token', token);
+            init.headers = headers;
+        }
+        return originalFetch.call(window, input, init);
+    };
+})();
 //  main.js — DiabetesMedicalRecord
 // ================================================
 

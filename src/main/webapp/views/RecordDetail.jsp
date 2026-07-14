@@ -104,47 +104,24 @@
     </div>
     </c:if>
 
-    <!-- IV. AI WARNING -->
-    <c:if test="${not empty detail.warning}">
+    <!-- IV. DOCTOR CONCLUSION -->
     <div class="card">
-        <div class="card-title">IV. Đánh giá AI — Nguy cơ Tiểu đường</div>
-        <div class="ai-panel ${detail.warning.riskLevel}">
-            <h3>
-                🤖 Mức nguy cơ:
-                <span class="risk-badge risk-${detail.warning.riskLevel}">${detail.warning.riskLevel}</span>
-                &nbsp;&nbsp; Điểm AI: <strong>${detail.warning.aiScore} / 100</strong>
-            </h3>
-            <hr style="margin:10px 0;border-color:rgba(0,0,0,.1);">
-            <p><strong>⚠️ Cảnh báo:</strong></p>
-            <pre>${detail.warning.warningMessage}</pre>
-            <br>
-            <p><strong>💡 Gợi ý xử lý:</strong></p>
-            <pre>${detail.warning.suggestedAction}</pre>
-            <br>
-            <small class="text-muted">
-                Thời gian phân tích: ${detail.warning.generatedAt} &nbsp;|&nbsp;
-                <c:choose>
-                    <c:when test="${detail.warning.reviewedByDoctor}">✅ Bác sĩ đã xem</c:when>
-                    <c:otherwise>⏳ Chờ bác sĩ xem xét</c:otherwise>
-                </c:choose>
-            </small>
-        </div>
-        <p class="text-muted" style="font-size:12px;margin-top:6px;">
-            * AI chỉ đóng vai trò hỗ trợ phân tích, không thay thế chẩn đoán lâm sàng của bác sĩ.
-        </p>
-    </div>
-    </c:if>
-
-    <!-- V. DOCTOR CONCLUSION -->
-    <div class="card">
-        <div class="card-title">V. Kết luận của Bác sĩ</div>
+        <div class="card-title">IV. Kết luận của Bác sĩ</div>
         <c:choose>
             <c:when test="${detail.record.status == 'COMPLETED'}">
                 <table style="box-shadow:none;">
                     <tr><th style="width:220px">Biến chứng</th><td>${detail.record.complicationNote}</td></tr>
                     <tr><th>Chẩn đoán</th><td><strong>${detail.record.finalDiagnosis}</strong></td></tr>
                     <tr><th>Hướng điều trị</th><td>${detail.record.treatmentPlan}</td></tr>
-                    <tr><th>Đơn thuốc</th><td>${detail.record.prescriptionNote}</td></tr>
+                    <tr><th>Đơn thuốc</th><td>
+                        <c:choose><c:when test="${not empty prescriptionItems}">
+                            <c:forEach items="${prescriptionItems}" var="item">
+                                <div><strong><c:out value="${item.medicineName}"/></strong> — <c:out value="${item.dosage}"/>
+                                    <c:if test="${not empty item.frequency}">, <c:out value="${item.frequency}"/></c:if>
+                                    <c:if test="${not empty item.durationDays}"> trong ${item.durationDays} ngày</c:if></div>
+                            </c:forEach>
+                        </c:when><c:otherwise><c:out value="${detail.record.prescriptionNote}"/></c:otherwise></c:choose>
+                    </td></tr>
                     <tr><th>Lời dặn</th><td>${detail.record.advice}</td></tr>
                     <tr><th>Ngày tái khám</th><td><strong>${detail.record.followUpDate}</strong></td></tr>
                     <tr><th>Ghi chú thêm</th><td>${detail.record.doctorNote}</td></tr>

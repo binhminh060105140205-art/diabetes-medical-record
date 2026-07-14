@@ -4,6 +4,8 @@ import models.MedicalRecord;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class MedicalRecordDAO extends DBContext {
     PreparedStatement stm;
@@ -44,7 +46,7 @@ public class MedicalRecordDAO extends DBContext {
             stm.setInt(1, id);
             rs = stm.executeQuery();
             if (rs.next()) return mapRow(rs);
-        } catch (SQLException e) { System.out.println("MRD.getById: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("load medical record", e); }
         return null;
     }
 
@@ -56,7 +58,7 @@ public class MedicalRecordDAO extends DBContext {
             stm.setInt(1, patientId);
             rs = stm.executeQuery();
             while (rs.next()) list.add(mapRow(rs));
-        } catch (SQLException e) { System.out.println("MRD.getByPatient: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("load patient medical records", e); }
         return list;
     }
 
@@ -68,7 +70,7 @@ public class MedicalRecordDAO extends DBContext {
             stm.setInt(1, doctorId);
             rs = stm.executeQuery();
             while (rs.next()) list.add(mapRow(rs));
-        } catch (SQLException e) { System.out.println("MRD.getByDoctor: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("load doctor medical records", e); }
         return list;
     }
 
@@ -84,7 +86,7 @@ public class MedicalRecordDAO extends DBContext {
             stm.setInt(1, doctorId);
             rs = stm.executeQuery();
             while (rs.next()) list.add(mapRow(rs));
-        } catch (SQLException e) { System.out.println("MRD.getPending: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("load pending medical records", e); }
         return list;
     }
 
@@ -106,7 +108,7 @@ public class MedicalRecordDAO extends DBContext {
             stm.executeUpdate();
             rs = stm.getGeneratedKeys();
             if (rs.next()) rec.setRecordId(rs.getInt(1));
-        } catch (SQLException e) { System.out.println("MRD.create: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("create medical record", e); }
         return rec;
     }
 
@@ -125,7 +127,7 @@ public class MedicalRecordDAO extends DBContext {
             stm.setString(7, rec.getDoctorNote());
             stm.setInt(8, rec.getRecordId());
             stm.executeUpdate();
-        } catch (SQLException e) { System.out.println("MRD.updateConclusion: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("complete medical record", e); }
     }
 
     public List<MedicalRecord> getRecent(int limit) {
@@ -136,7 +138,80 @@ public class MedicalRecordDAO extends DBContext {
             stm.setInt(1, limit);
             rs = stm.executeQuery();
             while (rs.next()) list.add(mapRow(rs));
-        } catch (SQLException e) { System.out.println("MRD.getRecent: " + e.getMessage()); }
+        } catch (SQLException e) { throw databaseError("load recent medical records", e); }
         return list;
+    }
+
+    public List<Map<String, Object>> getPrescriptionItems(int recordId) {
+        List<Map<String, Object>> items = new ArrayList<>();
+        String sql = "SELECT medicine_name,dosage,frequency,duration_days FROM PrescriptionItems "
+                + "WHERE record_id=? ORDER BY prescription_item_id";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, recordId);
+            try (ResultSet rows = ps.executeQuery()) {
+                while (rows.next()) {
+                    Map<String, Object> item = new LinkedHashMap<>();
+                    item.put("medicineName", rows.getString("medicine_name"));
+                    item.put("dosage", rows.getString("dosage"));
+                    item.put("frequency", rows.getString("frequency"));
+                    item.put("durationDays", rows.getObject("duration_days"));
+                    items.add(item);
+                }
+            }
+        } catch (SQLException e) { throw databaseError("load prescription", e); }
+        return items;
+    }
+
+    public void replacePrescriptionItems(int recordId, String[] names, String[] dosages,
+            String[] frequencies, String[] durations) {
+        String delete = "DELETE FROM PrescriptionItems WHERE record_id=?";
+        String insert = "INSERT INTO PrescriptionItems(record_id,medicine_name,dosage,frequency,duration_days) "
+                + "VALUES(?,?,?,?,?)";
+        try (PreparedStatement del = connection.prepareStatement(delete);
+             PreparedStatement add = connection.prepareStatement(insert)) {
+            del.setInt(1, recordId);
+            del.executeUpdate();
+            if (names == null) return;
+            for (int i = 0; i < names.length; i++) {
+                String name = names[i] == null ? "" : names[i].trim();
+                if (name.isEmpty()) continue;
+                String dosage = valueAt(dosages, i);
+                if (dosage.isBlank()) throw new IllegalArgumentException("Thuốc phải có liều dùng.");
+                add.setInt(1, recordId);
+                add.setString(2, name);
+                add.setString(3, dosage);
+                add.setString(4, valueAt(frequencies, i));
+                String duration = valueAt(durations, i);
+                if (duration.isBlank()) add.setNull(5, Types.INTEGER);
+                else {
+                    int days = Integer.parseInt(duration);
+                    if (days < 1 || days > 365) throw new IllegalArgumentException("Số ngày dùng thuốc phải từ 1 đến 365.");
+                    add.setInt(5, days);
+                }
+                add.addBatch();
+            }
+            add.executeBatch();
+        } catch (SQLException e) { throw databaseError("save prescription", e); }
+    }
+
+    public void completeWithPrescription(MedicalRecord record, String[] names, String[] dosages,
+            String[] frequencies, String[] durations) {
+        try {
+            connection.setAutoCommit(false);
+            updateConclusion(record);
+            replacePrescriptionItems(record.getRecordId(), names, dosages, frequencies, durations);
+            connection.commit();
+        } catch (RuntimeException | SQLException error) {
+            try { connection.rollback(); } catch (SQLException rollbackError) { error.addSuppressed(rollbackError); }
+            throw error instanceof RuntimeException runtime ? runtime
+                    : databaseError("complete record transaction", (SQLException) error);
+        } finally {
+            try { connection.setAutoCommit(true); }
+            catch (SQLException e) { throw databaseError("restore database transaction", e); }
+        }
+    }
+
+    private String valueAt(String[] values, int index) {
+        return values != null && index < values.length && values[index] != null ? values[index].trim() : "";
     }
 }
