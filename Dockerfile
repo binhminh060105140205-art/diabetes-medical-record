@@ -1,13 +1,15 @@
+# syntax=docker/dockerfile:1.7
 FROM maven:3.9.11-eclipse-temurin-17 AS build
 WORKDIR /app
 COPY pom.xml ./
+RUN --mount=type=cache,target=/root/.m2 mvn -B -DskipTests dependency:go-offline
 COPY src src
-RUN for attempt in 1 2 3 4 5; do \
+RUN --mount=type=cache,target=/root/.m2 for attempt in 1 2 3; do \
       mvn -B -DskipTests \
         -Dmaven.wagon.http.retryHandler.count=5 \
-        clean package && exit 0; \
-      echo "Maven Central download failed (attempt ${attempt}/5); retrying..."; \
-      sleep $((attempt * 10)); \
+        package && exit 0; \
+      echo "Maven build failed (attempt ${attempt}/3); retrying..."; \
+      sleep $((attempt * 5)); \
     done; \
     exit 1
 
