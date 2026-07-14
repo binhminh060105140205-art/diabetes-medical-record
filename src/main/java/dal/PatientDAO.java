@@ -41,6 +41,15 @@ public class PatientDAO extends DBContext {
         return list;
     }
 
+    public List<Patient> getRecent(int limit) {
+        List<Patient> list = new ArrayList<>();
+        try (PreparedStatement ps = connection.prepareStatement("SELECT * FROM Patients ORDER BY created_at DESC LIMIT ?")) {
+            ps.setInt(1, limit);
+            try (ResultSet result = ps.executeQuery()) { while (result.next()) list.add(mapRow(result)); }
+        } catch (SQLException e) { throw new IllegalStateException("Không thể tải bệnh nhân gần đây", e); }
+        return list;
+    }
+
     public List<Patient> search(String keyword) {
         List<Patient> list = new ArrayList<>();
         String sql = "SELECT * FROM Patients WHERE full_name ILIKE ? OR phone ILIKE ? "

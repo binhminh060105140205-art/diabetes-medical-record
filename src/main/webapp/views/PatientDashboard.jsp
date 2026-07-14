@@ -32,8 +32,8 @@
 <body>
 <jsp:include page="header.jsp"/>
 <jsp:include page="topnav.jsp"/>
-<div class="page-wrapper">
-    <h1 class="page-title">👤 Xin chào, ${sessionScope.user.fullName}</h1>
+<div class="page-wrapper app-workspace patient-workspace">
+    <div class="workspace-heading"><div><span class="workspace-kicker">CỔNG THÔNG TIN NGƯỜI BỆNH</span><h1>Chào bạn, <c:out value="${sessionScope.user.fullName}"/></h1><p>Theo dõi chỉ số, kết quả khám và kế hoạch chăm sóc của bạn tại một nơi.</p></div><div class="heading-actions"><a class="btn btn-light" href="${pageContext.request.contextPath}/PatientHistory">Hồ sơ khám bệnh</a><a class="btn btn-primary" href="#daily-health">＋ Cập nhật chỉ số</a></div></div>
 
     <c:if test="${not empty msg}"><div class="alert alert-info">${msg}</div></c:if>
     <c:if test="${not empty sessionScope.flashSuccess}">
@@ -41,15 +41,13 @@
         <% session.removeAttribute("flashSuccess"); %>
     </c:if>
 
-    <%-- AI Banner --%>
-    <div style="background:linear-gradient(135deg,#0f172a,#1d4ed8);border-radius:14px;padding:18px 24px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <%-- Health overview --%>
+    <div class="patient-overview">
         <div>
-            <div style="font-size:18px;font-weight:800;color:white;">🤖 AI Tư Vấn Sức Khỏe Hằng Ngày</div>
-            <div style="color:#93c5fd;font-size:13px;margin-top:4px;">Nhập chỉ số hôm nay → AI phân tích xu hướng và đưa ra lời khuyên phù hợp.</div>
+            <span>TỔNG QUAN SỨC KHỎE</span><div>Theo dõi đều đặn, kiểm soát chủ động</div>
+            <p>Cập nhật đường huyết, huyết áp và cân nặng để tạo nhật ký liên tục cho lần tái khám.</p>
         </div>
-        <a href="${pageContext.request.contextPath}/PatientAI"
-           style="background:#0d6efd;color:white;padding:10px 22px;border-radius:10px;font-weight:700;text-decoration:none;font-size:14px;white-space:nowrap;">
-            ✨ Mở AI Tư Vấn →
+        <a href="${pageContext.request.contextPath}/PatientAI" class="patient-overview-action">Mở nhật ký sức khỏe →
             <c:if test="${alertCount > 0}">
                 <span style="background:#dc2626;border-radius:50%;padding:1px 6px;font-size:11px;margin-left:6px;">${alertCount}</span>
             </c:if>
@@ -74,7 +72,7 @@
     </div>
     </c:if>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+    <div id="daily-health" class="patient-dashboard-grid">
 
     <%-- CỘT TRÁI: NHẬP CHỈ SỐ --%>
     <div>

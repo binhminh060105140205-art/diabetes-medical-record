@@ -10,15 +10,19 @@ public class ClinicWorkflowController extends HttpServlet {
   protected void doGet(HttpServletRequest req,HttpServletResponse resp)throws ServletException,IOException{
     User u=user(req); if(u==null||!CLINICAL.contains(u.getRole())){resp.sendRedirect("Login");return;}
     ClinicWorkflowDAO dao=new ClinicWorkflowDAO(); String view=req.getParameter("view"); if(view==null)view="encounters";
-    req.setAttribute("view",view); req.setAttribute("patients",new PatientDAO().getAll()); req.setAttribute("doctors",new DoctorDAO().getAll());
+    req.setAttribute("view",view);
+    if (Set.of("appointments","clinical").contains(view)) req.setAttribute("patients",new PatientDAO().getAll());
+    if ("appointments".equals(view)) req.setAttribute("doctors",new DoctorDAO().getAll());
     if ("DOCTOR".equals(u.getRole())) {
       Integer doctorId=dao.doctorIdForUser(u.getUserId());
       if(doctorId==null){resp.sendError(403,"Tài khoản chưa có hồ sơ bác sĩ");return;}
-      req.setAttribute("appointments",dao.appointmentsForDoctor(doctorId));
-      req.setAttribute("encounters",dao.encountersForDoctor(doctorId));
-      req.setAttribute("labOrders",dao.labOrdersForDoctor(doctorId));
+      if("appointments".equals(view)) req.setAttribute("appointments",dao.appointmentsForDoctor(doctorId));
+      if(Set.of("encounters","labs").contains(view)) req.setAttribute("encounters",dao.encountersForDoctor(doctorId));
+      if("labs".equals(view)) req.setAttribute("labOrders",dao.labOrdersForDoctor(doctorId));
     } else {
-      req.setAttribute("appointments",dao.appointments()); req.setAttribute("encounters",dao.encounters()); req.setAttribute("labOrders",dao.labOrders());
+      if("appointments".equals(view)) req.setAttribute("appointments",dao.appointments());
+      if("encounters".equals(view)) req.setAttribute("encounters",dao.encounters());
+      if("labs".equals(view)) req.setAttribute("labOrders",dao.labOrders());
     }
     String p=req.getParameter("patientId"); if(p!=null&&!p.isBlank()){int id=Integer.parseInt(p);req.setAttribute("selectedPatient",new PatientDAO().getById(id));req.setAttribute("allergies",dao.allergies(id));req.setAttribute("histories",dao.histories(id));}
     Object flash=req.getSession().getAttribute("workflowFlash");req.setAttribute("workflowFlash",flash);req.getSession().removeAttribute("workflowFlash");
