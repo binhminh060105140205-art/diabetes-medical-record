@@ -2,12 +2,12 @@
 <%@taglib prefix="c" uri="jakarta.tags.core"%>
 <!DOCTYPE html>
 <html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DiaCare Clinic — Quản lý bệnh tiểu đường toàn diện</title>
+<title>DiaCare — Quản lý sức khỏe toàn diện</title>
 <meta name="description" content="Nền tảng quản lý khám ngoại trú và theo dõi bệnh tiểu đường dành cho phòng khám, bác sĩ và người bệnh.">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/home.css"></head>
 <body class="home-body">
 <div class="hosp-topbar"><div class="topbar-container"><div class="topbar-left"><span>Thứ 2–Thứ 7: 07:30–17:30</span><span>Hà Nội</span></div><div class="topbar-right"><span class="topbar-hotline">Hotline cấp thiết: <strong>1800 1234</strong></span></div></div></div>
-<header class="hosp-nav"><div class="nav-container"><a class="hosp-brand" href="${pageContext.request.contextPath}/"><span class="brand-logo">+</span><span class="brand-text"><span class="brand-name">DiaCare Clinic</span><span class="brand-sub">Chăm sóc tiểu đường toàn diện</span></span></a>
+<header class="hosp-nav"><div class="nav-container"><a class="hosp-brand" href="${pageContext.request.contextPath}/"><span class="brand-logo">+</span><span class="brand-text"><span class="brand-name">DiaCare</span><span class="brand-sub">Chăm sóc tiểu đường toàn diện</span></span></a>
 <nav class="nav-links" id="home-nav"><a class="active" href="#home">Trang chủ</a><a href="#services">Dịch vụ</a><a href="#workflow">Quy trình khám</a><a href="#about">Về chúng tôi</a></nav>
 <div class="nav-actions"><c:choose><c:when test="${not empty sessionScope.user}"><a class="btn-primary" href="${pageContext.request.contextPath}/Login">Vào hệ thống</a></c:when><c:otherwise><a class="btn-primary" href="${pageContext.request.contextPath}/Login">Đăng nhập</a></c:otherwise></c:choose><button class="mobile-toggle" type="button" aria-label="Mở menu" onclick="document.getElementById('home-nav').classList.toggle('active')">☰</button></div></div></header>
 
@@ -23,5 +23,5 @@
 
 <section class="hosp-section about-section" id="about"><div class="about-panel"><div><span class="section-kicker">DIAcare CLINIC</span><h2>Chăm sóc dựa trên dữ liệu,<br>ấm áp như người thân</h2><p>Chúng tôi kết hợp quy trình lâm sàng chuẩn với công nghệ quản lý hồ sơ để đội ngũ y tế dành nhiều thời gian hơn cho người bệnh.</p></div><div class="about-contact"><strong>Cần hỗ trợ?</strong><span>1800 1234</span><small>diabetesclinic@gmail.com</small><a class="btn-primary" href="${pageContext.request.contextPath}/Login">Đăng nhập hệ thống</a></div></div></section></main>
 
-<footer class="hosp-footer"><div class="footer-container"><div class="footer-brand"><div class="brand-logo">+</div><h3 class="footer-heading">DiaCare Clinic</h3><p class="footer-about">Hệ thống quản lý hồ sơ và điều hành khám bệnh tiểu đường dành cho phòng khám ngoại trú hiện đại.</p></div><div><h3 class="footer-heading">Truy cập nhanh</h3><ul class="footer-links"><li><a href="#services">Dịch vụ</a></li><li><a href="#workflow">Quy trình khám</a></li><li><a href="${pageContext.request.contextPath}/Login">Đăng nhập</a></li></ul></div><div><h3 class="footer-heading">Liên hệ</h3><ul class="footer-contact"><li>Hà Nội, Việt Nam</li><li>1800 1234</li><li>diabetesclinic@gmail.com</li></ul></div></div><div class="footer-bottom">© 2026 DiaCare Clinic. Hệ thống quản lý khám ngoại trú.</div></footer>
+<footer class="hosp-footer"><div class="footer-container"><div class="footer-brand"><div class="brand-logo">+</div><h3 class="footer-heading">DiaCare</h3><p class="footer-about">Hệ thống quản lý hồ sơ và điều hành khám bệnh tiểu đường dành cho phòng khám ngoại trú hiện đại.</p></div><div><h3 class="footer-heading">Truy cập nhanh</h3><ul class="footer-links"><li><a href="#services">Dịch vụ</a></li><li><a href="#workflow">Quy trình khám</a></li><li><a href="${pageContext.request.contextPath}/Login">Đăng nhập</a></li></ul></div><div><h3 class="footer-heading">Liên hệ</h3><ul class="footer-contact"><li>Hà Nội, Việt Nam</li><li>1800 1234</li><li>diabetesclinic@gmail.com</li></ul></div></div><div class="footer-bottom">© 2026 DiaCare. Hệ thống quản lý khám ngoại trú.</div></footer>
 </body></html>

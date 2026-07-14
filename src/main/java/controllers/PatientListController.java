@@ -22,8 +22,7 @@ public class PatientListController extends HttpServlet {
         
         PatientDAO dao = new PatientDAO();
         int pageSize = 10;
-        String pageStr = request.getParameter("page");
-        int currentPage = (pageStr == null || pageStr.trim().isEmpty()) ? 1 : Integer.parseInt(pageStr.trim());
+        int currentPage = positiveInt(request.getParameter("page"), 1);
         
         String keyword = request.getParameter("keyword");
         if (keyword != null && !keyword.trim().isEmpty()) {
@@ -31,12 +30,22 @@ public class PatientListController extends HttpServlet {
             request.setAttribute("keyword", keyword.trim());
         } else {
             int totalPatients = dao.countAll();
-            int totalPages = (int) Math.ceil((double) totalPatients / pageSize);
+            int totalPages = Math.max(1, (int) Math.ceil((double) totalPatients / pageSize));
+            currentPage = Math.min(currentPage, totalPages);
             
             request.setAttribute("patients", dao.getWithPaging(currentPage, pageSize));
             request.setAttribute("currentPage", currentPage);
             request.setAttribute("totalPages", totalPages);
         }
         request.getRequestDispatcher("views/PatientList.jsp").forward(request, response);
+    }
+
+    private int positiveInt(String value, int fallback) {
+        try {
+            int parsed = Integer.parseInt(value);
+            return parsed > 0 ? parsed : fallback;
+        } catch (NumberFormatException | NullPointerException ignored) {
+            return fallback;
+        }
     }
 }

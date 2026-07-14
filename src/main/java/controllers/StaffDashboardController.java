@@ -23,7 +23,13 @@ public class StaffDashboardController extends HttpServlet {
         int total = dao.countAll();
         request.setAttribute("totalPatients", total);
 
-        request.setAttribute("recentPatients", dao.getRecent(10));
+        String keyword = request.getParameter("keyword");
+        if (keyword != null && !keyword.isBlank()) {
+            request.setAttribute("recentPatients", dao.search(keyword.trim()).stream().limit(10).toList());
+            request.setAttribute("keyword", keyword.trim());
+        } else {
+            request.setAttribute("recentPatients", dao.getRecent(8));
+        }
 
         request.getRequestDispatcher("views/StaffDashboard.jsp").forward(request, response);
     }

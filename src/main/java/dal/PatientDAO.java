@@ -50,7 +50,7 @@ public class PatientDAO extends DBContext {
     public List<Patient> search(String keyword) {
         List<Patient> list = new ArrayList<>();
         String sql = "SELECT * FROM Patients WHERE full_name ILIKE ? OR phone ILIKE ? "
-                   + "OR health_insurance_no ILIKE ? OR national_id ILIKE ?";
+                   + "OR health_insurance_no ILIKE ? OR national_id ILIKE ? ORDER BY full_name LIMIT 50";
         try {
             stm = connection.prepareStatement(sql);
             String kw = "%" + keyword + "%";

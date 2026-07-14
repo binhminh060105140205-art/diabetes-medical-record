@@ -39,13 +39,17 @@ public class PatientDashboardController extends HttpServlet {
         DeviceReadingDAO deviceDAO = new DeviceReadingDAO();
 
         List<MedicalRecord> records = recDAO.getByPatient(patient.getPatientId());
-        PatientDailyLog todayLog   = logDAO.getTodayLog(patient.getPatientId());
         List<PatientDailyLog> recentLogs = logDAO.getRecent(patient.getPatientId(), 7);
-        double[] avg7 = logDAO.getAvg7Days(patient.getPatientId());
+        PatientDailyLog todayLog = recentLogs.stream()
+                .filter(log -> java.time.LocalDate.now().equals(log.getLogDate())).findFirst().orElse(null);
+        double avgGlucose = recentLogs.stream().filter(log -> log.getBloodGlucose() != null)
+                .mapToDouble(PatientDailyLog::getBloodGlucose).average().orElse(0);
+        double avgSystolic = recentLogs.stream().filter(log -> log.getSystolicBp() != null)
+                .mapToInt(PatientDailyLog::getSystolicBp).average().orElse(0);
 
         // [NEW V3] HealthAlerts thay AIWarnings
         List<HealthAlert> unacknowledgedAlerts = alertDAO.getUnacknowledged(patient.getPatientId());
-        int alertCount = alertDAO.countUnacknowledged(patient.getPatientId());
+        int alertCount = unacknowledgedAlerts.size();
         List<DeviceReading> recentDeviceReadings = deviceDAO.getRecent(patient.getPatientId(), 3);
 
         request.setAttribute("patient",               patient);
@@ -53,8 +57,8 @@ public class PatientDashboardController extends HttpServlet {
         request.setAttribute("latestRecord",          records.isEmpty() ? null : records.get(0));
         request.setAttribute("todayLog",              todayLog);
         request.setAttribute("recentLogs",            recentLogs);
-        request.setAttribute("avg7BG",                avg7[0] > 0 ? String.format("%.1f", avg7[0]) : null);
-        request.setAttribute("avg7BP",                avg7[1] > 0 ? String.format("%.0f", avg7[1]) : null);
+        request.setAttribute("avg7BG",                avgGlucose > 0 ? String.format("%.1f", avgGlucose) : null);
+        request.setAttribute("avg7BP",                avgSystolic > 0 ? String.format("%.0f", avgSystolic) : null);
         // [NEW V3]
         request.setAttribute("unacknowledgedAlerts",  unacknowledgedAlerts);
         request.setAttribute("alertCount",            alertCount);

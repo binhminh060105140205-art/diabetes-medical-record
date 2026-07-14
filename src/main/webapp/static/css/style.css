@@ -658,3 +658,20 @@ body.is-navigating:after{content:'';position:fixed;top:0;left:0;right:0;height:3
 @media(max-width:700px){.workspace-heading{align-items:flex-start;flex-direction:column}.heading-actions{width:100%;flex-wrap:wrap}.metric-grid{grid-template-columns:1fr}.patient-overview{align-items:flex-start;flex-direction:column}.sidebar-context{padding-top:38px}.site-header .header-title{display:none}}
 .prescription-table input { min-width: 120px; }
 .prescription-table th { white-space: nowrap; }
+/* DiaCare UI foundation — one visual language for every authenticated page */
+:root{--primary:#087fbd;--primary-dark:#075985;--primary-soft:#e8f6fd;--surface:#fff;--canvas:#f3f8fb;--text:#14324a;--muted:#607d91;--border:#d7e6ef}
+html{font-size:16px}body{font-family:Inter,"Segoe UI",Arial,sans-serif;font-size:15px;line-height:1.55;color:var(--text);background:var(--canvas)}
+button,input,select,textarea{font:inherit}small,.table-sub{font-size:13px!important;line-height:1.45;color:var(--muted)}
+.site-header{background:linear-gradient(100deg,#075985,#0891c7)}.header-title small{font-size:11px;letter-spacing:1.3px}
+.app-sidebar{background:#103b58}.sidebar-link{font-size:15px}.sidebar-link.active{background:#17658d;border-left-color:#4fd1ff}
+.page-wrapper,.app-workspace{padding:28px 30px 44px}.workspace-heading h1,.page-title{font-size:clamp(25px,2.2vw,34px);letter-spacing:-.4px}
+.card,.metric-card,.support-card{border:1px solid var(--border);border-radius:16px;box-shadow:0 8px 24px rgba(25,74,104,.07)}
+.btn,.row-actions a{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:0 14px;border:1px solid #c9dce8;border-radius:9px;font-size:14px;font-weight:700;text-decoration:none;white-space:nowrap;background:#fff;color:#24506c;transition:.15s ease}
+.btn:hover,.row-actions a:hover{transform:translateY(-1px);border-color:#76b9da;background:#f2faff}.btn-primary,.row-actions a.primary{background:var(--primary);border-color:var(--primary);color:#fff}.btn-light{background:#fff;color:#24506c}.btn-sm{min-height:34px;padding:0 11px;font-size:13px}
+.modern-table,table{font-size:14px}.modern-table thead th,table thead th{background:#eaf4fa!important;color:#24506c!important;font-size:12px;letter-spacing:.45px;border-bottom:1px solid var(--border)}
+.modern-table tbody tr:hover,table tbody tr:hover{background:#f4fbff}.row-actions{gap:7px;flex-wrap:wrap}
+.compact-search{display:flex;align-items:center;gap:10px;margin:0 0 18px}.compact-search input{flex:1;min-width:220px;height:42px;padding:0 14px;border:1px solid #c9dce8;border-radius:10px;background:#fff;color:var(--text)}.compact-search input:focus{outline:3px solid rgba(8,127,189,.12);border-color:#42a6d4}
+.patient-search-card{margin-bottom:18px;padding:18px}.history-button{background:#eef8fd!important;border-color:#b9dced!important;color:#075985!important}
+.pagination{display:flex;justify-content:center;gap:7px;margin-top:22px;flex-wrap:wrap}.pagination a{display:grid;place-items:center;min-width:38px;height:38px;padding:0 10px;border:1px solid var(--border);border-radius:9px;background:#fff;color:#24506c;text-decoration:none;font-weight:700}.pagination a.active{background:var(--primary);border-color:var(--primary);color:#fff}
+.workflow-tabs a{font-size:14px}.panel-heading h2{font-size:20px}.empty-state{padding:32px!important;color:var(--muted)!important;text-align:center}
+@media(max-width:760px){.page-wrapper,.app-workspace{padding:20px 14px 36px}.compact-search{align-items:stretch;flex-direction:column}.compact-search input{width:100%}.table-scroll{overflow-x:auto}.btn{width:auto}}

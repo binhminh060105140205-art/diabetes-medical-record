@@ -36,14 +36,14 @@ public class ClinicWorkflowDAO extends DBContext {
           SELECT a.*, p.full_name patient_name, p.phone patient_phone, u.full_name doctor_name
           FROM appointments a JOIN patients p ON p.patient_id=a.patient_id
           JOIN doctors d ON d.doctor_id=a.doctor_id JOIN users u ON u.user_id=d.user_id
-          ORDER BY a.appointment_at DESC LIMIT 200""");
+          ORDER BY a.appointment_at DESC LIMIT 50""");
     }
     public List<Map<String,Object>> appointmentsForDoctor(int doctorId) {
         return query("""
           SELECT a.*, p.full_name patient_name, p.phone patient_phone, u.full_name doctor_name
           FROM appointments a JOIN patients p ON p.patient_id=a.patient_id
           JOIN doctors d ON d.doctor_id=a.doctor_id JOIN users u ON u.user_id=d.user_id
-          WHERE a.doctor_id=? ORDER BY a.appointment_at DESC LIMIT 200""", doctorId);
+          WHERE a.doctor_id=? ORDER BY a.appointment_at DESC LIMIT 50""", doctorId);
     }
     public void createAppointment(int patientId,int doctorId,LocalDateTime at,String reason,String note,int actor) {
         if (at == null || at.isBefore(LocalDateTime.now())) throw new IllegalArgumentException("Thời gian hẹn phải ở tương lai");
@@ -82,7 +82,7 @@ public class ClinicWorkflowDAO extends DBContext {
           JOIN doctors d ON d.doctor_id=e.doctor_id JOIN users u ON u.user_id=d.user_id
           LEFT JOIN queue_entries q ON q.encounter_id=e.encounter_id
           LEFT JOIN medicalrecords m ON m.encounter_id=e.encounter_id
-          ORDER BY CASE WHEN e.status='COMPLETED' THEN 1 ELSE 0 END,e.check_in_at DESC LIMIT 200""");
+          ORDER BY CASE WHEN e.status='COMPLETED' THEN 1 ELSE 0 END,e.check_in_at DESC LIMIT 50""");
     }
     public List<Map<String,Object>> encountersForDoctor(int doctorId) {
         return query("""
@@ -93,7 +93,7 @@ public class ClinicWorkflowDAO extends DBContext {
           LEFT JOIN queue_entries q ON q.encounter_id=e.encounter_id
           LEFT JOIN medicalrecords m ON m.encounter_id=e.encounter_id
           WHERE e.doctor_id=?
-          ORDER BY CASE WHEN e.status='COMPLETED' THEN 1 ELSE 0 END,e.check_in_at DESC LIMIT 200""", doctorId);
+          ORDER BY CASE WHEN e.status='COMPLETED' THEN 1 ELSE 0 END,e.check_in_at DESC LIMIT 50""", doctorId);
     }
     public void setEncounterStatus(int encounterId,String status,int actor) {
         Set<String> allowed=Set.of("WAITING_TRIAGE","WAITING_DOCTOR","IN_CONSULTATION","WAITING_LAB","LAB_COMPLETED","COMPLETED","CANCELLED");
@@ -115,11 +115,11 @@ public class ClinicWorkflowDAO extends DBContext {
     public List<Map<String,Object>> labOrders(){return query("""
       SELECT l.*,p.full_name patient_name,u.full_name doctor_name FROM lab_orders l
       JOIN patients p ON p.patient_id=l.patient_id JOIN doctors d ON d.doctor_id=l.doctor_id
-      JOIN users u ON u.user_id=d.user_id ORDER BY l.ordered_at DESC LIMIT 200""");}
+      JOIN users u ON u.user_id=d.user_id ORDER BY l.ordered_at DESC LIMIT 50""");}
     public List<Map<String,Object>> labOrdersForDoctor(int doctorId){return query("""
       SELECT l.*,p.full_name patient_name,u.full_name doctor_name FROM lab_orders l
       JOIN patients p ON p.patient_id=l.patient_id JOIN doctors d ON d.doctor_id=l.doctor_id
-      JOIN users u ON u.user_id=d.user_id WHERE l.doctor_id=? ORDER BY l.ordered_at DESC LIMIT 200""",doctorId);}
+      JOIN users u ON u.user_id=d.user_id WHERE l.doctor_id=? ORDER BY l.ordered_at DESC LIMIT 50""",doctorId);}
     public void createLabOrder(int encounterId,int doctorId,String code,String name,String priority,String note,int actor){
         try{
             int changed=update("""

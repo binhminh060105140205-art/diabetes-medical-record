@@ -5,7 +5,7 @@
 <div class="site-header">
     <div class="header-brand">
         <span class="header-icon">+</span>
-        <span class="header-title">DiaCare <small>Clinic Operations</small></span>
+        <span class="header-title">DiaCare <small>Quản lý sức khỏe</small></span>
     </div>
     <div class="header-actions">
         <c:choose>
