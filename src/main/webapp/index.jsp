@@ -1,21 +1,27 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%
-    Object userObj = session.getAttribute("user");
-    if (userObj != null) {
-        models.User u = (models.User) userObj;
-        String role = u.getRole();
-        if ("ADMIN".equals(role)) {
-            response.sendRedirect(request.getContextPath() + "/AdminDashboard");
-        } else if ("STAFF".equals(role)) {
-            response.sendRedirect(request.getContextPath() + "/StaffDashboard");
-        } else if ("DOCTOR".equals(role)) {
-            response.sendRedirect(request.getContextPath() + "/DoctorDashboard");
-        } else if ("PATIENT".equals(role)) {
-            response.sendRedirect(request.getContextPath() + "/PatientDashboard");
-        } else {
-            response.sendRedirect(request.getContextPath() + "/Login");
-        }
-    } else {
-        response.sendRedirect(request.getContextPath() + "/Login");
-    }
-%>
+<%@taglib prefix="c" uri="jakarta.tags.core"%>
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DiaCare Clinic — Quản lý bệnh tiểu đường toàn diện</title>
+<meta name="description" content="Nền tảng quản lý khám ngoại trú và theo dõi bệnh tiểu đường dành cho phòng khám, bác sĩ và người bệnh.">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/home.css"></head>
+<body class="home-body">
+<div class="hosp-topbar"><div class="topbar-container"><div class="topbar-left"><span>Thứ 2–Thứ 7: 07:30–17:30</span><span>Hà Nội</span></div><div class="topbar-right"><span class="topbar-hotline">Hotline cấp thiết: <strong>1800 1234</strong></span></div></div></div>
+<header class="hosp-nav"><div class="nav-container"><a class="hosp-brand" href="${pageContext.request.contextPath}/"><span class="brand-logo">+</span><span class="brand-text"><span class="brand-name">DiaCare Clinic</span><span class="brand-sub">Chăm sóc tiểu đường toàn diện</span></span></a>
+<nav class="nav-links" id="home-nav"><a class="active" href="#home">Trang chủ</a><a href="#services">Dịch vụ</a><a href="#workflow">Quy trình khám</a><a href="#about">Về chúng tôi</a></nav>
+<div class="nav-actions"><c:choose><c:when test="${not empty sessionScope.user}"><a class="btn-primary" href="${pageContext.request.contextPath}/Login">Vào hệ thống</a></c:when><c:otherwise><a class="btn-primary" href="${pageContext.request.contextPath}/Login">Đăng nhập</a></c:otherwise></c:choose><button class="mobile-toggle" type="button" aria-label="Mở menu" onclick="document.getElementById('home-nav').classList.toggle('active')">☰</button></div></div></header>
+
+<main><section class="hosp-hero" id="home"><div class="hero-pattern"></div><div class="hero-overlay"></div><div class="hero-content"><span class="hero-badge">Phòng khám chuyên khoa nội tiết</span><h1 class="hero-title">Đồng hành kiểm soát<br>tiểu đường mỗi ngày</h1><p class="hero-desc">Quản lý lịch hẹn, lượt khám, xét nghiệm và hồ sơ sức khỏe trên một nền tảng bảo mật — giúp bác sĩ ra quyết định tốt hơn và người bệnh chủ động hơn.</p><div class="hero-buttons"><a class="btn-primary btn-large" href="${pageContext.request.contextPath}/Login">Truy cập hồ sơ</a><a class="btn-outline btn-large" href="#workflow">Xem quy trình khám</a></div></div>
+<div class="quick-actions"><article class="action-card"><div class="ac-icon">01</div><h3>Đặt lịch thuận tiện</h3><p>Tiếp nhận lịch, xác nhận và check-in theo đúng khung giờ.</p><a class="ac-link" href="${pageContext.request.contextPath}/Login">Đăng nhập để đặt lịch →</a></article><article class="action-card ac-highlight"><div class="ac-icon">02</div><h3>Hồ sơ tập trung</h3><p>Dị ứng, tiền sử, sinh hiệu, chẩn đoán và điều trị được liên kết xuyên suốt.</p><a class="ac-link" href="#services">Khám phá dịch vụ →</a></article><article class="action-card"><div class="ac-icon">03</div><h3>Theo dõi liên tục</h3><p>Kết quả xét nghiệm và chỉ số sức khỏe được cập nhật rõ ràng.</p><a class="ac-link" href="${pageContext.request.contextPath}/Login">Mở hồ sơ cá nhân →</a></article></div></section>
+
+<section class="hosp-stats"><div class="stats-container"><div class="stat-box"><div class="stat-number">4</div><div class="stat-label">Nhóm chuyên môn phối hợp</div></div><div class="stat-box"><div class="stat-number">6</div><div class="stat-label">Bước khám liên thông</div></div><div class="stat-box"><div class="stat-number">24/7</div><div class="stat-label">Truy cập hồ sơ trực tuyến</div></div><div class="stat-box"><div class="stat-number">100%</div><div class="stat-label">Dữ liệu tập trung</div></div></div></section>
+
+<section class="hosp-section" id="services"><div class="section-header"><span class="section-kicker">DỊCH VỤ CHUYÊN MÔN</span><h2 class="section-title">Chăm sóc liền mạch, lấy người bệnh làm trung tâm</h2><div class="title-divider"></div><p class="section-desc">Từ tiếp nhận ban đầu đến theo dõi sau khám, mọi thông tin cần thiết đều nằm trong cùng một hành trình.</p></div><div class="services-grid">
+<article class="service-card"><div class="srv-icon">⌚</div><h3 class="srv-title">Lịch hẹn & hàng đợi</h3><p class="srv-desc">Giảm thời gian chờ bằng lịch hẹn, check-in và số thứ tự theo bác sĩ.</p></article><article class="service-card"><div class="srv-icon">♡</div><h3 class="srv-title">Khám nội tiết</h3><p class="srv-desc">Ghi nhận sinh hiệu, triệu chứng, tiền sử và dị ứng trước khi bác sĩ khám.</p></article><article class="service-card"><div class="srv-icon">⌁</div><h3 class="srv-title">Xét nghiệm</h3><p class="srv-desc">Chỉ định và trả kết quả HbA1c, đường huyết, mỡ máu, chức năng thận.</p></article><article class="service-card"><div class="srv-icon">✓</div><h3 class="srv-title">Kế hoạch điều trị</h3><p class="srv-desc">Chẩn đoán, đơn thuốc, tư vấn và lịch tái khám rõ ràng cho từng người bệnh.</p></article><article class="service-card"><div class="srv-icon">▦</div><h3 class="srv-title">Hồ sơ điện tử</h3><p class="srv-desc">Lịch sử khám được lưu tập trung và phân quyền theo từng vai trò.</p></article><article class="service-card"><div class="srv-icon">↗</div><h3 class="srv-title">Theo dõi tại nhà</h3><p class="srv-desc">Người bệnh chủ động cập nhật chỉ số và xem lại diễn tiến sức khỏe.</p></article></div></section>
+
+<section class="hosp-section workflow-section" id="workflow"><div class="section-header"><span class="section-kicker">QUY TRÌNH NGOẠI TRÚ</span><h2 class="section-title">Một hành trình khám rõ ràng</h2><div class="title-divider"></div></div><div class="workflow-steps"><div class="workflow-step"><span>1</span><h3>Đặt lịch</h3><p>Chọn bác sĩ và thời gian phù hợp.</p></div><div class="workflow-step"><span>2</span><h3>Check-in</h3><p>Tiếp nhận và cấp số hàng đợi.</p></div><div class="workflow-step"><span>3</span><h3>Sàng lọc</h3><p>Đo sinh hiệu, ghi nhận tiền sử.</p></div><div class="workflow-step"><span>4</span><h3>Bác sĩ khám</h3><p>Đánh giá và chỉ định cần thiết.</p></div><div class="workflow-step"><span>5</span><h3>Xét nghiệm</h3><p>Trả kết quả về đúng lượt khám.</p></div><div class="workflow-step"><span>6</span><h3>Kết luận</h3><p>Điều trị và hẹn tái khám.</p></div></div></section>
+
+<section class="hosp-section about-section" id="about"><div class="about-panel"><div><span class="section-kicker">DIAcare CLINIC</span><h2>Chăm sóc dựa trên dữ liệu,<br>ấm áp như người thân</h2><p>Chúng tôi kết hợp quy trình lâm sàng chuẩn với công nghệ quản lý hồ sơ để đội ngũ y tế dành nhiều thời gian hơn cho người bệnh.</p></div><div class="about-contact"><strong>Cần hỗ trợ?</strong><span>1800 1234</span><small>diabetesclinic@gmail.com</small><a class="btn-primary" href="${pageContext.request.contextPath}/Login">Đăng nhập hệ thống</a></div></div></section></main>
+
+<footer class="hosp-footer"><div class="footer-container"><div class="footer-brand"><div class="brand-logo">+</div><h3 class="footer-heading">DiaCare Clinic</h3><p class="footer-about">Hệ thống quản lý hồ sơ và điều hành khám bệnh tiểu đường dành cho phòng khám ngoại trú hiện đại.</p></div><div><h3 class="footer-heading">Truy cập nhanh</h3><ul class="footer-links"><li><a href="#services">Dịch vụ</a></li><li><a href="#workflow">Quy trình khám</a></li><li><a href="${pageContext.request.contextPath}/Login">Đăng nhập</a></li></ul></div><div><h3 class="footer-heading">Liên hệ</h3><ul class="footer-contact"><li>Hà Nội, Việt Nam</li><li>1800 1234</li><li>diabetesclinic@gmail.com</li></ul></div></div><div class="footer-bottom">© 2026 DiaCare Clinic. Hệ thống quản lý khám ngoại trú.</div></footer>
+</body></html>

@@ -1,5 +1,2 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<div class="site-footer">
-    <p>📧 Email: diabetesclinic@gmail.com &nbsp;|&nbsp; 📞 Hotline: 1800-1234 &nbsp;|&nbsp; 📍 Bệnh viện Đa khoa, Hà Nội</p>
-    <p>&copy; 2026 Hệ thống Quản lý Hồ sơ Bệnh án Tiểu đường</p>
-</div>
+<div class="site-footer"><div><strong>DiaCare Clinic</strong><span>Hệ thống quản lý khám ngoại trú</span></div><p>diabetesclinic@gmail.com &nbsp; • &nbsp; 1800 1234 &nbsp; • &nbsp; Hà Nội</p><small>&copy; 2026 DiaCare Clinic</small></div>

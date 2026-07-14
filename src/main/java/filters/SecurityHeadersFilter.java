@@ -1,5 +1,6 @@
 package filters;
 
+import dal.DBContext;
 import jakarta.servlet.*;
 import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.http.HttpServletResponse;
@@ -15,6 +16,11 @@ public class SecurityHeadersFilter implements Filter {
         http.setHeader("X-Frame-Options", "DENY");
         http.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
         http.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-        chain.doFilter(request, response);
+        DBContext.beginRequest();
+        try {
+            chain.doFilter(request, response);
+        } finally {
+            DBContext.closeRequestConnections();
+        }
     }
 }

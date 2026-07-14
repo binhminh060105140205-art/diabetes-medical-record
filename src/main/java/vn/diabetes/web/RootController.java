@@ -15,7 +15,7 @@ public class RootController {
     }
     @GetMapping("/")
     public String home() {
-        return "redirect:/Login";
+        return "forward:/index.jsp";
     }
 
     @GetMapping("/health")
