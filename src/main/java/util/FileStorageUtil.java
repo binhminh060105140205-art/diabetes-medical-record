@@ -1,0 +1,95 @@
+package util;
+
+import jakarta.servlet.http.Part;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.util.Locale;
+import java.util.Set;
+
+/**
+ * Lưu / đọc file ảnh của bác sĩ (ảnh khuôn mặt, ảnh CCCD, ảnh chứng chỉ hành nghề)
+ * ra một thư mục NẰM NGOÀI thư mục deploy của webapp (catalina.base), để dữ liệu
+ * không bị mất khi rebuild / redeploy project.
+ */
+public class FileStorageUtil {
+
+    private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "webp");
+    private static final long MAX_FILE_SIZE = 5L * 1024 * 1024; // 5MB
+
+    public static final String TYPE_FACE = "face";
+    public static final String TYPE_CCCD = "cccd";
+    public static final String TYPE_LICENSE = "license";
+
+    private static File getRootDir() {
+        String configured = System.getProperty("app.upload-dir");
+        File root = configured == null || configured.isBlank()
+                ? new File(System.getProperty("user.dir"), "uploads")
+                : new File(configured);
+        if (!root.exists()) root.mkdirs();
+        return root;
+    }
+
+    private static File getDoctorDir(int doctorId) {
+        File dir = new File(getRootDir(), String.valueOf(doctorId));
+        if (!dir.exists()) dir.mkdirs();
+        return dir;
+    }
+
+    private static String extractExtension(Part part) {
+        String submitted = part.getSubmittedFileName();
+        if (submitted == null || !submitted.contains(".")) return null;
+        return submitted.substring(submitted.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * Lưu ảnh upload cho bác sĩ. Trả về tên file đã lưu (chỉ cần lưu tên này vào DB),
+     * hoặc null nếu part rỗng / không hợp lệ.
+     *
+     * @param part     phần file lấy từ request.getPart(...)
+     * @param doctorId id bác sĩ
+     * @param type     "face" | "cccd" | "license"
+     */
+    public static String saveDoctorImage(Part part, int doctorId, String type) throws IOException {
+        if (part == null || part.getSize() == 0) return null;
+
+        if (part.getSize() > MAX_FILE_SIZE) {
+            throw new IOException("File vượt quá dung lượng cho phép (tối đa 5MB).");
+        }
+
+        String contentType = part.getContentType();
+        String ext = extractExtension(part);
+        if (contentType == null || !contentType.toLowerCase(Locale.ROOT).startsWith("image/")
+                || ext == null || !ALLOWED_EXT.contains(ext)) {
+            throw new IOException("Chỉ chấp nhận file ảnh (jpg, jpeg, png, webp).");
+        }
+
+        File targetFile = new File(getDoctorDir(doctorId), type + "." + ext);
+
+        // Xóa các file cùng loại nhưng khác đuôi từ lần upload trước (tránh rác + ảnh cũ lẫn ảnh mới)
+        for (String otherExt : ALLOWED_EXT) {
+            if (!otherExt.equals(ext)) {
+                File stale = new File(getDoctorDir(doctorId), type + "." + otherExt);
+                if (stale.exists()) stale.delete();
+            }
+        }
+
+        try (InputStream in = part.getInputStream();
+             OutputStream out = Files.newOutputStream(targetFile.toPath())) {
+            in.transferTo(out);
+        }
+
+        return targetFile.getName();
+    }
+
+    /**
+     * Lấy file ảnh đã lưu của bác sĩ theo loại. Trả về null nếu chưa có ảnh nào.
+     */
+    public static File resolveDoctorImage(int doctorId, String storedFileName) {
+        if (storedFileName == null || storedFileName.isBlank()) return null;
+        File f = new File(getDoctorDir(doctorId), storedFileName);
+        return f.exists() ? f : null;
+    }
+}

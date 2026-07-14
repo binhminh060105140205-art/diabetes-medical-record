@@ -1,0 +1,144 @@
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib prefix="c" uri="jakarta.tags.core"%>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hồ Sơ Bác Sĩ - Admin</title>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css">
+    <style>
+        .form-container {
+            max-width: 820px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .info-row { display:flex; flex-wrap:wrap; gap:20px; margin-bottom:18px; font-size:14px; }
+        .info-row div { min-width:180px; }
+        .info-row b { display:block; color:#6c757d; font-size:12px; font-weight:600; }
+        .doc-image-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+        .doc-image-box {
+            flex: 1 1 220px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+        .doc-image-box label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .doc-image-box .preview {
+            width: 100%;
+            max-height: 160px;
+            object-fit: contain;
+            background: #f8f9fa;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+        .doc-image-box .no-image {
+            width: 100%;
+            height: 160px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            color: #adb5bd;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+        .doc-image-box input[type="file"] { width: 100%; font-size: 12px; }
+        .hint { font-size: 12px; color: #6c757d; margin-top: 15px; }
+    </style>
+</head>
+<body>
+<jsp:include page="header.jsp"/>
+<jsp:include page="topnav.jsp"/>
+
+<div class="page-wrapper">
+    <h1 class="page-title">🪪 Hồ Sơ Minh Chứng — ${targetUser.fullName}</h1>
+
+    <c:if test="${not empty toastMessage}">
+        <div class="alert alert-${toastType == 'danger' ? 'danger' : 'success'}">${toastMessage}</div>
+    </c:if>
+
+    <div class="form-container">
+        <div class="info-row">
+            <div><b>Username</b>${targetUser.username}</div>
+            <div><b>Số điện thoại</b>${targetUser.phone}</div>
+            <div><b>Email</b>${targetUser.email}</div>
+            <div><b>Số CCCD</b>${targetUser.cccd}</div>
+        </div>
+
+        <c:if test="${not empty doctor}">
+        <div class="info-row">
+            <div><b>Chuyên khoa</b>${doctor.specialty}</div>
+            <div><b>Số chứng chỉ hành nghề</b>${doctor.licenseNo}</div>
+            <div><b>Học vị / Bằng cấp</b>${doctor.degree}</div>
+        </div>
+        </c:if>
+
+        <c:choose>
+        <c:when test="${empty doctor}">
+            <div class="alert alert-danger">Tài khoản này chưa có hồ sơ Doctors tương ứng (thiếu dữ liệu chuyên khoa/chứng chỉ), nên chưa thể lưu ảnh minh chứng.</div>
+        </c:when>
+        <c:otherwise>
+            <form action="${pageContext.request.contextPath}/AdminDoctorDetail" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="userId" value="${targetUser.userId}">
+                <div class="doc-image-row">
+                    <div class="doc-image-box">
+                        <label>Ảnh khuôn mặt</label>
+                        <c:choose>
+                            <c:when test="${not empty doctor.faceImagePath}">
+                                <img class="preview" src="${pageContext.request.contextPath}/DoctorFile?doctorId=${doctor.doctorId}&type=face">
+                            </c:when>
+                            <c:otherwise><div class="no-image">Chưa có ảnh</div></c:otherwise>
+                        </c:choose>
+                        <input type="file" name="faceImage" accept="image/png,image/jpeg,image/webp">
+                    </div>
+
+                    <div class="doc-image-box">
+                        <label>Ảnh CCCD</label>
+                        <c:choose>
+                            <c:when test="${not empty doctor.cccdImagePath}">
+                                <img class="preview" src="${pageContext.request.contextPath}/DoctorFile?doctorId=${doctor.doctorId}&type=cccd">
+                            </c:when>
+                            <c:otherwise><div class="no-image">Chưa có ảnh</div></c:otherwise>
+                        </c:choose>
+                        <input type="file" name="cccdImage" accept="image/png,image/jpeg,image/webp">
+                    </div>
+
+                    <div class="doc-image-box">
+                        <label>Ảnh chứng chỉ hành nghề</label>
+                        <c:choose>
+                            <c:when test="${not empty doctor.licenseImagePath}">
+                                <img class="preview" src="${pageContext.request.contextPath}/DoctorFile?doctorId=${doctor.doctorId}&type=license">
+                            </c:when>
+                            <c:otherwise><div class="no-image">Chưa có ảnh</div></c:otherwise>
+                        </c:choose>
+                        <input type="file" name="licenseImage" accept="image/png,image/jpeg,image/webp">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">💾 Lưu ảnh</button>
+                <a href="${pageContext.request.contextPath}/AdminDashboard?filterRole=DOCTOR" class="btn btn-outline" style="background:#6c757d;color:white;margin-left:8px;">← Quay lại danh sách</a>
+                <p class="hint">Admin có thể xem và thay thế ảnh hộ bác sĩ nếu cần. Chỉ chấp nhận JPG/PNG/WEBP, tối đa 5MB mỗi ảnh.</p>
+            </form>
+        </c:otherwise>
+        </c:choose>
+    </div>
+</div>
+
+<jsp:include page="footer.jsp"/>
+</body>
+</html>
