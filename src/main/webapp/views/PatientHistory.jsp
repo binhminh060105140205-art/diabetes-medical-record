@@ -23,8 +23,8 @@
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <c:if test="${sessionScope.user.role == 'STAFF'}">
-                <a href="${pageContext.request.contextPath}/MedicalRecordForm?patientId=${patient.patientId}"
-                   class="btn btn-primary">➕ Tạo bệnh án mới</a>
+                <a href="${pageContext.request.contextPath}/ClinicWorkflow?view=appointments"
+                   class="btn btn-primary">Đặt lịch khám</a>
             </c:if>
             <c:choose>
                 <c:when test="${sessionScope.user.role == 'ADMIN'}">

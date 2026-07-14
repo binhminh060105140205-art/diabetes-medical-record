@@ -8,6 +8,7 @@ public class MedicalRecord {
     private int patientId;
     private int doctorId;
     private int createdByStaff;
+    private int encounterId;
     private LocalDateTime visitDate;
     private String reasonForVisit;
     private String symptoms;
@@ -38,6 +39,8 @@ public class MedicalRecord {
 
     public int getCreatedByStaff()              { return createdByStaff; }
     public void setCreatedByStaff(int v)        { this.createdByStaff = v; }
+    public int getEncounterId()                 { return encounterId; }
+    public void setEncounterId(int v)           { this.encounterId = v; }
 
     public LocalDateTime getVisitDate()              { return visitDate; }
     public void setVisitDate(LocalDateTime v)        { this.visitDate = v; }

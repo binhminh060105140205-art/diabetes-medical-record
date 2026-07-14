@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.security.MessageDigest;
 
 /**
  * [NEW - Upgrade V3]
@@ -31,6 +32,16 @@ public class DeviceDataUploadController extends HttpServlet {
             throws ServletException, IOException {
         response.setContentType("application/json;charset=UTF-8");
         request.setCharacterEncoding("UTF-8");
+
+        String configuredKey = System.getenv("DEVICE_API_KEY");
+        if (configuredKey == null || configuredKey.isBlank()) {
+            sendError(response, 503, "Device API chưa được cấu hình"); return;
+        }
+        String suppliedKey = request.getHeader("X-Device-Key");
+        if (suppliedKey == null || !MessageDigest.isEqual(
+                configuredKey.getBytes(StandardCharsets.UTF_8), suppliedKey.getBytes(StandardCharsets.UTF_8))) {
+            sendError(response, 401, "Device API key không hợp lệ"); return;
+        }
 
         String rawJson;
         try (BufferedReader reader = new BufferedReader(
@@ -107,9 +118,7 @@ public class DeviceDataUploadController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         response.setContentType("application/json;charset=UTF-8");
-        response.getWriter().print("{\"status\":\"Device Data API V3 running\"," +
-            "\"endpoint\":\"POST /api/device-data/upload\"," +
-            "\"supported\":[\"glucometer\",\"smartwatch\",\"bp_monitor\",\"scale\"]}");
+        response.getWriter().print("{\"status\":\"Device Data API available\"}");
     }
 
     private void parseGlucometer(String json, DeviceReading dr) {

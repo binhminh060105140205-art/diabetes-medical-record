@@ -24,6 +24,8 @@ services:
         sync: false
       - key: DB_POOL_SIZE
         value: "5"
+      - key: DEVICE_API_KEY
+        sync: false
       - key: BOOTSTRAP_ADMIN_USERNAME
         value: admin
       - key: BOOTSTRAP_ADMIN_PASSWORD

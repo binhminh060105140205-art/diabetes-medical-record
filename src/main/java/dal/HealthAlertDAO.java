@@ -84,6 +84,14 @@ public class HealthAlertDAO extends DBContext {
         } catch (SQLException e) { System.out.println("HealthAlertDAO.acknowledge: " + e.getMessage()); }
     }
 
+    public boolean acknowledgeForPatient(int alertId, int patientId) {
+        try (PreparedStatement ps = connection.prepareStatement(
+                "UPDATE HealthAlerts SET is_acknowledged=TRUE,acknowledged_at=CURRENT_TIMESTAMP WHERE alert_id=? AND patient_id=?")) {
+            ps.setInt(1, alertId); ps.setInt(2, patientId);
+            return ps.executeUpdate() == 1;
+        } catch (SQLException e) { throw new IllegalStateException("Không thể xác nhận cảnh báo", e); }
+    }
+
     public int countUnacknowledged(int patientId) {
         try {
             stm = connection.prepareStatement(

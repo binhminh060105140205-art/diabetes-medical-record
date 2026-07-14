@@ -36,6 +36,7 @@ public class MedicalRecordFormController extends HttpServlet {
         }
 
         String pidParam = request.getParameter("patientId");
+        String encounterParam = request.getParameter("encounterId");
         String ridParam = request.getParameter("recordId");
         PatientDAO patDAO = new PatientDAO();
         DoctorDAO  docDAO = new DoctorDAO();
@@ -45,6 +46,10 @@ public class MedicalRecordFormController extends HttpServlet {
             MedicalRecordDAO recDAO = new MedicalRecordDAO();
             MedicalRecord rec = recDAO.getById(recordId);
             if (rec == null) { response.sendRedirect(request.getContextPath() + "/PatientList"); return; }
+            if ("DOCTOR".equals(user.getRole())) {
+                Integer doctorId = new ClinicWorkflowDAO().doctorIdForUser(user.getUserId());
+                if (doctorId == null || doctorId != rec.getDoctorId()) { response.sendError(403); return; }
+            }
 
             request.setAttribute("record",   rec);
             request.setAttribute("patient",  patDAO.getById(rec.getPatientId()));
@@ -65,6 +70,7 @@ public class MedicalRecordFormController extends HttpServlet {
             request.setAttribute("labDone",      labDone);
         } else if (pidParam != null) {
             request.setAttribute("patient", patDAO.getById(Integer.parseInt(pidParam)));
+            request.setAttribute("encounterId", encounterParam);
         }
 
         request.setAttribute("doctors", docDAO.getAll());
@@ -91,12 +97,15 @@ public class MedicalRecordFormController extends HttpServlet {
             String docIdParam = request.getParameter("doctorId");
             if (docIdParam != null && !docIdParam.isEmpty()) rec.setDoctorId(Integer.parseInt(docIdParam));
             rec.setCreatedByStaff(user.getUserId());
+            String encounterId = request.getParameter("encounterId");
+            if (encounterId != null && !encounterId.isBlank()) rec.setEncounterId(Integer.parseInt(encounterId));
             rec.setReasonForVisit(request.getParameter("reasonForVisit"));
             rec.setSymptoms(request.getParameter("symptoms"));
             rec.setMedicalHistory(request.getParameter("medicalHistory"));
             rec.setLifestyleHabits(request.getParameter("lifestyleHabits"));
             rec.setClinicalExam(request.getParameter("clinicalExam"));
             rec = recDAO.create(rec);
+            if (rec.getEncounterId() > 0) new ClinicWorkflowDAO().setEncounterStatus(rec.getEncounterId(), "WAITING_DOCTOR", user.getUserId());
             response.sendRedirect(request.getContextPath() + "/MedicalRecordForm?recordId=" + rec.getRecordId() + "&tab=2");
 
         // ── TAB 2: STAFF nhập chỉ số lâm sàng ──────────────────────────
@@ -167,6 +176,8 @@ public class MedicalRecordFormController extends HttpServlet {
             if (!"DOCTOR".equals(user.getRole())) { response.sendRedirect(request.getContextPath() + "/Login"); return; }
             MedicalRecord rec = recDAO.getById(Integer.parseInt(ridParam));
             if (rec == null) { response.sendRedirect(request.getContextPath() + "/DoctorDashboard"); return; }
+            Integer currentDoctorId = new ClinicWorkflowDAO().doctorIdForUser(user.getUserId());
+            if (currentDoctorId == null || currentDoctorId != rec.getDoctorId()) { response.sendError(403); return; }
             if (request.getParameter("complicationNote") != null) rec.setComplicationNote(request.getParameter("complicationNote"));
             if (request.getParameter("finalDiagnosis")  != null) rec.setFinalDiagnosis(request.getParameter("finalDiagnosis"));
             if (request.getParameter("treatmentPlan")   != null) rec.setTreatmentPlan(request.getParameter("treatmentPlan"));
@@ -176,6 +187,7 @@ public class MedicalRecordFormController extends HttpServlet {
             if (fup != null && !fup.isEmpty()) rec.setFollowUpDate(java.time.LocalDate.parse(fup));
             if (request.getParameter("doctorNote")      != null) rec.setDoctorNote(request.getParameter("doctorNote"));
             recDAO.updateConclusion(rec);
+            if (rec.getEncounterId() > 0) new ClinicWorkflowDAO().setEncounterStatus(rec.getEncounterId(), "COMPLETED", user.getUserId());
             // [V3] Bỏ AIWarningDAO.markReviewed() — bảng đã xóa
             response.sendRedirect(request.getContextPath() + "/RecordDetail?id=" + rec.getRecordId());
         }

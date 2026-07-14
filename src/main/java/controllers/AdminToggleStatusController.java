@@ -11,7 +11,7 @@ import java.io.IOException;
 public class AdminToggleStatusController extends HttpServlet {
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         HttpSession session = request.getSession(false);
         User admin = (session != null) ? (User) session.getAttribute("user") : null;
@@ -34,5 +34,10 @@ public class AdminToggleStatusController extends HttpServlet {
         if (filterRole != null && !filterRole.isEmpty()) url.append("filterRole=").append(filterRole).append("&");
         if (keyword    != null && !keyword.isEmpty())    url.append("keyword=").append(keyword).append("&");
         response.sendRedirect(url.toString());
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
     }
 }

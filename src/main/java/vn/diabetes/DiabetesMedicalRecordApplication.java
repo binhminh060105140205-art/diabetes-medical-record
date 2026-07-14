@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.servlet.ServletComponentScan;
 
 @SpringBootApplication
-@ServletComponentScan(basePackages = "controllers")
+@ServletComponentScan(basePackages = {"controllers", "filters"})
 public class DiabetesMedicalRecordApplication {
     public static void main(String[] args) {
         SpringApplication.run(DiabetesMedicalRecordApplication.class, args);

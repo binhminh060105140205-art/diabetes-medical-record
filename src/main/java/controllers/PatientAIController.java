@@ -143,7 +143,9 @@ public class PatientAIController extends HttpServlet {
         } else if ("acknowledgeAlert".equals(action)) {
             try {
                 int alertId = Integer.parseInt(request.getParameter("alertId"));
-                new HealthAlertDAO().acknowledge(alertId);
+                if (!new HealthAlertDAO().acknowledgeForPatient(alertId, patient.getPatientId())) {
+                    response.sendError(404); return;
+                }
                 response.getWriter().print("{\"success\":true}");
             } catch (Exception e) {
                 response.getWriter().print("{\"error\":\"alertId không hợp lệ\"}");

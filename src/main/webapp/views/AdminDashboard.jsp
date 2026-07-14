@@ -108,11 +108,12 @@
                                    class="btn btn-success btn-sm">🪪 Hồ sơ</a>
                             </c:if>
                             <c:if test="${u.username != 'admin'}">
-                                <a href="${pageContext.request.contextPath}/AdminToggleStatus?id=${u.userId}${not empty filterRole ? '&filterRole='.concat(filterRole) : ''}&page=${currentPage}"
-                                   class="btn btn-sm ${u.status == 'ACTIVE' ? 'btn-danger' : 'btn-success'}"
-                                   onclick="return confirm('Xác nhận thay đổi trạng thái tài khoản ${u.username}?')">
-                                     ${u.status == 'ACTIVE' ? '🔒 Khóa' : '🔓 Mở khóa'}
-                                </a>
+                                <form method="post" action="${pageContext.request.contextPath}/AdminToggleStatus" class="inline-form" onsubmit="return confirm('Xác nhận thay đổi trạng thái tài khoản?')">
+                                    <input type="hidden" name="id" value="${u.userId}">
+                                    <input type="hidden" name="filterRole" value="${filterRole}">
+                                    <input type="hidden" name="page" value="${currentPage}">
+                                    <button class="btn btn-sm ${u.status == 'ACTIVE' ? 'btn-danger' : 'btn-success'}">${u.status == 'ACTIVE' ? '🔒 Khóa' : '🔓 Mở khóa'}</button>
+                                </form>
                             </c:if>
                         </td>
                     </tr>

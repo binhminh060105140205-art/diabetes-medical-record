@@ -65,8 +65,8 @@
                 <td>
                     <a href="${pageContext.request.contextPath}/PatientForm?id=${p.patientId}"
                        class="btn btn-warning btn-sm">✏️ Sửa</a>
-                    <a href="${pageContext.request.contextPath}/MedicalRecordForm?patientId=${p.patientId}"
-                       class="btn btn-primary btn-sm">📋 Tạo bệnh án</a>
+                    <a href="${pageContext.request.contextPath}/ClinicWorkflow?view=appointments"
+                       class="btn btn-primary btn-sm">Đặt lịch khám</a>
                     <a href="${pageContext.request.contextPath}/PatientHistory?patientId=${p.patientId}"
                        class="btn btn-success btn-sm">📁 Lịch sử</a>
                 </td>

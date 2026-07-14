@@ -36,6 +36,13 @@ public class RecordDetailController extends HttpServlet {
                 response.sendRedirect("PatientDashboard"); return;
             }
         }
+        if ("DOCTOR".equals(user.getRole())) {
+            Integer doctorId = new ClinicWorkflowDAO().doctorIdForUser(user.getUserId());
+            if (doctorId == null || doctorId != rec.getDoctorId()) { response.sendError(403); return; }
+        }
+        if (!java.util.Set.of("ADMIN","STAFF","DOCTOR","PATIENT").contains(user.getRole())) {
+            response.sendError(403); return;
+        }
 
         RecordDetail detail = new RecordDetail();
         detail.setRecord(rec);

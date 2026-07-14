@@ -15,6 +15,7 @@ public class MedicalRecordDAO extends DBContext {
         r.setPatientId(rs.getInt("patient_id"));
         r.setDoctorId(rs.getInt("doctor_id"));
         r.setCreatedByStaff(rs.getInt("created_by_staff"));
+        r.setEncounterId(rs.getInt("encounter_id"));
         Timestamp vd = rs.getTimestamp("visit_date");
         if (vd != null) r.setVisitDate(vd.toLocalDateTime());
         r.setReasonForVisit(rs.getString("reason_for_visit"));
@@ -88,19 +89,20 @@ public class MedicalRecordDAO extends DBContext {
     }
 
     public MedicalRecord create(MedicalRecord rec) {
-        String sql = "INSERT INTO MedicalRecords(patient_id,doctor_id,created_by_staff,"
+        String sql = "INSERT INTO MedicalRecords(patient_id,doctor_id,created_by_staff,encounter_id,"
                    + "reason_for_visit,symptoms,medical_history,lifestyle_habits,clinical_exam,status) "
-                   + "VALUES(?,?,?,?,?,?,?,?,'DRAFT')";
+                   + "VALUES(?,?,?,?,?,?,?,?,?,'DRAFT')";
         try {
             stm = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             stm.setInt(1, rec.getPatientId());
             if (rec.getDoctorId() > 0) stm.setInt(2, rec.getDoctorId()); else stm.setNull(2, Types.INTEGER);
             if (rec.getCreatedByStaff() > 0) stm.setInt(3, rec.getCreatedByStaff()); else stm.setNull(3, Types.INTEGER);
-            stm.setString(4, rec.getReasonForVisit());
-            stm.setString(5, rec.getSymptoms());
-            stm.setString(6, rec.getMedicalHistory());
-            stm.setString(7, rec.getLifestyleHabits());
-            stm.setString(8, rec.getClinicalExam());
+            if (rec.getEncounterId() > 0) stm.setInt(4, rec.getEncounterId()); else stm.setNull(4, Types.INTEGER);
+            stm.setString(5, rec.getReasonForVisit());
+            stm.setString(6, rec.getSymptoms());
+            stm.setString(7, rec.getMedicalHistory());
+            stm.setString(8, rec.getLifestyleHabits());
+            stm.setString(9, rec.getClinicalExam());
             stm.executeUpdate();
             rs = stm.getGeneratedKeys();
             if (rs.next()) rec.setRecordId(rs.getInt(1));

@@ -83,6 +83,7 @@
             <form action="${pageContext.request.contextPath}/MedicalRecordForm" method="post">
                 <input type="hidden" name="action" value="saveBasic">
                 <input type="hidden" name="patientId" value="${patient.patientId}">
+                <input type="hidden" name="encounterId" value="${encounterId}">
 
                 <div class="form-group">
                     <label class="required">Bác sĩ phụ trách</label>

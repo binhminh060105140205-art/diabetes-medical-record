@@ -16,6 +16,9 @@ public class PatientHistoryController extends HttpServlet {
         HttpSession session = request.getSession(false);
         User user = (session != null) ? (User) session.getAttribute("user") : null;
         if (user == null) { response.sendRedirect(request.getContextPath() + "/Login"); return; }
+        if (!java.util.Set.of("ADMIN","STAFF","DOCTOR","PATIENT").contains(user.getRole())) {
+            response.sendError(403); return;
+        }
 
         PatientDAO patDAO = new PatientDAO();
         int patientId = -1;
@@ -54,6 +57,13 @@ public class PatientHistoryController extends HttpServlet {
                 response.sendRedirect(request.getContextPath() + "/PatientList");
             }
             return;
+        }
+        if ("DOCTOR".equals(user.getRole())) {
+            ClinicWorkflowDAO workflowDAO = new ClinicWorkflowDAO();
+            Integer doctorId = workflowDAO.doctorIdForUser(user.getUserId());
+            if (doctorId == null || !workflowDAO.doctorHasPatient(doctorId, patientId)) {
+                response.sendError(403); return;
+            }
         }
 
         MedicalRecordDAO recDAO  = new MedicalRecordDAO();
