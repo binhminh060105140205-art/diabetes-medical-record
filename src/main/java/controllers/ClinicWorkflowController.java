@@ -10,7 +10,7 @@ public class ClinicWorkflowController extends HttpServlet {
   protected void doGet(HttpServletRequest req,HttpServletResponse resp)throws ServletException,IOException{
     User u=user(req); if(u==null||!CLINICAL.contains(u.getRole())){resp.sendRedirect("Login");return;}
     ClinicWorkflowDAO dao=new ClinicWorkflowDAO(); String view=req.getParameter("view");
-    if(!Set.of("appointments","encounters","clinical","labs").contains(view)) view="encounters";
+    if(view==null || !Set.of("appointments","encounters","clinical","labs").contains(view)) view="encounters";
     req.setAttribute("view",view);
     if (Set.of("appointments","clinical").contains(view)) req.setAttribute("patients",new PatientDAO().getAll());
     if ("appointments".equals(view)) req.setAttribute("doctors",new DoctorDAO().getAll());
