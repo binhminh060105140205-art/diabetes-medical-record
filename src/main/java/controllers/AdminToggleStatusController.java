@@ -18,10 +18,17 @@ public class AdminToggleStatusController extends HttpServlet {
         if (admin == null || !"ADMIN".equals(admin.getRole())) {
             response.sendRedirect(request.getContextPath() + "/Login"); return;
         }
-        int uid = Integer.parseInt(request.getParameter("id"));
+        int uid;
+        try {
+            uid = Integer.parseInt(request.getParameter("id"));
+            if (uid <= 0) throw new NumberFormatException();
+        } catch (NumberFormatException | NullPointerException invalidId) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Mã tài khoản không hợp lệ");
+            return;
+        }
         UserDAO dao = new UserDAO();
         User target = dao.getById(uid);
-        if (target != null && !target.getUsername().equals("admin")) {
+        if (target != null && uid != admin.getUserId() && !target.getUsername().equals("admin")) {
             target.setStatus("ACTIVE".equals(target.getStatus()) ? "INACTIVE" : "ACTIVE");
             dao.update(target);
         }

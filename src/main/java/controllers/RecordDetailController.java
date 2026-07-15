@@ -18,7 +18,14 @@ public class RecordDetailController extends HttpServlet {
         User user = (session != null) ? (User) session.getAttribute("user") : null;
         if (user == null) { response.sendRedirect("Login"); return; }
 
-        int recordId = Integer.parseInt(request.getParameter("id"));
+        int recordId;
+        try {
+            recordId = Integer.parseInt(request.getParameter("id"));
+            if (recordId <= 0) throw new NumberFormatException();
+        } catch (NumberFormatException | NullPointerException invalidId) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Mã bệnh án không hợp lệ");
+            return;
+        }
 
         MedicalRecordDAO recDAO  = new MedicalRecordDAO();
         PatientDAO       patDAO  = new PatientDAO();

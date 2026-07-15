@@ -42,7 +42,8 @@ public class MedicalRecordFormController extends HttpServlet {
         DoctorDAO  docDAO = new DoctorDAO();
 
         if (ridParam != null) {
-            int recordId = Integer.parseInt(ridParam);
+            int recordId = positiveId(ridParam);
+            if (recordId == 0) { response.sendError(400, "Mã bệnh án không hợp lệ"); return; }
             MedicalRecordDAO recDAO = new MedicalRecordDAO();
             MedicalRecord rec = recDAO.getById(recordId);
             if (rec == null) { response.sendRedirect(request.getContextPath() + "/PatientList"); return; }
@@ -70,7 +71,11 @@ public class MedicalRecordFormController extends HttpServlet {
             request.setAttribute("clinicalDone", clinicalDone);
             request.setAttribute("labDone",      labDone);
         } else if (pidParam != null) {
-            request.setAttribute("patient", patDAO.getById(Integer.parseInt(pidParam)));
+            int patientId = positiveId(pidParam);
+            if (patientId == 0) { response.sendError(400, "Mã bệnh nhân không hợp lệ"); return; }
+            Patient patient = patDAO.getById(patientId);
+            if (patient == null) { response.sendError(404, "Không tìm thấy bệnh nhân"); return; }
+            request.setAttribute("patient", patient);
             request.setAttribute("encounterId", encounterParam);
         }
 
@@ -236,4 +241,11 @@ public class MedicalRecordFormController extends HttpServlet {
 
     private double parseDouble(String s) { try { return s != null && !s.isEmpty() ? Double.parseDouble(s) : 0; } catch (Exception e) { return 0; } }
     private int    parseInt(String s)    { try { return s != null && !s.isEmpty() ? Integer.parseInt(s) : 0;  } catch (Exception e) { return 0; } }
+    private int positiveId(String value) {
+        try {
+            int parsed = Integer.parseInt(value);
+            if (parsed > 0) return parsed;
+        } catch (NumberFormatException | NullPointerException ignored) { }
+        return 0;
+    }
 }
