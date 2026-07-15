@@ -26,5 +26,9 @@ services:
         sync: false
       - key: BOOTSTRAP_ADMIN_NAME
         value: System Administrator
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
       - key: UPLOAD_DIR
         value: /app/uploads

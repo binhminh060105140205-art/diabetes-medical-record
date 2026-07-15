@@ -1,9 +1,9 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%><%@taglib prefix="c" uri="jakarta.tags.core"%>
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Điều hành phòng khám</title><link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css"></head><body>
 <jsp:include page="header.jsp"/><jsp:include page="topnav.jsp"/><main class="page-wrapper workflow-page">
-<div class="page-heading"><div><div class="eyebrow">VẬN HÀNH NGOẠI TRÚ</div><h1 class="page-title">Điều hành phòng khám</h1><p class="text-muted">Lịch hẹn → tiếp nhận → hàng đợi → khám → xét nghiệm → hoàn tất</p></div></div>
+<div class="page-heading"><div><div class="eyebrow">VẬN HÀNH NGOẠI TRÚ</div><h1 class="page-title">Điều hành khám</h1><p class="text-muted">Staff tiếp nhận và xếp lượt khám; bác sĩ khám, chỉ định xét nghiệm và hoàn tất.</p></div></div>
 <c:if test="${not empty workflowFlash}"><div class="alert alert-info"><c:out value="${workflowFlash}"/></div></c:if>
-<nav class="module-tabs"><a class="${view=='appointments'?'active':''}" href="?view=appointments">Lịch hẹn</a><a class="${view=='encounters'?'active':''}" href="?view=encounters">Lượt khám & hàng đợi</a><a class="${view=='clinical'?'active':''}" href="?view=clinical">Dị ứng & tiền sử</a><a class="${view=='labs'?'active':''}" href="?view=labs">Chỉ định xét nghiệm</a></nav>
+<nav class="module-tabs"><c:if test="${sessionScope.user.role=='STAFF'}"><a class="${view=='appointments'?'active':''}" href="?view=appointments">Lịch hẹn</a></c:if><a class="${view=='encounters'?'active':''}" href="?view=encounters">Lượt khám</a><c:if test="${sessionScope.user.role=='DOCTOR'}"><a class="${view=='clinical'?'active':''}" href="?view=clinical">Dị ứng & tiền sử</a></c:if><a class="${view=='labs'?'active':''}" href="?view=labs">Xét nghiệm</a></nav>
 
 <c:if test="${view=='appointments'}">
  <c:if test="${sessionScope.user.role=='STAFF'||sessionScope.user.role=='ADMIN'}"><section class="card"><div class="card-title">Tạo lịch hẹn</div><form method="post" action="ClinicWorkflow" class="form-grid"><input type="hidden" name="action" value="createAppointment">

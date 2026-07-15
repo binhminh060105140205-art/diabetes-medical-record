@@ -3,6 +3,7 @@ package controllers;
 import dal.*;
 import models.*;
 import util.FileStorageUtil;
+import util.AccountNotificationMailer;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
@@ -114,7 +115,10 @@ public class AdminCreateUserController extends HttpServlet {
         }
 
         HttpSession currentSession = request.getSession();
-        currentSession.setAttribute("toastMessage", "Khởi tạo tài khoản " + role + " thành công!");
+        boolean queued = AccountNotificationMailer.sendAsync(email, fullName, username, password, role);
+        currentSession.setAttribute("toastMessage", queued
+                ? "Khởi tạo tài khoản " + role + " thành công. Thông tin đăng nhập đang được gửi tới " + email + "."
+                : "Khởi tạo tài khoản " + role + " thành công. Chưa gửi email vì máy chủ chưa cấu hình Gmail.");
         currentSession.setAttribute("toastType", "success");
 
         if ("DOCTOR".equals(role) && newUser.getUserId() > 0) {

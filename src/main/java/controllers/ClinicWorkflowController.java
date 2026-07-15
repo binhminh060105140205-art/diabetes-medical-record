@@ -6,11 +6,13 @@ import java.io.IOException; import java.time.LocalDateTime; import java.sql.Date
 
 @WebServlet("/ClinicWorkflow")
 public class ClinicWorkflowController extends HttpServlet {
-  private static final Set<String> CLINICAL=Set.of("ADMIN","STAFF","DOCTOR");
+  private static final Set<String> CLINICAL=Set.of("STAFF","DOCTOR");
   protected void doGet(HttpServletRequest req,HttpServletResponse resp)throws ServletException,IOException{
     User u=user(req); if(u==null||!CLINICAL.contains(u.getRole())){resp.sendRedirect("Login");return;}
     ClinicWorkflowDAO dao=new ClinicWorkflowDAO(); String view=req.getParameter("view");
     if(view==null || !Set.of("appointments","encounters","clinical","labs").contains(view)) view="encounters";
+    if ("DOCTOR".equals(u.getRole()) && "appointments".equals(view)) view="encounters";
+    if ("STAFF".equals(u.getRole()) && "clinical".equals(view)) view="encounters";
     req.setAttribute("view",view);
     if (Set.of("appointments","clinical").contains(view)) req.setAttribute("patients",new PatientDAO().getAll());
     if ("appointments".equals(view)) req.setAttribute("doctors",new DoctorDAO().getAll());
@@ -33,13 +35,13 @@ public class ClinicWorkflowController extends HttpServlet {
     req.setCharacterEncoding("UTF-8");User u=user(req);if(u==null||!CLINICAL.contains(u.getRole())){resp.sendError(403);return;}
     ClinicWorkflowDAO d=new ClinicWorkflowDAO();String a=req.getParameter("action"),view="encounters";
     try{
-      if("createAppointment".equals(a)&&Set.of("ADMIN","STAFF").contains(u.getRole())){d.createAppointment(i(req,"patientId"),i(req,"doctorId"),LocalDateTime.parse(required(req,"appointmentAt")),required(req,"reason"),req.getParameter("note"),u.getUserId());view="appointments";}
-      else if("checkIn".equals(a)&&Set.of("ADMIN","STAFF").contains(u.getRole())){d.checkIn(i(req,"appointmentId"),u.getUserId());view="encounters";}
-      else if("status".equals(a)){int eid=i(req,"encounterId");if("DOCTOR".equals(u.getRole())){Integer did=d.doctorIdForUser(u.getUserId());if(did==null||!d.doctorOwnsEncounter(did,eid))throw new SecurityException("Không được phân công lượt khám này");}d.setEncounterStatus(eid,req.getParameter("status"),u.getUserId());}
-      else if("allergy".equals(a)){d.addAllergy(i(req,"patientId"),required(req,"allergen"),req.getParameter("reaction"),req.getParameter("severity"),u.getUserId());view="clinical";}
-      else if("history".equals(a)){String ds=req.getParameter("diagnosedDate");d.addHistory(i(req,"patientId"),req.getParameter("historyType"),required(req,"conditionName"),ds==null||ds.isBlank()?null:Date.valueOf(ds),req.getParameter("historyStatus"),req.getParameter("historyNote"),u.getUserId());view="clinical";}
+      if("createAppointment".equals(a)&&"STAFF".equals(u.getRole())){d.createAppointment(i(req,"patientId"),i(req,"doctorId"),LocalDateTime.parse(required(req,"appointmentAt")),required(req,"reason"),req.getParameter("note"),u.getUserId());view="appointments";}
+      else if("checkIn".equals(a)&&"STAFF".equals(u.getRole())){d.checkIn(i(req,"appointmentId"),u.getUserId());view="encounters";}
+      else if("status".equals(a)&&"DOCTOR".equals(u.getRole())){int eid=i(req,"encounterId");Integer did=d.doctorIdForUser(u.getUserId());if(did==null||!d.doctorOwnsEncounter(did,eid))throw new SecurityException("Không được phân công lượt khám này");d.setEncounterStatus(eid,req.getParameter("status"),u.getUserId());}
+      else if("allergy".equals(a)&&"DOCTOR".equals(u.getRole())){d.addAllergy(i(req,"patientId"),required(req,"allergen"),req.getParameter("reaction"),req.getParameter("severity"),u.getUserId());view="clinical";}
+      else if("history".equals(a)&&"DOCTOR".equals(u.getRole())){String ds=req.getParameter("diagnosedDate");d.addHistory(i(req,"patientId"),req.getParameter("historyType"),required(req,"conditionName"),ds==null||ds.isBlank()?null:Date.valueOf(ds),req.getParameter("historyStatus"),req.getParameter("historyNote"),u.getUserId());view="clinical";}
       else if("labOrder".equals(a)&&"DOCTOR".equals(u.getRole())){Integer did=d.doctorIdForUser(u.getUserId());int eid=i(req,"encounterId");if(did==null||!d.doctorOwnsEncounter(did,eid))throw new SecurityException("Không được phân công lượt khám này");d.createLabOrder(eid,did,required(req,"testCode"),required(req,"testName"),req.getParameter("priority"),req.getParameter("clinicalNote"),u.getUserId());view="labs";}
-      else if("labResult".equals(a)&&Set.of("ADMIN","STAFF").contains(u.getRole())){d.resultLab(i(req,"labOrderId"),required(req,"resultValue"),req.getParameter("resultUnit"),req.getParameter("referenceRange"),req.getParameter("resultFlag"),u.getUserId());view="labs";}
+      else if("labResult".equals(a)&&"STAFF".equals(u.getRole())){d.resultLab(i(req,"labOrderId"),required(req,"resultValue"),req.getParameter("resultUnit"),req.getParameter("referenceRange"),req.getParameter("resultFlag"),u.getUserId());view="labs";}
       else throw new SecurityException("Thao tác không được phép");
       req.getSession().setAttribute("workflowFlash","Đã cập nhật thành công");
     }catch(IllegalArgumentException|SecurityException e){req.getSession().setAttribute("workflowFlash","Không thể cập nhật: "+e.getMessage());}

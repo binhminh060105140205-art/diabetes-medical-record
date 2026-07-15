@@ -104,7 +104,12 @@ public class MedicalRecordFormController extends HttpServlet {
             if (docIdParam != null && !docIdParam.isEmpty()) rec.setDoctorId(Integer.parseInt(docIdParam));
             rec.setCreatedByStaff(user.getUserId());
             String encounterId = request.getParameter("encounterId");
-            if (encounterId != null && !encounterId.isBlank()) rec.setEncounterId(Integer.parseInt(encounterId));
+            if (encounterId != null && !encounterId.isBlank()) {
+                rec.setEncounterId(Integer.parseInt(encounterId));
+                int[] assignment = new ClinicWorkflowDAO().assignmentForEncounter(rec.getEncounterId());
+                rec.setPatientId(assignment[0]);
+                rec.setDoctorId(assignment[1]);
+            }
             rec.setReasonForVisit(request.getParameter("reasonForVisit"));
             rec.setSymptoms(request.getParameter("symptoms"));
             rec.setMedicalHistory(request.getParameter("medicalHistory"));

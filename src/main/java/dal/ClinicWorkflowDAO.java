@@ -82,7 +82,8 @@ public class ClinicWorkflowDAO extends DBContext {
           JOIN doctors d ON d.doctor_id=e.doctor_id JOIN users u ON u.user_id=d.user_id
           LEFT JOIN queue_entries q ON q.encounter_id=e.encounter_id
           LEFT JOIN medicalrecords m ON m.encounter_id=e.encounter_id
-          ORDER BY CASE WHEN e.status='COMPLETED' THEN 1 ELSE 0 END,e.check_in_at DESC LIMIT 50""");
+          WHERE e.status NOT IN ('COMPLETED','CANCELLED')
+          ORDER BY e.check_in_at DESC LIMIT 50""");
     }
     public List<Map<String,Object>> encountersForDoctor(int doctorId) {
         return query("""
@@ -92,8 +93,8 @@ public class ClinicWorkflowDAO extends DBContext {
           JOIN doctors d ON d.doctor_id=e.doctor_id JOIN users u ON u.user_id=d.user_id
           LEFT JOIN queue_entries q ON q.encounter_id=e.encounter_id
           LEFT JOIN medicalrecords m ON m.encounter_id=e.encounter_id
-          WHERE e.doctor_id=?
-          ORDER BY CASE WHEN e.status='COMPLETED' THEN 1 ELSE 0 END,e.check_in_at DESC LIMIT 50""", doctorId);
+          WHERE e.doctor_id=? AND e.status NOT IN ('COMPLETED','CANCELLED')
+          ORDER BY e.check_in_at DESC LIMIT 50""", doctorId);
     }
     public void setEncounterStatus(int encounterId,String status,int actor) {
         Set<String> allowed=Set.of("WAITING_TRIAGE","WAITING_DOCTOR","IN_CONSULTATION","WAITING_LAB","LAB_COMPLETED","COMPLETED","CANCELLED");
@@ -142,6 +143,7 @@ public class ClinicWorkflowDAO extends DBContext {
             audit(actor,"RESULT","LAB_ORDER",String.valueOf(orderId),value+" "+unit);
         }catch(SQLException e){throw new IllegalStateException(e.getMessage(),e);}}
     public Integer doctorIdForUser(int userId){List<Map<String,Object>> r=query("SELECT doctor_id FROM doctors WHERE user_id=?",userId);return r.isEmpty()?null:((Number)r.get(0).get("doctor_id")).intValue();}
+    public int[] assignmentForEncounter(int encounterId){List<Map<String,Object>> r=query("SELECT patient_id,doctor_id FROM encounters WHERE encounter_id=?",encounterId);if(r.isEmpty())throw new IllegalArgumentException("Lượt khám không tồn tại");return new int[]{((Number)r.get(0).get("patient_id")).intValue(),((Number)r.get(0).get("doctor_id")).intValue()};}
     public boolean doctorOwnsEncounter(int doctorId,int encounterId){return !query("SELECT 1 ok FROM encounters WHERE encounter_id=? AND doctor_id=?",encounterId,doctorId).isEmpty();}
     public boolean doctorHasPatient(int doctorId,int patientId){return !query("SELECT 1 ok FROM encounters WHERE doctor_id=? AND patient_id=? LIMIT 1",doctorId,patientId).isEmpty();}
     private void audit(int actor,String action,String type,String id,String details) throws SQLException {update("INSERT INTO audit_logs(user_id,action,entity_type,entity_id,details) VALUES(?,?,?,?,?)",actor,action,type,id,details);}
