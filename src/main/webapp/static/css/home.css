@@ -353,3 +353,4 @@ h1, h2, h3, h4, h5, h6 {
     .stats-container { grid-template-columns: 1fr; }
     .hero-title { font-size: 28px; }
 }
+.nav-register{font-weight:800;color:#075985;padding:12px 15px;text-decoration:none}.nav-register:hover{color:#0284c7}

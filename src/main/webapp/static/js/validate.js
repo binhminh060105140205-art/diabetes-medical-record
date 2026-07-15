@@ -64,8 +64,8 @@ function validatePatientForm() {
     const dob = val('dateOfBirth');
     if (dob) {
         const year = new Date(dob).getFullYear();
-        if (year < 1900 || year > new Date().getFullYear() - 18) {
-            showErr('dateOfBirth', 'Ngày sinh không hợp lệ (bệnh nhân phải từ 18 tuổi trở lên)');
+        if (year < 1900 || new Date(dob) > new Date()) {
+            showErr('dateOfBirth', 'Ngày sinh không hợp lệ');
             ok = false;
         }
     }
@@ -211,6 +211,16 @@ function validateLogin() {
     return ok;
 }
 
+function validateRegister() {
+    clearAllErrors();
+    let ok = validatePatientForm();
+    if (!/^[A-Za-z0-9_]{4,30}$/.test(val('username'))) { showErr('username', 'Tên đăng nhập gồm 4–30 chữ, số hoặc dấu gạch dưới'); ok = false; }
+    if (val('password').length < 8) { showErr('password', 'Mật khẩu phải có ít nhất 8 ký tự'); ok = false; }
+    if (val('password') !== val('confirmPassword')) { showErr('confirmPassword', 'Mật khẩu nhập lại không khớp'); ok = false; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val('email'))) { showErr('email', 'Email không hợp lệ'); ok = false; }
+    return ok;
+}
+
 // ── VALIDATE CREATE USER (Admin) ────────────────────
 function validateCreateUser() {
     clearAllErrors();
@@ -296,6 +306,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (type === 'patient')     valid = validatePatientForm();
             if (type === 'indicators')  valid = validateIndicators();
             if (type === 'login')       valid = validateLogin();
+            if (type === 'register')    valid = validateRegister();
             if (type === 'createUser')  valid = validateCreateUser();
             if (type === 'basicRecord') valid = validateBasicRecord();
             if (type === 'conclusion')  valid = validateConclusion();
@@ -316,6 +327,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (type === 'patient')     valid = validatePatientForm();
             if (type === 'indicators')  valid = validateIndicators();
             if (type === 'login')       valid = validateLogin();
+            if (type === 'register')    valid = validateRegister();
             if (type === 'createUser')  valid = validateCreateUser();
             if (type === 'basicRecord') valid = validateBasicRecord();
             if (type === 'conclusion')  valid = validateConclusion();

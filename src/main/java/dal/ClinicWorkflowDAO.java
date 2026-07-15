@@ -45,6 +45,13 @@ public class ClinicWorkflowDAO extends DBContext {
           JOIN doctors d ON d.doctor_id=a.doctor_id JOIN users u ON u.user_id=d.user_id
           WHERE a.doctor_id=? ORDER BY a.appointment_at DESC LIMIT 50""", doctorId);
     }
+    public List<Map<String,Object>> appointmentsForPatient(int patientId) {
+        return query("""
+          SELECT a.*,u.full_name doctor_name,d.specialty
+          FROM appointments a JOIN doctors d ON d.doctor_id=a.doctor_id
+          JOIN users u ON u.user_id=d.user_id
+          WHERE a.patient_id=? ORDER BY a.appointment_at DESC LIMIT 30""", patientId);
+    }
     public void createAppointment(int patientId,int doctorId,LocalDateTime at,String reason,String note,int actor) {
         if (at == null || at.isBefore(LocalDateTime.now())) throw new IllegalArgumentException("Thời gian hẹn phải ở tương lai");
         try { update("INSERT INTO appointments(patient_id,doctor_id,appointment_at,reason,note,created_by) VALUES(?,?,?,?,?,?)",

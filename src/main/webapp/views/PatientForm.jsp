@@ -27,8 +27,7 @@
 
     <div class="card">
         <div class="card-title">📋 Thông tin hành chính bệnh nhân</div>
-        <form action="${pageContext.request.contextPath}/PatientForm" method="post"
-              onsubmit="return validatePatientForm()">
+        <form action="${pageContext.request.contextPath}/PatientForm" method="post" data-validate="patient">
             <input type="hidden" name="patientId" value="${patient.patientId}">
 
             <div class="form-row">
@@ -79,11 +78,7 @@
             </div>
 
             <c:if test="${not editMode}">
-            <div class="alert alert-info" style="margin-top:8px;">
-                💡 Hệ thống tự tạo tài khoản bệnh nhân:<br>
-                &nbsp;&nbsp;• Username: <strong>bn_[SĐT]</strong><br>
-                &nbsp;&nbsp;• Mật khẩu mặc định: <strong>Patient@123</strong>
-            </div>
+            <div class="account-section"><div class="card-title">Tài khoản đăng nhập</div><p class="text-muted">Có email: hệ thống gửi thông tin tự động. Không có email: cấp trực tiếp cho bệnh nhân.</p><div class="form-row"><div class="form-group"><label class="required">Tên đăng nhập</label><input class="form-control" name="username" minlength="4" maxlength="30" pattern="[A-Za-z0-9_]+" value="${param.username}" placeholder="VD: nguyenvana" required></div><div class="form-group"><label class="required">Mật khẩu tạm thời</label><input class="form-control" type="password" name="password" minlength="8" maxlength="72" autocomplete="new-password" required></div><div class="form-group"><label>Email nhận tài khoản</label><input class="form-control" type="email" name="email" maxlength="100" value="${param.email}" placeholder="benhnhan@gmail.com"></div></div></div>
             </c:if>
 
             <div style="margin-top:16px;display:flex;gap:10px;">
@@ -100,31 +95,8 @@
     </div>
 </div>
 
-<script>
-function validatePatientForm() {
-    let ok = true;
-    document.querySelectorAll('.err-msg').forEach(e => e.textContent = '');
-    document.querySelectorAll('.input-error').forEach(e => e.classList.remove('input-error'));
-
-    const fn = document.getElementById('fullName').value.trim();
-    if (fn.length < 2) {
-        document.getElementById('err_fullName').textContent = '⚠ Họ tên phải có ít nhất 2 ký tự';
-        document.getElementById('fullName').classList.add('input-error');
-        ok = false;
-    }
-
-    const phone = document.getElementById('phone').value.trim();
-    if (!/^(0|\+84)[0-9]{9}$/.test(phone)) {
-        document.getElementById('err_phone').textContent = '⚠ Số điện thoại không hợp lệ (VD: 0912345678)';
-        document.getElementById('phone').classList.add('input-error');
-        ok = false;
-    }
-
-    if (!ok) window.scrollTo({ top: 0, behavior: 'smooth' });
-    return ok;
-}
-</script>
 <script src="${pageContext.request.contextPath}/static/js/main.js"></script>
+<script src="${pageContext.request.contextPath}/static/js/validate.js"></script>
 <jsp:include page="footer.jsp"/>
 </body>
 </html>
