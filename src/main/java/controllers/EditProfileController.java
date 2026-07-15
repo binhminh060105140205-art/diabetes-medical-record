@@ -31,8 +31,8 @@ public class EditProfileController extends HttpServlet {
             User user = dao.getById(currentUser.getUserId());
             request.setAttribute("profileUser", user);
         } catch (Exception e) {
-            e.printStackTrace();
             request.setAttribute("profileUser", currentUser);
+            request.setAttribute("errorMessage", "Không thể tải hồ sơ. Vui lòng thử lại.");
         }
         request.getRequestDispatcher("views/editProfile.jsp").forward(request, response);
     }
@@ -58,11 +58,22 @@ public class EditProfileController extends HttpServlet {
         String cccd = request.getParameter("cccd");
         String password = request.getParameter("password");
 
+        String validationError = validate(username, fullName, phone, cccd, password);
+        if (validationError != null) {
+            request.setAttribute("errorMessage", validationError);
+            request.setAttribute("profileUser", currentUser);
+            request.getRequestDispatcher("views/editProfile.jsp").forward(request, response);
+            return;
+        }
+
         try {
             UserDAO dao = new UserDAO();
             User userToUpdate = dao.getById(currentUser.getUserId());
             
             if (userToUpdate != null) {
+                if (!username.equalsIgnoreCase(userToUpdate.getUsername()) && dao.usernameExists(username)) {
+                    throw new IllegalArgumentException("Tên đăng nhập đã được sử dụng.");
+                }
                 userToUpdate.setUsername(username);
                 userToUpdate.setFullName(fullName);
                 userToUpdate.setPhone(phone);
@@ -85,23 +96,15 @@ public class EditProfileController extends HttpServlet {
                 dao.updateProfile(userToUpdate);
 
                 if ("PATIENT".equalsIgnoreCase(userToUpdate.getRole())) {
-                    try {
-                        PatientDAO pDao = new PatientDAO();
-                        Patient p = pDao.getByUserId(userToUpdate.getUserId());
-                        if (p != null) {
-                            p.setFullName(fullName);
-                            p.setPhone(phone);
-                            if (dobStr != null && !dobStr.trim().isEmpty()) {
-                                p.setDateOfBirth(java.time.LocalDate.parse(dobStr));
-                            } else {
-                                p.setDateOfBirth(null);
-                            }
-                            p.setGender(gender);
-                            p.setNationalId(cccd);
-                            pDao.updateBasicProfile(p);
-                        }
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
+                    PatientDAO pDao = new PatientDAO();
+                    Patient p = pDao.getByUserId(userToUpdate.getUserId());
+                    if (p != null) {
+                        p.setFullName(fullName.trim());
+                        p.setPhone(phone == null ? null : phone.trim());
+                        p.setDateOfBirth(dobStr == null || dobStr.isBlank() ? null : java.time.LocalDate.parse(dobStr));
+                        p.setGender(gender);
+                        p.setNationalId(cccd == null ? null : cccd.trim());
+                        pDao.updateBasicProfile(p);
                     }
                 }
 
@@ -110,11 +113,26 @@ public class EditProfileController extends HttpServlet {
                 request.setAttribute("profileUser", userToUpdate);
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            request.setAttribute("errorMessage", "Đã xảy ra lỗi khi cập nhật: " + e.getMessage());
+            getServletContext().log("Profile update failed for user " + currentUser.getUserId(), e);
+            request.setAttribute("errorMessage", e instanceof IllegalArgumentException
+                    ? e.getMessage() : "Không thể cập nhật hồ sơ. Vui lòng thử lại.");
             request.setAttribute("profileUser", currentUser);
         }
 
         request.getRequestDispatcher("views/editProfile.jsp").forward(request, response);
+    }
+
+    private String validate(String username, String fullName, String phone, String cccd, String password) {
+        if (username == null || !username.matches("^[A-Za-z0-9._-]{4,50}$"))
+            return "Tên đăng nhập phải có 4–50 ký tự và không chứa khoảng trắng.";
+        if (fullName == null || fullName.trim().length() < 2 || fullName.trim().length() > 100)
+            return "Họ tên phải có từ 2 đến 100 ký tự.";
+        if (phone != null && !phone.isBlank() && !phone.trim().matches("^(0|\\+84)[0-9]{9}$"))
+            return "Số điện thoại không đúng định dạng Việt Nam.";
+        if (cccd != null && !cccd.isBlank() && !cccd.trim().matches("^(?:[0-9]{9}|[0-9]{12})$"))
+            return "CCCD phải gồm 9 hoặc 12 chữ số.";
+        if (password != null && !password.isBlank() && password.length() < 8)
+            return "Mật khẩu mới phải có ít nhất 8 ký tự.";
+        return null;
     }
 }

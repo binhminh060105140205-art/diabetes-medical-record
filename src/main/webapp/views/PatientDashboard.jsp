@@ -37,7 +37,7 @@
 
     <c:if test="${not empty msg}"><div class="alert alert-info">${msg}</div></c:if>
     <c:if test="${not empty sessionScope.flashSuccess}">
-        <div class="alert alert-success">${sessionScope.flashSuccess}</div>
+        <div class="alert alert-success"><c:out value="${sessionScope.flashSuccess}"/></div>
         <% session.removeAttribute("flashSuccess"); %>
     </c:if>
 

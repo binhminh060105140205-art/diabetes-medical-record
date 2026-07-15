@@ -50,6 +50,24 @@ public class PatientFormController extends HttpServlet {
         PatientDAO patientDAO = new PatientDAO();
         UserDAO    userDAO    = new UserDAO();
 
+        if (fullName == null || fullName.trim().length() < 2 || fullName.trim().length() > 100
+                || phone == null || !phone.trim().matches("^(0|\\+84)[0-9]{9}$")) {
+            request.setAttribute("err", "Họ tên hoặc số điện thoại không hợp lệ.");
+            request.getRequestDispatcher("views/PatientForm.jsp").forward(request, response);
+            return;
+        }
+        try {
+            if (dob != null && !dob.isBlank()) {
+                LocalDate birthDate = LocalDate.parse(dob);
+                if (birthDate.isAfter(LocalDate.now()) || birthDate.isBefore(LocalDate.of(1900, 1, 1)))
+                    throw new IllegalArgumentException();
+            }
+        } catch (Exception invalidDate) {
+            request.setAttribute("err", "Ngày sinh không hợp lệ.");
+            request.getRequestDispatcher("views/PatientForm.jsp").forward(request, response);
+            return;
+        }
+
         // ── TẠO MỚI ─────────────────────────────────────────────────────
         if (idParam == null || idParam.isEmpty()) {
 
@@ -119,10 +137,8 @@ public class PatientFormController extends HttpServlet {
 
             // Thành công
             HttpSession sess = request.getSession();
-            sess.setAttribute("flashSuccess",
-                "✅ Đã tạo bệnh nhân: <strong>" + fullName + "</strong>"
-                + " | Tài khoản: <code>" + username + "</code>"
-                + " / Mật khẩu: <code>" + password + "</code>");
+            sess.setAttribute("flashSuccess", "Đã tạo bệnh nhân " + fullName.trim()
+                    + ". Tài khoản: " + username + " / Mật khẩu tạm thời: " + password);
             response.sendRedirect(request.getContextPath() + "/PatientList");
 
         // ── CẬP NHẬT ─────────────────────────────────────────────────────

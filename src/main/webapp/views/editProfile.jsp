@@ -64,23 +64,23 @@
         <form action="${pageContext.request.contextPath}/EditProfile" method="POST">
             <div class="form-group">
                 <label>Tên đăng nhập</label>
-                <input type="text" name="username" value="${profileUser.username}" required>
+                <input type="text" name="username" value="${profileUser.username}" minlength="4" maxlength="50" pattern="[A-Za-z0-9._-]+" required>
             </div>
             <div class="form-group">
                 <label>Mật khẩu (Để trống nếu không đổi)</label>
-                <input type="password" name="password" placeholder="Nhập mật khẩu mới...">
+                <input type="password" name="password" minlength="8" maxlength="72" autocomplete="new-password" placeholder="Tối thiểu 8 ký tự">
             </div>
             <div class="form-group">
                 <label>Họ và tên</label>
-                <input type="text" name="fullName" value="${profileUser.fullName}" required>
+                <input type="text" name="fullName" value="${profileUser.fullName}" minlength="2" maxlength="100" required>
             </div>
             <div class="form-group">
                 <label>Số CCCD / CMND</label>
-                <input type="text" name="cccd" value="${profileUser.cccd}">
+                <input type="text" name="cccd" value="${profileUser.cccd}" inputmode="numeric" pattern="([0-9]{9}|[0-9]{12})" maxlength="12">
             </div>
             <div class="form-group">
                 <label>Số điện thoại</label>
-                <input type="text" name="phone" value="${profileUser.phone}">
+                <input type="tel" name="phone" value="${profileUser.phone}" pattern="(0|\+84)[0-9]{9}" maxlength="12">
             </div>
             <div class="form-group">
                 <label>Email</label>
