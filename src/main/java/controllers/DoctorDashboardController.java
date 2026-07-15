@@ -29,12 +29,8 @@ public class DoctorDashboardController extends HttpServlet {
         request.setAttribute("totalPatients", patDAO.countAll());
 
         if (doctor != null) {
-            List<MedicalRecord> allRecords = recDAO.getByDoctor(doctor.getDoctorId());
-            request.setAttribute("totalMyRecords", allRecords.size());
-
-            // Bệnh án gần đây (top 5)
-            int end = Math.min(5, allRecords.size());
-            request.setAttribute("myRecords", allRecords.subList(0, end));
+            request.setAttribute("totalMyRecords", recDAO.countByDoctor(doctor.getDoctorId()));
+            request.setAttribute("myRecords", recDAO.getRecentByDoctor(doctor.getDoctorId(), 5));
 
             // Bệnh nhân CHỜ KHÁM (DRAFT)
             List<MedicalRecord> pending = recDAO.getPendingByDoctor(doctor.getDoctorId());

@@ -25,7 +25,7 @@ public class AuthenticationService {
 
         Optional<User> user = users.findActiveByUsername(username.trim());
         if (user.isPresent() && Passwords.matches(password, user.get().getPassword())) {
-            if (!Passwords.isEncoded(user.get().getPassword())) {
+            if (Passwords.needsRehash(user.get().getPassword())) {
                 String encoded = Passwords.encode(password);
                 users.updatePassword(user.get().getUserId(), encoded);
                 user.get().setPassword(null);

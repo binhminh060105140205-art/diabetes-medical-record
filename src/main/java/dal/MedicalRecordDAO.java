@@ -74,13 +74,31 @@ public class MedicalRecordDAO extends DBContext {
         return list;
     }
 
+    public List<MedicalRecord> getRecentByDoctor(int doctorId, int limit) {
+        List<MedicalRecord> list = new ArrayList<>();
+        String sql = "SELECT * FROM MedicalRecords WHERE doctor_id=? ORDER BY visit_date DESC LIMIT ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, doctorId); ps.setInt(2, limit);
+            try (ResultSet rows = ps.executeQuery()) { while (rows.next()) list.add(mapRow(rows)); }
+        } catch (SQLException e) { throw databaseError("load recent doctor records", e); }
+        return list;
+    }
+
+    public int countByDoctor(int doctorId) {
+        try (PreparedStatement ps = connection.prepareStatement(
+                "SELECT COUNT(*) FROM MedicalRecords WHERE doctor_id=?")) {
+            ps.setInt(1, doctorId);
+            try (ResultSet rows = ps.executeQuery()) { return rows.next() ? rows.getInt(1) : 0; }
+        } catch (SQLException e) { throw databaseError("count doctor records", e); }
+    }
+
     /**
      * Bệnh nhân CHỜ KHÁM: bệnh án DRAFT được giao cho bác sĩ này
      * Staff đã nhập thông tin ban đầu nhưng Doctor chưa kết luận
      */
     public List<MedicalRecord> getPendingByDoctor(int doctorId) {
         List<MedicalRecord> list = new ArrayList<>();
-        String sql = "SELECT * FROM MedicalRecords WHERE doctor_id=? AND status='DRAFT' ORDER BY visit_date DESC";
+        String sql = "SELECT * FROM MedicalRecords WHERE doctor_id=? AND status='DRAFT' ORDER BY visit_date DESC LIMIT 20";
         try {
             stm = connection.prepareStatement(sql);
             stm.setInt(1, doctorId);
