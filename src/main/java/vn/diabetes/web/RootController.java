@@ -23,8 +23,10 @@ public class RootController {
     public ResponseEntity<String> health() {
         try {
             Integer value = jdbc.queryForObject("SELECT 1", Integer.class);
+            String revision = System.getenv().getOrDefault("RENDER_GIT_COMMIT", "local");
+            if (revision.length() > 8) revision = revision.substring(0, 8);
             return value != null && value == 1
-                    ? ResponseEntity.ok("OK")
+                    ? ResponseEntity.ok("OK revision=" + revision)
                     : ResponseEntity.internalServerError().body("DATABASE_UNHEALTHY");
         } catch (Exception ex) {
             return ResponseEntity.status(503).body("DATABASE_UNAVAILABLE");
