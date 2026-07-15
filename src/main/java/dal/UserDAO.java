@@ -74,6 +74,20 @@ public class UserDAO extends DBContext {
         }
     }
 
+    public int[] getAdminDashboardCounts() {
+        String sql = "SELECT "
+                + "(SELECT COUNT(*) FROM Patients) AS patients, "
+                + "COUNT(*) FILTER (WHERE role='DOCTOR') AS doctors, "
+                + "COUNT(*) FILTER (WHERE role='STAFF') AS staff FROM Users";
+        try (PreparedStatement ps = connection.prepareStatement(sql);
+             ResultSet rows = ps.executeQuery()) {
+            return rows.next() ? new int[]{rows.getInt("patients"), rows.getInt("doctors"), rows.getInt("staff")}
+                    : new int[]{0, 0, 0};
+        } catch (SQLException e) {
+            throw databaseError("load admin dashboard counts", e);
+        }
+    }
+
     public User create(User u) {
         String sql = "INSERT INTO Users(username, password, full_name, phone, role, status, email, dob, gender, address, cccd) VALUES(?,?,?,?,?,?,?,?,?,?,?)";
         try {

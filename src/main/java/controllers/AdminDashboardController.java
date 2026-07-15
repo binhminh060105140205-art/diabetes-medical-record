@@ -22,7 +22,6 @@ public class AdminDashboardController extends HttpServlet {
         }
 
         UserDAO    userDAO = new UserDAO();
-        PatientDAO patDAO  = new PatientDAO();
 
         String filterRole = request.getParameter("filterRole");
         String pageStr    = request.getParameter("page");
@@ -44,9 +43,10 @@ public class AdminDashboardController extends HttpServlet {
         request.setAttribute("keyword",      keyword);
         request.setAttribute("pageSize",     PAGE_SIZE);
 
-        request.setAttribute("totalPatients", patDAO.countAll());
-        request.setAttribute("totalDoctors",  userDAO.countWithFilter("DOCTOR", null));
-        request.setAttribute("totalStaffs",   userDAO.countWithFilter("STAFF", null));
+        int[] counts = userDAO.getAdminDashboardCounts();
+        request.setAttribute("totalPatients", counts[0]);
+        request.setAttribute("totalDoctors",  counts[1]);
+        request.setAttribute("totalStaffs",   counts[2]);
 
         request.getRequestDispatcher("views/AdminDashboard.jsp").forward(request, response);
     }
