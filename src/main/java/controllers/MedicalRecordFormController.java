@@ -77,6 +77,7 @@ public class MedicalRecordFormController extends HttpServlet {
             if (patient == null) { response.sendError(404, "Không tìm thấy bệnh nhân"); return; }
             request.setAttribute("patient", patient);
             request.setAttribute("encounterId", encounterParam);
+            if (encounterParam != null && !encounterParam.isBlank()) request.setAttribute("appointmentTime", new ClinicWorkflowDAO().appointmentTimeForEncounter(positiveId(encounterParam)));
         }
 
         request.setAttribute("doctors", docDAO.getAll());

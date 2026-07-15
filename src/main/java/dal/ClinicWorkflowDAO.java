@@ -2,9 +2,15 @@ package dal;
 
 import java.sql.*;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.DayOfWeek;
 import java.util.*;
 
 public class ClinicWorkflowDAO extends DBContext {
+    public static final LocalTime OPEN_TIME = LocalTime.of(7, 30);
+    public static final LocalTime CLOSE_TIME = LocalTime.of(17, 30);
+    public static final int SLOT_MINUTES = 30;
+    public static final int MAX_PATIENTS_PER_DOCTOR_PER_DAY = 20;
     private List<Map<String,Object>> query(String sql, Object... args) {
         List<Map<String,Object>> rows = new ArrayList<>();
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -53,10 +59,70 @@ public class ClinicWorkflowDAO extends DBContext {
           WHERE a.patient_id=? ORDER BY a.appointment_at DESC LIMIT 30""", patientId);
     }
     public void createAppointment(int patientId,int doctorId,LocalDateTime at,String reason,String note,int actor) {
-        if (at == null || at.isBefore(LocalDateTime.now())) throw new IllegalArgumentException("Thời gian hẹn phải ở tương lai");
-        try { update("INSERT INTO appointments(patient_id,doctor_id,appointment_at,reason,note,created_by) VALUES(?,?,?,?,?,?)",
-                patientId,doctorId,at,reason,note,actor); audit(actor,"CREATE","APPOINTMENT",null,reason); }
-        catch(SQLException e){ throw new IllegalStateException("Không thể tạo lịch hẹn; hãy kiểm tra khung giờ trùng",e); }
+        validateAppointmentTime(at);
+        try {
+            connection.setAutoCommit(false);
+            lockAndValidateCapacity(patientId,doctorId,at,null);
+            update("INSERT INTO appointments(patient_id,doctor_id,appointment_at,reason,note,created_by) VALUES(?,?,?,?,?,?)", patientId,doctorId,at,reason,note,actor);
+            audit(actor,"CREATE","APPOINTMENT",null,reason);
+            connection.commit();
+        } catch(Exception e) {
+            try { connection.rollback(); } catch(SQLException ignored) {}
+            if(e instanceof IllegalArgumentException iae) throw iae;
+            throw new IllegalStateException("Không thể tạo lịch hẹn.",e);
+        } finally { try { connection.setAutoCommit(true); } catch(SQLException ignored) {} }
+    }
+
+    public void rescheduleAppointment(int appointmentId,LocalDateTime newTime,String note,int actor) {
+        validateAppointmentTime(newTime);
+        try {
+            connection.setAutoCommit(false);
+            List<Map<String,Object>> rows=query("SELECT patient_id,doctor_id,status FROM appointments WHERE appointment_id=? FOR UPDATE",appointmentId);
+            if(rows.isEmpty()) throw new IllegalArgumentException("Lịch hẹn không tồn tại.");
+            Map<String,Object> ap=rows.get(0); String status=String.valueOf(ap.get("status"));
+            if(Set.of("CHECKED_IN","COMPLETED","CANCELLED","NO_SHOW").contains(status)) throw new IllegalArgumentException("Lịch hẹn này không thể đổi giờ.");
+            int patientId=((Number)ap.get("patient_id")).intValue(), doctorId=((Number)ap.get("doctor_id")).intValue();
+            lockAndValidateCapacity(patientId,doctorId,newTime,appointmentId);
+            update("UPDATE appointments SET appointment_at=?,status='CONFIRMED',note=CASE WHEN ? IS NULL OR ?='' THEN note ELSE ? END WHERE appointment_id=?",newTime,note,note,note,appointmentId);
+            audit(actor,"RESCHEDULE","APPOINTMENT",String.valueOf(appointmentId),newTime.toString());
+            connection.commit();
+        } catch(Exception e) {
+            try { connection.rollback(); } catch(SQLException ignored) {}
+            if(e instanceof IllegalArgumentException iae) throw iae;
+            throw new IllegalStateException("Không thể đổi lịch hẹn.",e);
+        } finally { try { connection.setAutoCommit(true); } catch(SQLException ignored) {} }
+    }
+
+    public void setAppointmentStatus(int appointmentId,String status,int actor) {
+        if(!Set.of("CONFIRMED","CANCELLED","NO_SHOW").contains(status)) throw new IllegalArgumentException("Trạng thái lịch hẹn không hợp lệ.");
+        try {
+            String timeRule="NO_SHOW".equals(status)?" AND appointment_at<=CURRENT_TIMESTAMP":"";
+            int changed=update("UPDATE appointments SET status=? WHERE appointment_id=? AND status NOT IN ('CHECKED_IN','COMPLETED','CANCELLED','NO_SHOW')"+timeRule,status,appointmentId);
+            if(changed!=1) throw new IllegalArgumentException("NO_SHOW".equals(status)?"Chỉ đánh dấu vắng hẹn sau khi đã qua giờ khám.":"Lịch hẹn không tồn tại hoặc đã được xử lý.");
+            audit(actor,"STATUS","APPOINTMENT",String.valueOf(appointmentId),status);
+        } catch(SQLException e) { throw new IllegalStateException("Không thể cập nhật lịch hẹn.",e); }
+    }
+
+    private void validateAppointmentTime(LocalDateTime at) {
+        if(at==null || !at.isAfter(LocalDateTime.now().plusMinutes(15))) throw new IllegalArgumentException("Lịch hẹn phải sau hiện tại ít nhất 15 phút.");
+        if(at.getDayOfWeek()==DayOfWeek.SUNDAY) throw new IllegalArgumentException("Phòng khám nghỉ Chủ nhật.");
+        LocalTime time=at.toLocalTime();
+        if(time.isBefore(OPEN_TIME)||time.isAfter(CLOSE_TIME.minusMinutes(SLOT_MINUTES))) throw new IllegalArgumentException("Chỉ nhận lịch từ 07:30 đến 17:00.");
+        if(time.getMinute()%SLOT_MINUTES!=0||time.getSecond()!=0||time.getNano()!=0) throw new IllegalArgumentException("Giờ hẹn phải theo khung 30 phút.");
+    }
+
+    private void lockAndValidateCapacity(int patientId,int doctorId,LocalDateTime at,Integer excludedId) throws SQLException {
+        try(PreparedStatement lock=connection.prepareStatement("SELECT doctor_id FROM doctors WHERE doctor_id=? FOR UPDATE")) {
+            lock.setInt(1,doctorId); try(ResultSet rs=lock.executeQuery()){if(!rs.next())throw new IllegalArgumentException("Bác sĩ không tồn tại.");}
+        }
+        String excluded=excludedId==null?"":" AND appointment_id<>?";
+        List<Object> args=new ArrayList<>(List.of(doctorId,at)); if(excludedId!=null)args.add(excludedId);
+        if(!query("SELECT 1 ok FROM appointments WHERE doctor_id=? AND appointment_at=? AND status NOT IN ('CANCELLED','NO_SHOW')"+excluded,args.toArray()).isEmpty()) throw new IllegalArgumentException("Bác sĩ đã có bệnh nhân trong khung giờ này.");
+        args=new ArrayList<>(List.of(patientId,at)); if(excludedId!=null)args.add(excludedId);
+        if(!query("SELECT 1 ok FROM appointments WHERE patient_id=? AND appointment_at=? AND status NOT IN ('CANCELLED','NO_SHOW')"+excluded,args.toArray()).isEmpty()) throw new IllegalArgumentException("Bệnh nhân đã có lịch trong khung giờ này.");
+        args=new ArrayList<>(List.of(doctorId,java.sql.Date.valueOf(at.toLocalDate()))); if(excludedId!=null)args.add(excludedId);
+        List<Map<String,Object>> count=query("SELECT COUNT(*) total FROM appointments WHERE doctor_id=? AND appointment_at::date=? AND status NOT IN ('CANCELLED','NO_SHOW')"+excluded,args.toArray());
+        if(((Number)count.get(0).get("total")).intValue()>=MAX_PATIENTS_PER_DOCTOR_PER_DAY) throw new IllegalArgumentException("Bác sĩ đã đủ 20 bệnh nhân trong ngày này.");
     }
     public void checkIn(int appointmentId,int actor) {
         try {
@@ -64,7 +130,7 @@ public class ClinicWorkflowDAO extends DBContext {
             Map<String,Object> ap;
             List<Map<String,Object>> rows=query("SELECT patient_id,doctor_id,status FROM appointments WHERE appointment_id=? FOR UPDATE",appointmentId);
             if(rows.isEmpty()) throw new SQLException("Lịch hẹn không tồn tại"); ap=rows.get(0);
-            if("CHECKED_IN".equals(ap.get("status"))) throw new SQLException("Lịch hẹn đã check-in");
+            if(!Set.of("BOOKED","CONFIRMED").contains(String.valueOf(ap.get("status")))) throw new IllegalArgumentException("Chỉ lịch đang chờ hoặc đã xác nhận mới được check-in.");
             update("UPDATE appointments SET status='CHECKED_IN' WHERE appointment_id=?",appointmentId);
             int encounterId;
             try(PreparedStatement ps=connection.prepareStatement("INSERT INTO encounters(appointment_id,patient_id,doctor_id,created_by) VALUES(?,?,?,?) RETURNING encounter_id")){
@@ -78,7 +144,7 @@ public class ClinicWorkflowDAO extends DBContext {
             update("INSERT INTO queue_entries(encounter_id,doctor_id,queue_number) VALUES(?,?,?)",encounterId,ap.get("doctor_id"),queueNo);
             audit(actor,"CHECK_IN","ENCOUNTER",String.valueOf(encounterId),"queue="+queueNo);
             connection.commit();
-        } catch(Exception e){ try{connection.rollback();}catch(SQLException ignored){} throw new IllegalStateException("Check-in thất bại",e); }
+        } catch(Exception e){ try{connection.rollback();}catch(SQLException ignored){} if(e instanceof IllegalArgumentException iae)throw iae;throw new IllegalStateException("Check-in thất bại",e); }
         finally { try{connection.setAutoCommit(true);}catch(SQLException ignored){} }
     }
     public List<Map<String,Object>> encounters() {
@@ -151,6 +217,7 @@ public class ClinicWorkflowDAO extends DBContext {
         }catch(SQLException e){throw new IllegalStateException(e.getMessage(),e);}}
     public Integer doctorIdForUser(int userId){List<Map<String,Object>> r=query("SELECT doctor_id FROM doctors WHERE user_id=?",userId);return r.isEmpty()?null:((Number)r.get(0).get("doctor_id")).intValue();}
     public int[] assignmentForEncounter(int encounterId){List<Map<String,Object>> r=query("SELECT patient_id,doctor_id FROM encounters WHERE encounter_id=?",encounterId);if(r.isEmpty())throw new IllegalArgumentException("Lượt khám không tồn tại");return new int[]{((Number)r.get(0).get("patient_id")).intValue(),((Number)r.get(0).get("doctor_id")).intValue()};}
+    public LocalDateTime appointmentTimeForEncounter(int encounterId){List<Map<String,Object>> r=query("SELECT a.appointment_at FROM encounters e LEFT JOIN appointments a ON a.appointment_id=e.appointment_id WHERE e.encounter_id=?",encounterId);if(r.isEmpty()||r.get(0).get("appointment_at")==null)return null;Object v=r.get(0).get("appointment_at");return v instanceof Timestamp t?t.toLocalDateTime():(LocalDateTime)v;}
     public boolean doctorOwnsEncounter(int doctorId,int encounterId){return !query("SELECT 1 ok FROM encounters WHERE encounter_id=? AND doctor_id=?",encounterId,doctorId).isEmpty();}
     public boolean doctorHasPatient(int doctorId,int patientId){return !query("SELECT 1 ok FROM encounters WHERE doctor_id=? AND patient_id=? LIMIT 1",doctorId,patientId).isEmpty();}
     private void audit(int actor,String action,String type,String id,String details) throws SQLException {update("INSERT INTO audit_logs(user_id,action,entity_type,entity_id,details) VALUES(?,?,?,?,?)",actor,action,type,id,details);}

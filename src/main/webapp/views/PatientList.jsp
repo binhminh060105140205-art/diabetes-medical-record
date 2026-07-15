@@ -52,6 +52,7 @@
                                             <a href="${pageContext.request.contextPath}/PatientHistory?patientId=${p.patientId}" class="btn btn-sm history-button">
                                                 Xem hồ sơ
                                             </a>
+                                            <c:if test="${sessionScope.user.role=='DOCTOR'}"><a href="${pageContext.request.contextPath}/DoctorPatientJournal?patientId=${p.patientId}" class="btn btn-sm btn-outline-dark">Nhật ký sức khỏe</a></c:if>
                                         </td>
                                     </tr>
                                 </c:forEach>

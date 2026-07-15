@@ -6,13 +6,13 @@ import java.io.IOException; import java.time.LocalDateTime; import java.sql.Date
 
 @WebServlet("/ClinicWorkflow")
 public class ClinicWorkflowController extends HttpServlet {
-  private static final Set<String> CLINICAL=Set.of("STAFF","DOCTOR");
+  private static final Set<String> CLINICAL=Set.of("ADMIN","STAFF","DOCTOR");
   protected void doGet(HttpServletRequest req,HttpServletResponse resp)throws ServletException,IOException{
     User u=user(req); if(u==null||!CLINICAL.contains(u.getRole())){resp.sendRedirect("Login");return;}
     ClinicWorkflowDAO dao=new ClinicWorkflowDAO(); String view=req.getParameter("view");
     if(view==null || !Set.of("appointments","encounters","clinical","labs").contains(view)) view="encounters";
     if ("DOCTOR".equals(u.getRole()) && "appointments".equals(view)) view="encounters";
-    if ("STAFF".equals(u.getRole()) && "clinical".equals(view)) view="encounters";
+    if (!"DOCTOR".equals(u.getRole()) && "clinical".equals(view)) view="encounters";
     req.setAttribute("view",view);
     if (Set.of("appointments","clinical").contains(view)) req.setAttribute("patients",new PatientDAO().getAll());
     if ("appointments".equals(view)) req.setAttribute("doctors",new DoctorDAO().getAll());
@@ -35,8 +35,10 @@ public class ClinicWorkflowController extends HttpServlet {
     req.setCharacterEncoding("UTF-8");User u=user(req);if(u==null||!CLINICAL.contains(u.getRole())){resp.sendError(403);return;}
     ClinicWorkflowDAO d=new ClinicWorkflowDAO();String a=req.getParameter("action"),view="encounters";
     try{
-      if("createAppointment".equals(a)&&"STAFF".equals(u.getRole())){d.createAppointment(i(req,"patientId"),i(req,"doctorId"),LocalDateTime.parse(required(req,"appointmentAt")),required(req,"reason"),req.getParameter("note"),u.getUserId());view="appointments";}
-      else if("checkIn".equals(a)&&"STAFF".equals(u.getRole())){d.checkIn(i(req,"appointmentId"),u.getUserId());view="encounters";}
+      if("createAppointment".equals(a)&&isReception(u)){d.createAppointment(i(req,"patientId"),i(req,"doctorId"),LocalDateTime.parse(required(req,"appointmentAt")),required(req,"reason"),req.getParameter("note"),u.getUserId());view="appointments";}
+      else if("rescheduleAppointment".equals(a)&&isReception(u)){d.rescheduleAppointment(i(req,"appointmentId"),LocalDateTime.parse(required(req,"appointmentAt")),req.getParameter("note"),u.getUserId());view="appointments";}
+      else if("appointmentStatus".equals(a)&&isReception(u)){d.setAppointmentStatus(i(req,"appointmentId"),required(req,"status"),u.getUserId());view="appointments";}
+      else if("checkIn".equals(a)&&isReception(u)){d.checkIn(i(req,"appointmentId"),u.getUserId());view="encounters";}
       else if("status".equals(a)&&"DOCTOR".equals(u.getRole())){int eid=i(req,"encounterId");Integer did=d.doctorIdForUser(u.getUserId());if(did==null||!d.doctorOwnsEncounter(did,eid))throw new SecurityException("Không được phân công lượt khám này");d.setEncounterStatus(eid,req.getParameter("status"),u.getUserId());}
       else if("allergy".equals(a)&&"DOCTOR".equals(u.getRole())){d.addAllergy(i(req,"patientId"),required(req,"allergen"),req.getParameter("reaction"),req.getParameter("severity"),u.getUserId());view="clinical";}
       else if("history".equals(a)&&"DOCTOR".equals(u.getRole())){String ds=req.getParameter("diagnosedDate");d.addHistory(i(req,"patientId"),req.getParameter("historyType"),required(req,"conditionName"),ds==null||ds.isBlank()?null:Date.valueOf(ds),req.getParameter("historyStatus"),req.getParameter("historyNote"),u.getUserId());view="clinical";}
@@ -49,6 +51,7 @@ public class ClinicWorkflowController extends HttpServlet {
     String pid=req.getParameter("patientId");resp.sendRedirect(req.getContextPath()+"/ClinicWorkflow?view="+view+(pid!=null?"&patientId="+pid:""));
   }
   private User user(HttpServletRequest r){HttpSession s=r.getSession(false);return s==null?null:(User)s.getAttribute("user");}
+  private boolean isReception(User u){return Set.of("ADMIN","STAFF").contains(u.getRole());}
   private int i(HttpServletRequest r,String n){return positive(required(r,n),n);}
   private int positive(String value,String name){try{int parsed=Integer.parseInt(value);if(parsed>0)return parsed;}catch(NumberFormatException ignored){}throw new IllegalArgumentException(name+" không hợp lệ");}
   private int positiveOrZero(String value){try{int parsed=Integer.parseInt(value);return parsed>0?parsed:0;}catch(NumberFormatException ignored){return 0;}}

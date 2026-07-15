@@ -28,6 +28,7 @@ public class PatientHealthController extends HttpServlet {
             log.setDiastolicBp(integer(req,"diastolicBp")); log.setWeight(decimal(req,"weight"));
             log.setHeartRate(integer(req,"heartRate")); log.setSpo2(decimal(req,"spo2"));
             log.setMealType(text(req,"mealType")); log.setSymptoms(text(req,"symptoms")); log.setNote(text(req,"note"));
+            try { validate(log); } catch(IllegalArgumentException e) { resp.setStatus(400); resp.getWriter().print("{\"success\":false,\"error\":\""+json(e.getMessage())+"\"}"); return; }
             PatientDailyLog saved = new PatientDailyLogDAO().save(log);
             List<HealthAlert> alerts = AlertEngine.analyzeLog(saved); HealthAlertDAO dao = new HealthAlertDAO();
             for (HealthAlert alert : alerts) dao.save(alert);
@@ -43,4 +44,13 @@ public class PatientHealthController extends HttpServlet {
     private String text(HttpServletRequest req,String name){String v=req.getParameter(name);return v==null||v.isBlank()?null:v.trim();}
     private Double decimal(HttpServletRequest req,String name)throws ServletException{String v=text(req,name);try{return v==null?null:Double.valueOf(v);}catch(NumberFormatException e){throw new ServletException(name+" không hợp lệ",e);}}
     private Integer integer(HttpServletRequest req,String name)throws ServletException{String v=text(req,name);try{return v==null?null:Integer.valueOf(v);}catch(NumberFormatException e){throw new ServletException(name+" không hợp lệ",e);}}
+    private void validate(PatientDailyLog log) {
+        range(log.getBloodGlucose(),20,600,"Đường huyết"); range(log.getWeight(),20,300,"Cân nặng"); range(log.getSpo2(),50,100,"SpO2");
+        range(log.getSystolicBp(),60,260,"Huyết áp tâm thu"); range(log.getDiastolicBp(),30,180,"Huyết áp tâm trương"); range(log.getHeartRate(),30,220,"Nhịp tim");
+        if(log.getSystolicBp()!=null&&log.getDiastolicBp()!=null&&log.getSystolicBp()<=log.getDiastolicBp()) throw new IllegalArgumentException("Huyết áp tâm thu phải lớn hơn tâm trương.");
+        if(log.getSymptoms()!=null&&log.getSymptoms().length()>500) throw new IllegalArgumentException("Triệu chứng tối đa 500 ký tự.");
+        if(log.getNote()!=null&&log.getNote().length()>1000) throw new IllegalArgumentException("Ghi chú tối đa 1000 ký tự.");
+    }
+    private void range(Number value,double min,double max,String label){if(value!=null&&(value.doubleValue()<min||value.doubleValue()>max))throw new IllegalArgumentException(label+" ngoài khoảng hợp lệ ("+min+"–"+max+").");}
+    private String json(String value){return value.replace("\\","\\\\").replace("\"","\\\"");}
 }

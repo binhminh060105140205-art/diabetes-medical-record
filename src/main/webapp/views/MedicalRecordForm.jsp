@@ -84,6 +84,7 @@
                 <input type="hidden" name="action" value="saveBasic">
                 <input type="hidden" name="patientId" value="${patient.patientId}">
                 <input type="hidden" name="encounterId" value="${encounterId}">
+                <div class="form-group"><label>Ngày giờ khám</label><input class="form-control" value="${not empty appointmentTime?appointmentTime:record.visitDate}" readonly><small>Ngày khám lấy từ lịch hẹn/check-in và không chỉnh sửa tại bệnh án.</small></div>
 
                 <div class="form-group">
                     <label class="required">Bác sĩ phụ trách</label>
