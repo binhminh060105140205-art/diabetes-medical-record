@@ -20,4 +20,4 @@ COPY --from=build /app/target/diabetes-medical-record.war app.war
 RUN mkdir -p /app/uploads && chown -R spring:spring /app
 USER spring
 EXPOSE 10000
-ENTRYPOINT ["java","-XX:MaxRAMPercentage=75.0","-jar","/app/app.war"]
+ENTRYPOINT ["java","-XX:+UseSerialGC","-XX:InitialRAMPercentage=20.0","-XX:MaxRAMPercentage=60.0","-Xss512k","-jar","/app/app.war"]
