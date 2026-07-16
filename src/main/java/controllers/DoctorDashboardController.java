@@ -22,20 +22,16 @@ public class DoctorDashboardController extends HttpServlet {
 
         DoctorDAO        doctorDAO = new DoctorDAO();
         MedicalRecordDAO recDAO    = new MedicalRecordDAO();
-        PatientDAO       patDAO    = new PatientDAO();
-
         Doctor doctor = doctorDAO.getByUserId(user.getUserId());
         request.setAttribute("doctor",        doctor);
-        request.setAttribute("totalPatients", patDAO.countAll());
 
         if (doctor != null) {
-            request.setAttribute("totalMyRecords", recDAO.countByDoctor(doctor.getDoctorId()));
-            request.setAttribute("myRecords", recDAO.getRecentByDoctor(doctor.getDoctorId(), 5));
-
-            // Bệnh nhân CHỜ KHÁM (DRAFT)
-            List<MedicalRecord> pending = recDAO.getPendingByDoctor(doctor.getDoctorId());
-            request.setAttribute("pendingRecords", pending);
-            request.setAttribute("totalPending",   pending.size());
+            MedicalRecordDAO.DoctorDashboardData data = recDAO.loadDoctorDashboard(doctor.getDoctorId());
+            request.setAttribute("totalPatients", data.totalPatients());
+            request.setAttribute("totalMyRecords", data.totalRecords());
+            request.setAttribute("myRecords", data.recent());
+            request.setAttribute("pendingRecords", data.pending());
+            request.setAttribute("totalPending", data.pendingCount());
         }
 
         request.getRequestDispatcher("views/DoctorDashboard.jsp").forward(request, response);

@@ -75,15 +75,6 @@ public class HealthAlertDAO extends DBContext {
         return list;
     }
 
-    public void acknowledge(int alertId) {
-        try {
-            stm = connection.prepareStatement(
-                "UPDATE HealthAlerts SET is_acknowledged=TRUE,acknowledged_at=CURRENT_TIMESTAMP WHERE alert_id=?");
-            stm.setInt(1, alertId);
-            stm.executeUpdate();
-        } catch (SQLException e) { throw databaseError("acknowledge health alert", e); }
-    }
-
     public boolean acknowledgeForPatient(int alertId, int patientId) {
         try (PreparedStatement ps = connection.prepareStatement(
                 "UPDATE HealthAlerts SET is_acknowledged=TRUE,acknowledged_at=CURRENT_TIMESTAMP WHERE alert_id=? AND patient_id=?")) {

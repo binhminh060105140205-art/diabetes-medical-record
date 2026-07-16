@@ -62,51 +62,57 @@ public class MedicalRecordDAO extends DBContext {
         return list;
     }
 
-    public List<MedicalRecord> getByDoctor(int doctorId) {
-        List<MedicalRecord> list = new ArrayList<>();
-        String sql = "SELECT * FROM MedicalRecords WHERE doctor_id=? ORDER BY visit_date DESC";
-        try {
-            stm = connection.prepareStatement(sql);
-            stm.setInt(1, doctorId);
-            rs = stm.executeQuery();
-            while (rs.next()) list.add(mapRow(rs));
-        } catch (SQLException e) { throw databaseError("load doctor medical records", e); }
-        return list;
-    }
-
-    public List<MedicalRecord> getRecentByDoctor(int doctorId, int limit) {
-        List<MedicalRecord> list = new ArrayList<>();
-        String sql = "SELECT * FROM MedicalRecords WHERE doctor_id=? ORDER BY visit_date DESC LIMIT ?";
+    public MedicalRecord getLatestByPatient(int patientId) {
+        String sql = "SELECT * FROM MedicalRecords WHERE patient_id=? ORDER BY visit_date DESC LIMIT 1";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, doctorId); ps.setInt(2, limit);
-            try (ResultSet rows = ps.executeQuery()) { while (rows.next()) list.add(mapRow(rows)); }
-        } catch (SQLException e) { throw databaseError("load recent doctor records", e); }
-        return list;
+            ps.setInt(1, patientId);
+            try (ResultSet rows = ps.executeQuery()) { return rows.next() ? mapRow(rows) : null; }
+        } catch (SQLException error) { throw databaseError("load latest patient record", error); }
     }
 
-    public int countByDoctor(int doctorId) {
-        try (PreparedStatement ps = connection.prepareStatement(
-                "SELECT COUNT(*) FROM MedicalRecords WHERE doctor_id=?")) {
-            ps.setInt(1, doctorId);
-            try (ResultSet rows = ps.executeQuery()) { return rows.next() ? rows.getInt(1) : 0; }
-        } catch (SQLException e) { throw databaseError("count doctor records", e); }
+    /** Loads doctor metrics, recent records and pending records in one database round-trip. */
+    public DoctorDashboardData loadDoctorDashboard(int doctorId) {
+        String sql = """
+            WITH stats AS (
+              SELECT COUNT(*) total_records,
+                     COUNT(*) FILTER (WHERE status='DRAFT') pending_records,
+                     (SELECT COUNT(*) FROM patients) total_patients
+              FROM medicalrecords WHERE doctor_id=?
+            ), items AS (
+              SELECT recent.*, 'RECENT' bucket FROM (
+                SELECT * FROM medicalrecords WHERE doctor_id=? ORDER BY visit_date DESC LIMIT 5
+              ) recent
+              UNION ALL
+              SELECT pending.*, 'PENDING' bucket FROM (
+                SELECT * FROM medicalrecords WHERE doctor_id=? AND status='DRAFT'
+                ORDER BY visit_date DESC LIMIT 20
+              ) pending
+            )
+            SELECT i.*,s.total_records,s.pending_records,s.total_patients
+            FROM stats s LEFT JOIN items i ON TRUE
+            """;
+        List<MedicalRecord> recent = new ArrayList<>(), pending = new ArrayList<>();
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, doctorId); ps.setInt(2, doctorId); ps.setInt(3, doctorId);
+            try (ResultSet rows = ps.executeQuery()) {
+                int totalRecords = 0, pendingCount = 0, totalPatients = 0;
+                while (rows.next()) {
+                    totalRecords = rows.getInt("total_records");
+                    pendingCount = rows.getInt("pending_records");
+                    totalPatients = rows.getInt("total_patients");
+                    if (rows.getObject("record_id") != null) {
+                        MedicalRecord record = mapRow(rows);
+                        if ("RECENT".equals(rows.getString("bucket"))) recent.add(record);
+                        else pending.add(record);
+                    }
+                }
+                return new DoctorDashboardData(totalPatients, totalRecords, pendingCount, recent, pending);
+            }
+        } catch (SQLException error) { throw databaseError("load doctor dashboard", error); }
     }
 
-    /**
-     * Bệnh nhân CHỜ KHÁM: bệnh án DRAFT được giao cho bác sĩ này
-     * Staff đã nhập thông tin ban đầu nhưng Doctor chưa kết luận
-     */
-    public List<MedicalRecord> getPendingByDoctor(int doctorId) {
-        List<MedicalRecord> list = new ArrayList<>();
-        String sql = "SELECT * FROM MedicalRecords WHERE doctor_id=? AND status='DRAFT' ORDER BY visit_date DESC LIMIT 20";
-        try {
-            stm = connection.prepareStatement(sql);
-            stm.setInt(1, doctorId);
-            rs = stm.executeQuery();
-            while (rs.next()) list.add(mapRow(rs));
-        } catch (SQLException e) { throw databaseError("load pending medical records", e); }
-        return list;
-    }
+    public record DoctorDashboardData(int totalPatients, int totalRecords,
+            int pendingCount, List<MedicalRecord> recent, List<MedicalRecord> pending) {}
 
     public MedicalRecord create(MedicalRecord rec) {
         String sql = "INSERT INTO MedicalRecords(patient_id,doctor_id,created_by_staff,encounter_id,"
@@ -146,18 +152,6 @@ public class MedicalRecordDAO extends DBContext {
             stm.setInt(8, rec.getRecordId());
             stm.executeUpdate();
         } catch (SQLException e) { throw databaseError("complete medical record", e); }
-    }
-
-    public List<MedicalRecord> getRecent(int limit) {
-        List<MedicalRecord> list = new ArrayList<>();
-        String sql = "SELECT * FROM MedicalRecords ORDER BY created_at DESC LIMIT ?";
-        try {
-            stm = connection.prepareStatement(sql);
-            stm.setInt(1, limit);
-            rs = stm.executeQuery();
-            while (rs.next()) list.add(mapRow(rs));
-        } catch (SQLException e) { throw databaseError("load recent medical records", e); }
-        return list;
     }
 
     public List<Map<String, Object>> getPrescriptionItems(int recordId) {

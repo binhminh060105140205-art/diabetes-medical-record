@@ -43,13 +43,17 @@ Repository đã có `Dockerfile` và `render.yaml`. Trên Render cấu hình `DB
 ## Cấu trúc
 
 ```text
-src/main/java/controllers/       Controller/Servlet
-src/main/java/dal/               Database và nghiệp vụ
-src/main/java/models/            Model
-src/main/java/vn/diabetes/       Spring Boot và đăng nhập
+src/main/java/controllers/       Servlet tương thích, chia theo từng màn hình
+src/main/java/dal/               Truy vấn JDBC thuần
+src/main/java/models/            Model dùng chung
+src/main/java/vn/diabetes/auth/  Spring MVC đăng nhập hoàn chỉnh
+src/main/java/vn/diabetes/config/Bridge tạm cho DAO legacy dùng Hikari
+src/main/java/vn/diabetes/service/Service nghiệp vụ đang được migrate
+src/main/java/vn/diabetes/validation/Quy tắc validate dùng chung
 src/main/resources/db/migration/ Flyway schema/seed
 src/main/webapp/views/           JSP
 src/main/webapp/static/          CSS/JavaScript
+src/test/java/                   Unit test service, validation và auth
 ```
 
 `.env`, `target/` và `uploads/` không được đưa lên GitHub.

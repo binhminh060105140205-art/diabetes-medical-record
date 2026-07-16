@@ -33,7 +33,6 @@ public class LoginController {
             return redirectFor(result.user());
         }
         model.addAttribute("err", result.error());
-        model.addAttribute("lockUntil", result.lockUntil());
         model.addAttribute("username", username);
         return "forward:/views/Login.jsp";
     }

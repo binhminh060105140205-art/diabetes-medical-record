@@ -9,11 +9,15 @@ import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import vn.diabetes.validation.Validators;
 
 @WebServlet("/AdminCreateUser")
 @MultipartConfig(maxFileSize = 5 * 1024 * 1024, maxRequestSize = 20 * 1024 * 1024)
 public class AdminCreateUserController extends HttpServlet {
+    private static final Logger LOGGER=Logger.getLogger(AdminCreateUserController.class.getName());
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -59,6 +63,17 @@ public class AdminCreateUserController extends HttpServlet {
         String licenseNo = request.getParameter("licenseNo");
         String degree    = request.getParameter("degree");
 
+        try {
+            username=Validators.username(username); password=Validators.password(password,"Mật khẩu");
+            fullName=Validators.fullName(fullName); phone=Validators.phone(phone); email=Validators.email(email,false);
+            gender=Validators.gender(gender); address=Validators.address(address); role=Validators.role(role); cccd=Validators.cccd(cccd);
+            if("PATIENT".equals(role))throw new IllegalArgumentException("Hãy tạo tài khoản bệnh nhân tại màn Tiếp nhận bệnh nhân.");
+            specialty=Validators.max(specialty,100,"Chuyên khoa"); licenseNo=Validators.max(licenseNo,50,"Số chứng chỉ"); degree=Validators.max(degree,100,"Học vị");
+            if("DOCTOR".equals(role)){specialty=Validators.required(specialty,"Chuyên khoa");licenseNo=Validators.required(licenseNo,"Số chứng chỉ hành nghề");}
+        } catch(IllegalArgumentException ex) {
+            request.setAttribute("err",ex.getMessage()); request.getRequestDispatcher("views/AdminCreateUser.jsp").forward(request,response); return;
+        }
+
         UserDAO userDAO = new UserDAO();
         if (userDAO.usernameExists(username)) {
             request.setAttribute("err", "Tên đăng nhập đã tồn tại.");
@@ -77,14 +92,8 @@ public class AdminCreateUserController extends HttpServlet {
         newUser.setRole(role);
         newUser.setCccd(cccd);
 
-        if (dobString != null && !dobString.trim().isEmpty()) {
-            try {
-                java.util.Date parsedDate = new SimpleDateFormat("yyyy-MM-dd").parse(dobString);
-                newUser.setDob(parsedDate);
-            } catch (Exception e) {
-                System.out.println("Lỗi parse ngày sinh: " + e.getMessage());
-            }
-        }
+        try { LocalDate dob=Validators.dateOfBirth(dobString,false); if(dob!=null)newUser.setDob(java.sql.Date.valueOf(dob)); }
+        catch(IllegalArgumentException ex){request.setAttribute("err",ex.getMessage());request.getRequestDispatcher("views/AdminCreateUser.jsp").forward(request,response);return;}
 
         newUser = userDAO.create(newUser);
 
@@ -110,7 +119,7 @@ public class AdminCreateUserController extends HttpServlet {
                     docDAO.updateImages(doc.getDoctorId(), faceFile, cccdFile, licenseFile);
                 }
             } catch (Exception ex) {
-                System.out.println("AdminCreateUser: lỗi upload ảnh bác sĩ - " + ex.getMessage());
+                LOGGER.log(Level.WARNING,"Không thể lưu ảnh hồ sơ bác sĩ userId="+newUser.getUserId(),ex);
             }
         }
 

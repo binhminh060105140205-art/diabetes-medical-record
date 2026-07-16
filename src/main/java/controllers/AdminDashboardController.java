@@ -31,11 +31,14 @@ public class AdminDashboardController extends HttpServlet {
         try { currentPage = Integer.parseInt(pageStr); } catch (Exception ignored) {}
         if (currentPage < 1) currentPage = 1;
 
-        int totalRecords = userDAO.countWithFilter(filterRole, keyword);
+        UserDAO.AdminDashboardData data = userDAO.loadAdminDashboard(filterRole, keyword, currentPage, PAGE_SIZE);
+        int totalRecords = data.filteredTotal();
         int totalPages   = Math.max(1, (int) Math.ceil((double) totalRecords / PAGE_SIZE));
-        if (currentPage > totalPages) currentPage = totalPages;
-
-        request.setAttribute("allUsers",     userDAO.getWithPagingAndFilter(filterRole, keyword, currentPage, PAGE_SIZE));
+        if (currentPage > totalPages) {
+            currentPage = totalPages;
+            data = userDAO.loadAdminDashboard(filterRole, keyword, currentPage, PAGE_SIZE);
+        }
+        request.setAttribute("allUsers",     data.users());
         request.setAttribute("currentPage",  currentPage);
         request.setAttribute("totalPages",   totalPages);
         request.setAttribute("totalRecords", totalRecords);
@@ -43,10 +46,9 @@ public class AdminDashboardController extends HttpServlet {
         request.setAttribute("keyword",      keyword);
         request.setAttribute("pageSize",     PAGE_SIZE);
 
-        int[] counts = userDAO.getAdminDashboardCounts();
-        request.setAttribute("totalPatients", counts[0]);
-        request.setAttribute("totalDoctors",  counts[1]);
-        request.setAttribute("totalStaffs",   counts[2]);
+        request.setAttribute("totalPatients", data.patients());
+        request.setAttribute("totalDoctors",  data.doctors());
+        request.setAttribute("totalStaffs",   data.staff());
 
         request.getRequestDispatcher("views/AdminDashboard.jsp").forward(request, response);
     }

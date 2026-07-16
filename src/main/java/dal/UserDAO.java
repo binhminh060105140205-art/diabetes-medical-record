@@ -33,22 +33,6 @@ public class UserDAO extends DBContext {
         return u;
     }
 
-    public User login(String username, String password) {
-        String sql = "SELECT * FROM Users WHERE username=? AND password=?";
-        try {
-            stm = connection.prepareStatement(sql);
-            stm.setString(1, username);
-            stm.setString(2, password);
-            rs = stm.executeQuery();
-            if (rs.next()) {
-                return mapRow(rs);
-            }
-        } catch (SQLException e) {
-            throw databaseError("login", e);
-        }
-        return null;
-    }
-
     public User getById(int id) {
         String sql = "SELECT * FROM Users WHERE user_id=?";
         try {
@@ -74,19 +58,45 @@ public class UserDAO extends DBContext {
         }
     }
 
-    public int[] getAdminDashboardCounts() {
-        String sql = "SELECT "
-                + "(SELECT COUNT(*) FROM Patients) AS patients, "
-                + "COUNT(*) FILTER (WHERE role='DOCTOR') AS doctors, "
-                + "COUNT(*) FILTER (WHERE role='STAFF') AS staff FROM Users";
-        try (PreparedStatement ps = connection.prepareStatement(sql);
-             ResultSet rows = ps.executeQuery()) {
-            return rows.next() ? new int[]{rows.getInt("patients"), rows.getInt("doctors"), rows.getInt("staff")}
-                    : new int[]{0, 0, 0};
-        } catch (SQLException e) {
-            throw databaseError("load admin dashboard counts", e);
-        }
+    /** Loads counters, filtered total and the requested user page in one database round-trip. */
+    public AdminDashboardData loadAdminDashboard(String role, String keyword, int page, int pageSize) {
+        boolean hasRole = role != null && !role.isBlank();
+        boolean hasKeyword = keyword != null && !keyword.isBlank();
+        StringBuilder where = new StringBuilder(" WHERE 1=1");
+        if (hasRole) where.append(" AND role=?");
+        if (hasKeyword) where.append(" AND (full_name ILIKE ? OR username ILIKE ? OR phone ILIKE ?)");
+        String sql = """
+            WITH metrics AS (
+              SELECT (SELECT COUNT(*) FROM patients) patients,
+                     COUNT(*) FILTER (WHERE role='DOCTOR') doctors,
+                     COUNT(*) FILTER (WHERE role='STAFF') staff
+              FROM users
+            ), filtered AS (SELECT * FROM users""" + where + "), total AS (SELECT COUNT(*) total FROM filtered), "
+                + "page_data AS (SELECT * FROM filtered ORDER BY created_at DESC LIMIT ? OFFSET ?) "
+                + "SELECT p.*,m.patients,m.doctors,m.staff,t.total FROM metrics m CROSS JOIN total t LEFT JOIN page_data p ON TRUE";
+        List<User> users = new ArrayList<>();
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            int index = 1;
+            if (hasRole) ps.setString(index++, role);
+            if (hasKeyword) {
+                String value = "%" + keyword.trim() + "%";
+                ps.setString(index++, value); ps.setString(index++, value); ps.setString(index++, value);
+            }
+            ps.setInt(index++, pageSize); ps.setInt(index, (page - 1) * pageSize);
+            try (ResultSet rows = ps.executeQuery()) {
+                int total = 0, patients = 0, doctors = 0, staff = 0;
+                while (rows.next()) {
+                    total = rows.getInt("total"); patients = rows.getInt("patients");
+                    doctors = rows.getInt("doctors"); staff = rows.getInt("staff");
+                    if (rows.getObject("user_id") != null) users.add(mapRow(rows));
+                }
+                return new AdminDashboardData(users, total, patients, doctors, staff);
+            }
+        } catch (SQLException error) { throw databaseError("load admin dashboard", error); }
     }
+
+    public record AdminDashboardData(List<User> users, int filteredTotal,
+            int patients, int doctors, int staff) {}
 
     public User create(User u) {
         String sql = "INSERT INTO Users(username, password, full_name, phone, role, status, email, dob, gender, address, cccd) VALUES(?,?,?,?,?,?,?,?,?,?,?)";
@@ -174,95 +184,4 @@ public class UserDAO extends DBContext {
         return list;
     }
 
-    public List<User> getByRole(String role) {
-        List<User> list = new ArrayList<>();
-        String sql = "SELECT * FROM Users WHERE role=? ORDER BY full_name";
-        try {
-            stm = connection.prepareStatement(sql);
-            stm.setString(1, role);
-            rs = stm.executeQuery();
-            while (rs.next()) list.add(mapRow(rs));
-        } catch (SQLException e) {
-            throw databaseError("load users by role", e);
-        }
-        return list;
-    }
-
-    public int countWithFilter(String role) {
-        String sql = (role == null || role.isEmpty()) ? "SELECT COUNT(*) FROM Users" : "SELECT COUNT(*) FROM Users WHERE role=?";
-        try {
-            stm = connection.prepareStatement(sql);
-            if (role != null && !role.isEmpty()) {
-                stm.setString(1, role);
-            }
-            rs = stm.executeQuery();
-            if (rs.next()) return rs.getInt(1);
-        } catch (SQLException e) {
-            throw databaseError("count users", e);
-        }
-        return 0;
-    }
-
-    public List<User> getWithPagingAndFilter(String role, int pageIndex, int pageSize) {
-        List<User> list = new ArrayList<>();
-        String sql = (role == null || role.isEmpty()) 
-            ? "SELECT * FROM Users ORDER BY created_at DESC LIMIT ? OFFSET ?"
-            : "SELECT * FROM Users WHERE role=? ORDER BY created_at DESC LIMIT ? OFFSET ?";
-        try {
-            stm = connection.prepareStatement(sql);
-            if (role == null || role.isEmpty()) {
-                stm.setInt(1, pageSize);
-                stm.setInt(2, (pageIndex - 1) * pageSize);
-            } else {
-                stm.setString(1, role);
-                stm.setInt(2, pageSize);
-                stm.setInt(3, (pageIndex - 1) * pageSize);
-            }
-            rs = stm.executeQuery();
-            while (rs.next()) list.add(mapRow(rs));
-        } catch (SQLException e) {
-            throw databaseError("load user page", e);
-        }
-        return list;
-    }
-
-    public int countWithFilter(String role, String keyword) {
-        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM Users WHERE 1=1");
-        if (role != null && !role.isEmpty())    sql.append(" AND role=?");
-        if (keyword != null && !keyword.isEmpty()) sql.append(" AND (full_name ILIKE ? OR username ILIKE ? OR phone ILIKE ?)");
-        try {
-            stm = connection.prepareStatement(sql.toString());
-            int idx = 1;
-            if (role != null && !role.isEmpty())        stm.setString(idx++, role);
-            if (keyword != null && !keyword.isEmpty()) {
-                String kw = "%" + keyword + "%";
-                stm.setString(idx++, kw); stm.setString(idx++, kw); stm.setString(idx++, kw);
-            }
-            rs = stm.executeQuery();
-            if (rs.next()) return rs.getInt(1);
-        } catch (SQLException e) { throw databaseError("count filtered users", e); }
-        return 0;
-    }
-
-    public List<User> getWithPagingAndFilter(String role, String keyword, int pageIndex, int pageSize) {
-        List<User> list = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT * FROM Users WHERE 1=1");
-        if (role != null && !role.isEmpty())       sql.append(" AND role=?");
-        if (keyword != null && !keyword.isEmpty()) sql.append(" AND (full_name ILIKE ? OR username ILIKE ? OR phone ILIKE ?)");
-        sql.append(" ORDER BY created_at DESC LIMIT ? OFFSET ?");
-        try {
-            stm = connection.prepareStatement(sql.toString());
-            int idx = 1;
-            if (role != null && !role.isEmpty())        stm.setString(idx++, role);
-            if (keyword != null && !keyword.isEmpty()) {
-                String kw = "%" + keyword + "%";
-                stm.setString(idx++, kw); stm.setString(idx++, kw); stm.setString(idx++, kw);
-            }
-            stm.setInt(idx++, pageSize);
-            stm.setInt(idx,   (pageIndex - 1) * pageSize);
-            rs = stm.executeQuery();
-            while (rs.next()) list.add(mapRow(rs));
-        } catch (SQLException e) { throw databaseError("load filtered users", e); }
-        return list;
-    }
 }

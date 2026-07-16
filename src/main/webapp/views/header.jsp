@@ -1,7 +1,5 @@
 <%@taglib prefix="c" uri="jakarta.tags.core" %>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css">
-<meta name="csrf-token" content="${sessionScope.csrfToken}">
 <div class="site-header">
     <div class="header-brand">
         <span class="header-icon">+</span>

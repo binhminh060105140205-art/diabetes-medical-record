@@ -2,15 +2,9 @@ package dal;
 
 import java.sql.*;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.DayOfWeek;
 import java.util.*;
 
-public class ClinicWorkflowDAO extends DBContext {
-    public static final LocalTime OPEN_TIME = LocalTime.of(7, 30);
-    public static final LocalTime CLOSE_TIME = LocalTime.of(17, 30);
-    public static final int SLOT_MINUTES = 30;
-    public static final int MAX_PATIENTS_PER_DOCTOR_PER_DAY = 20;
+public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.ClinicWorkflowGateway {
     private List<Map<String,Object>> query(String sql, Object... args) {
         List<Map<String,Object>> rows = new ArrayList<>();
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -59,7 +53,7 @@ public class ClinicWorkflowDAO extends DBContext {
           WHERE a.patient_id=? ORDER BY a.appointment_at DESC LIMIT 30""", patientId);
     }
     public void createAppointment(int patientId,int doctorId,LocalDateTime at,String reason,String note,int actor) {
-        validateAppointmentTime(at);
+        vn.diabetes.validation.AppointmentRules.validate(at,LocalDateTime.now());
         try {
             connection.setAutoCommit(false);
             lockAndValidateCapacity(patientId,doctorId,at,null);
@@ -74,7 +68,7 @@ public class ClinicWorkflowDAO extends DBContext {
     }
 
     public void rescheduleAppointment(int appointmentId,LocalDateTime newTime,String note,int actor) {
-        validateAppointmentTime(newTime);
+        vn.diabetes.validation.AppointmentRules.validate(newTime,LocalDateTime.now());
         try {
             connection.setAutoCommit(false);
             List<Map<String,Object>> rows=query("SELECT patient_id,doctor_id,status FROM appointments WHERE appointment_id=? FOR UPDATE",appointmentId);
@@ -103,14 +97,6 @@ public class ClinicWorkflowDAO extends DBContext {
         } catch(SQLException e) { throw new IllegalStateException("Không thể cập nhật lịch hẹn.",e); }
     }
 
-    private void validateAppointmentTime(LocalDateTime at) {
-        if(at==null || !at.isAfter(LocalDateTime.now().plusMinutes(15))) throw new IllegalArgumentException("Lịch hẹn phải sau hiện tại ít nhất 15 phút.");
-        if(at.getDayOfWeek()==DayOfWeek.SUNDAY) throw new IllegalArgumentException("Phòng khám nghỉ Chủ nhật.");
-        LocalTime time=at.toLocalTime();
-        if(time.isBefore(OPEN_TIME)||time.isAfter(CLOSE_TIME.minusMinutes(SLOT_MINUTES))) throw new IllegalArgumentException("Chỉ nhận lịch từ 07:30 đến 17:00.");
-        if(time.getMinute()%SLOT_MINUTES!=0||time.getSecond()!=0||time.getNano()!=0) throw new IllegalArgumentException("Giờ hẹn phải theo khung 30 phút.");
-    }
-
     private void lockAndValidateCapacity(int patientId,int doctorId,LocalDateTime at,Integer excludedId) throws SQLException {
         try(PreparedStatement lock=connection.prepareStatement("SELECT doctor_id FROM doctors WHERE doctor_id=? FOR UPDATE")) {
             lock.setInt(1,doctorId); try(ResultSet rs=lock.executeQuery()){if(!rs.next())throw new IllegalArgumentException("Bác sĩ không tồn tại.");}
@@ -122,7 +108,7 @@ public class ClinicWorkflowDAO extends DBContext {
         if(!query("SELECT 1 ok FROM appointments WHERE patient_id=? AND appointment_at=? AND status NOT IN ('CANCELLED','NO_SHOW')"+excluded,args.toArray()).isEmpty()) throw new IllegalArgumentException("Bệnh nhân đã có lịch trong khung giờ này.");
         args=new ArrayList<>(List.of(doctorId,java.sql.Date.valueOf(at.toLocalDate()))); if(excludedId!=null)args.add(excludedId);
         List<Map<String,Object>> count=query("SELECT COUNT(*) total FROM appointments WHERE doctor_id=? AND appointment_at::date=? AND status NOT IN ('CANCELLED','NO_SHOW')"+excluded,args.toArray());
-        if(((Number)count.get(0).get("total")).intValue()>=MAX_PATIENTS_PER_DOCTOR_PER_DAY) throw new IllegalArgumentException("Bác sĩ đã đủ 20 bệnh nhân trong ngày này.");
+        if(((Number)count.get(0).get("total")).intValue()>=vn.diabetes.validation.AppointmentRules.MAX_PATIENTS_PER_DOCTOR_PER_DAY) throw new IllegalArgumentException("Bác sĩ đã đủ 20 bệnh nhân trong ngày này.");
     }
     public void checkIn(int appointmentId,int actor) {
         try {

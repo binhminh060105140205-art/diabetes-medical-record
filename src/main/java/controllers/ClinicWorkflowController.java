@@ -3,6 +3,7 @@ package controllers;
 import dal.*; import models.*;
 import jakarta.servlet.*; import jakarta.servlet.annotation.WebServlet; import jakarta.servlet.http.*;
 import java.io.IOException; import java.time.LocalDateTime; import java.sql.Date; import java.util.Set;
+import vn.diabetes.service.ClinicWorkflowService;
 
 @WebServlet("/ClinicWorkflow")
 public class ClinicWorkflowController extends HttpServlet {
@@ -33,17 +34,17 @@ public class ClinicWorkflowController extends HttpServlet {
   }
   protected void doPost(HttpServletRequest req,HttpServletResponse resp)throws IOException,ServletException{
     req.setCharacterEncoding("UTF-8");User u=user(req);if(u==null||!CLINICAL.contains(u.getRole())){resp.sendError(403);return;}
-    ClinicWorkflowDAO d=new ClinicWorkflowDAO();String a=req.getParameter("action"),view="encounters";
+    ClinicWorkflowDAO d=new ClinicWorkflowDAO();ClinicWorkflowService service=new ClinicWorkflowService(d);String a=req.getParameter("action"),view="encounters";
     try{
-      if("createAppointment".equals(a)&&isReception(u)){d.createAppointment(i(req,"patientId"),i(req,"doctorId"),LocalDateTime.parse(required(req,"appointmentAt")),required(req,"reason"),req.getParameter("note"),u.getUserId());view="appointments";}
-      else if("rescheduleAppointment".equals(a)&&isReception(u)){d.rescheduleAppointment(i(req,"appointmentId"),LocalDateTime.parse(required(req,"appointmentAt")),req.getParameter("note"),u.getUserId());view="appointments";}
-      else if("appointmentStatus".equals(a)&&isReception(u)){d.setAppointmentStatus(i(req,"appointmentId"),required(req,"status"),u.getUserId());view="appointments";}
-      else if("checkIn".equals(a)&&isReception(u)){d.checkIn(i(req,"appointmentId"),u.getUserId());view="encounters";}
-      else if("status".equals(a)&&"DOCTOR".equals(u.getRole())){int eid=i(req,"encounterId");Integer did=d.doctorIdForUser(u.getUserId());if(did==null||!d.doctorOwnsEncounter(did,eid))throw new SecurityException("Không được phân công lượt khám này");d.setEncounterStatus(eid,req.getParameter("status"),u.getUserId());}
-      else if("allergy".equals(a)&&"DOCTOR".equals(u.getRole())){d.addAllergy(i(req,"patientId"),required(req,"allergen"),req.getParameter("reaction"),req.getParameter("severity"),u.getUserId());view="clinical";}
-      else if("history".equals(a)&&"DOCTOR".equals(u.getRole())){String ds=req.getParameter("diagnosedDate");d.addHistory(i(req,"patientId"),req.getParameter("historyType"),required(req,"conditionName"),ds==null||ds.isBlank()?null:Date.valueOf(ds),req.getParameter("historyStatus"),req.getParameter("historyNote"),u.getUserId());view="clinical";}
-      else if("labOrder".equals(a)&&"DOCTOR".equals(u.getRole())){Integer did=d.doctorIdForUser(u.getUserId());int eid=i(req,"encounterId");if(did==null||!d.doctorOwnsEncounter(did,eid))throw new SecurityException("Không được phân công lượt khám này");d.createLabOrder(eid,did,required(req,"testCode"),required(req,"testName"),req.getParameter("priority"),req.getParameter("clinicalNote"),u.getUserId());view="labs";}
-      else if("labResult".equals(a)&&"STAFF".equals(u.getRole())){d.resultLab(i(req,"labOrderId"),required(req,"resultValue"),req.getParameter("resultUnit"),req.getParameter("referenceRange"),req.getParameter("resultFlag"),u.getUserId());view="labs";}
+      if("createAppointment".equals(a)&&isReception(u)){service.createAppointment(i(req,"patientId"),i(req,"doctorId"),LocalDateTime.parse(required(req,"appointmentAt")),required(req,"reason"),req.getParameter("note"),u.getUserId());view="appointments";}
+      else if("rescheduleAppointment".equals(a)&&isReception(u)){service.rescheduleAppointment(i(req,"appointmentId"),LocalDateTime.parse(required(req,"appointmentAt")),req.getParameter("note"),u.getUserId());view="appointments";}
+      else if("appointmentStatus".equals(a)&&isReception(u)){service.setAppointmentStatus(i(req,"appointmentId"),required(req,"status"),u.getUserId());view="appointments";}
+      else if("checkIn".equals(a)&&isReception(u)){service.checkIn(i(req,"appointmentId"),u.getUserId());view="encounters";}
+      else if("status".equals(a)&&"DOCTOR".equals(u.getRole())){int eid=i(req,"encounterId");Integer did=d.doctorIdForUser(u.getUserId());if(did==null||!d.doctorOwnsEncounter(did,eid))throw new SecurityException("Không được phân công lượt khám này");service.setEncounterStatus(eid,req.getParameter("status"),u.getUserId());}
+      else if("allergy".equals(a)&&"DOCTOR".equals(u.getRole())){service.addAllergy(i(req,"patientId"),required(req,"allergen"),req.getParameter("reaction"),req.getParameter("severity"),u.getUserId());view="clinical";}
+      else if("history".equals(a)&&"DOCTOR".equals(u.getRole())){String ds=req.getParameter("diagnosedDate");service.addHistory(i(req,"patientId"),req.getParameter("historyType"),required(req,"conditionName"),ds==null||ds.isBlank()?null:Date.valueOf(ds),req.getParameter("historyStatus"),req.getParameter("historyNote"),u.getUserId());view="clinical";}
+      else if("labOrder".equals(a)&&"DOCTOR".equals(u.getRole())){Integer did=d.doctorIdForUser(u.getUserId());int eid=i(req,"encounterId");if(did==null||!d.doctorOwnsEncounter(did,eid))throw new SecurityException("Không được phân công lượt khám này");service.createLabOrder(eid,did,required(req,"testCode"),required(req,"testName"),req.getParameter("priority"),req.getParameter("clinicalNote"),u.getUserId());view="labs";}
+      else if("labResult".equals(a)&&"STAFF".equals(u.getRole())){service.resultLab(i(req,"labOrderId"),required(req,"resultValue"),req.getParameter("resultUnit"),req.getParameter("referenceRange"),req.getParameter("resultFlag"),u.getUserId());view="labs";}
       else throw new SecurityException("Thao tác không được phép");
       req.getSession().setAttribute("workflowFlash","Đã cập nhật thành công");
     }catch(IllegalArgumentException|SecurityException e){req.getSession().setAttribute("workflowFlash","Không thể cập nhật: "+e.getMessage());}

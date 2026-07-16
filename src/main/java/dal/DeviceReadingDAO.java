@@ -69,30 +69,6 @@ public class DeviceReadingDAO extends DBContext {
         return list;
     }
 
-    public List<DeviceReading> getAbnormal(int patientId) {
-        List<DeviceReading> list = new ArrayList<>();
-        try {
-            stm = connection.prepareStatement(
-                "SELECT * FROM DeviceReadings WHERE patient_id=? AND is_abnormal=TRUE ORDER BY measured_at DESC");
-            stm.setInt(1, patientId);
-            rs = stm.executeQuery();
-            while (rs.next()) list.add(mapRow(rs));
-        } catch (SQLException e) { throw databaseError("load abnormal device readings", e); }
-        return list;
-    }
-
-    public double getAvgGlucose7Days(int patientId) {
-        try {
-            stm = connection.prepareStatement(
-                "SELECT AVG(parsed_glucose) FROM DeviceReadings WHERE patient_id=? " +
-                "AND parsed_glucose IS NOT NULL AND measured_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'");
-            stm.setInt(1, patientId);
-            rs = stm.executeQuery();
-            if (rs.next()) { double v = rs.getDouble(1); if (!rs.wasNull()) return v; }
-        } catch (SQLException e) { throw databaseError("calculate device glucose average", e); }
-        return 0.0;
-    }
-
     private void setND(PreparedStatement s, int i, Double v) throws SQLException {
         if (v != null) s.setDouble(i, v); else s.setNull(i, Types.DOUBLE);
     }

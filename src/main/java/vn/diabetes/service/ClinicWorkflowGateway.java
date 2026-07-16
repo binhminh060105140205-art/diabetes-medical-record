@@ -1,0 +1,13 @@
+package vn.diabetes.service;
+import java.time.LocalDateTime;
+public interface ClinicWorkflowGateway {
+ void createAppointment(int patientId,int doctorId,LocalDateTime at,String reason,String note,int actor);
+ void rescheduleAppointment(int appointmentId,LocalDateTime at,String note,int actor);
+ void setAppointmentStatus(int appointmentId,String status,int actor);
+ void checkIn(int appointmentId,int actor);
+ void setEncounterStatus(int encounterId,String status,int actor);
+ void addAllergy(int patientId,String allergen,String reaction,String severity,int actor);
+ void addHistory(int patientId,String type,String name,java.sql.Date date,String status,String note,int actor);
+ void createLabOrder(int encounterId,int doctorId,String code,String name,String priority,String note,int actor);
+ void resultLab(int orderId,String value,String unit,String range,String flag,int actor);
+}

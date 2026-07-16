@@ -10,7 +10,8 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import java.io.IOException;
 import java.time.LocalDate;
-import java.util.Set;
+import vn.diabetes.service.PatientRegistrationService;
+import vn.diabetes.validation.Validators;
 
 @WebServlet("/PatientForm")
 public class PatientFormController extends HttpServlet {
@@ -35,18 +36,15 @@ public class PatientFormController extends HttpServlet {
         String phone = clean(request, "phone"); String address = clean(request, "address");
         String insurance = clean(request, "healthInsuranceNo");
         try {
-            validatePatient(fullName, dobText, gender, phone, address, insurance);
-            LocalDate dob = dobText.isBlank() ? null : LocalDate.parse(dobText);
+            fullName=Validators.fullName(fullName); phone=Validators.phone(phone); gender=Validators.gender(gender); address=Validators.address(address); insurance=Validators.insurance(insurance);
+            LocalDate dob = Validators.dateOfBirth(dobText,false);
             if (id.isBlank()) {
                 String username = clean(request, "username"); String password = request.getParameter("password");
                 String email = clean(request, "email");
-                if (!username.matches("^[A-Za-z0-9_]{4,30}$")) throw new IllegalArgumentException("Tên đăng nhập gồm 4–30 chữ, số hoặc dấu gạch dưới.");
-                if (password == null || password.length() < 8 || password.length() > 72) throw new IllegalArgumentException("Mật khẩu tạm thời phải có từ 8 đến 72 ký tự.");
-                if (!email.isBlank() && (!email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$") || email.length() > 100)) throw new IllegalArgumentException("Email không hợp lệ.");
-                new PatientRegistrationDAO().register(username, password, fullName, phone, email, dob,
-                        gender, address, insurance, staff.getUserId());
-                boolean mailed = AccountNotificationMailer.sendAsync(email, fullName, username, password, "PATIENT");
-                String message = "Đã tạo hồ sơ và tài khoản " + username + ". ";
+                PatientRegistrationService service=new PatientRegistrationService(new PatientRegistrationDAO());
+                PatientRegistrationService.Result result=service.register(new PatientRegistrationService.Command(username,password,null,fullName,phone,email,dobText,gender,address,insurance,staff.getUserId()));
+                boolean mailed = AccountNotificationMailer.sendAsync(result.email(), result.fullName(), result.username(), result.temporaryPassword(), "PATIENT");
+                String message = "Đã tạo hồ sơ và tài khoản " + result.username() + ". ";
                 message += mailed ? "Thông tin đăng nhập đang được gửi tới " + email + "."
                         : "Hãy cấp trực tiếp mật khẩu tạm thời cho bệnh nhân.";
                 request.getSession().setAttribute("flashSuccess", message);
@@ -67,14 +65,6 @@ public class PatientFormController extends HttpServlet {
         }
     }
 
-    private void validatePatient(String name, String dob, String gender, String phone, String address, String insurance) {
-        if (name.length() < 2 || name.length() > 100) throw new IllegalArgumentException("Họ tên phải có từ 2 đến 100 ký tự.");
-        if (!phone.matches("^(0[0-9]{9}|\\+84[0-9]{9})$")) throw new IllegalArgumentException("Số điện thoại không hợp lệ.");
-        if (!Set.of("Nam", "Nữ", "Khác").contains(gender)) throw new IllegalArgumentException("Giới tính không hợp lệ.");
-        if (!dob.isBlank()) { LocalDate date = LocalDate.parse(dob); if (date.isAfter(LocalDate.now()) || date.isBefore(LocalDate.of(1900,1,1))) throw new IllegalArgumentException("Ngày sinh không hợp lệ."); }
-        if (address.length() > 255) throw new IllegalArgumentException("Địa chỉ tối đa 255 ký tự.");
-        if (!insurance.isBlank() && !insurance.matches("^[A-Za-z0-9]{10,20}$")) throw new IllegalArgumentException("Số BHYT không hợp lệ.");
-    }
     private User currentStaff(HttpServletRequest request) { HttpSession s=request.getSession(false); User u=s==null?null:(User)s.getAttribute("user"); return u!=null&&"STAFF".equals(u.getRole())?u:null; }
     private String clean(HttpServletRequest request, String name) { String v=request.getParameter(name); return v==null?"":v.trim(); }
 }

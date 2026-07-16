@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * [MODIFIED - Upgrade V3]
  * Thêm xử lý: heart_rate, spo2, meal_type trong save/update/mapRow.
- * Giữ nguyên: getRecent, getTodayLog, getYesterdayLog, getAvg7Days, countConsecutiveDaysWithSymptom.
+ * Lưu và đọc nhật ký sức khỏe hằng ngày.
  */
 public class PatientDailyLogDAO extends DBContext {
     PreparedStatement stm;
@@ -90,52 +90,6 @@ public class PatientDailyLogDAO extends DBContext {
             if (rs.next()) return mapRow(rs);
         } catch (SQLException e) { throw databaseError("load today's patient log", e); }
         return null;
-    }
-
-    public PatientDailyLog getYesterdayLog(int patientId) {
-        try {
-            stm = connection.prepareStatement(
-                "SELECT * FROM PatientDailyLogs WHERE patient_id=? " +
-                "AND log_date=CURRENT_DATE - INTERVAL '1 day'");
-            stm.setInt(1, patientId);
-            rs = stm.executeQuery();
-            if (rs.next()) return mapRow(rs);
-        } catch (SQLException e) { throw databaseError("load yesterday's patient log", e); }
-        return null;
-    }
-
-    /** Trả về [avgBloodGlucose, avgSystolicBp] của 7 ngày gần nhất */
-    public double[] getAvg7Days(int patientId) {
-        double[] result = {0.0, 0.0};
-        String sql = "SELECT AVG(blood_glucose) AS avg_bg, AVG(CAST(systolic_bp AS FLOAT)) AS avg_sbp " +
-            "FROM PatientDailyLogs WHERE patient_id=? " +
-            "AND log_date >= CAST(CURRENT_TIMESTAMP - INTERVAL '7 days' AS DATE) AND blood_glucose IS NOT NULL";
-        try {
-            stm = connection.prepareStatement(sql);
-            stm.setInt(1, patientId);
-            rs = stm.executeQuery();
-            if (rs.next()) {
-                double bg = rs.getDouble("avg_bg");   if (!rs.wasNull()) result[0] = bg;
-                double sbp = rs.getDouble("avg_sbp"); if (!rs.wasNull()) result[1] = sbp;
-            }
-        } catch (SQLException e) { throw databaseError("calculate patient health average", e); }
-        return result;
-    }
-
-    public int countConsecutiveDaysWithSymptom(int patientId, String symptom) {
-        String sql = "SELECT symptoms FROM PatientDailyLogs WHERE patient_id=? ORDER BY log_date DESC LIMIT 7";
-        try {
-            stm = connection.prepareStatement(sql);
-            stm.setInt(1, patientId);
-            rs = stm.executeQuery();
-            int count = 0;
-            while (rs.next()) {
-                String syms = rs.getString("symptoms");
-                if (syms != null && syms.toLowerCase().contains(symptom.toLowerCase())) count++;
-                else break;
-            }
-            return count;
-        } catch (SQLException e) { throw databaseError("count patient symptoms", e); }
     }
 
     private void setND(PreparedStatement s, int i, Double v) throws SQLException {

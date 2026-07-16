@@ -38,14 +38,35 @@ public class PatientDAO extends DBContext {
         return list;
     }
 
-    public List<Patient> getRecent(int limit) {
-        List<Patient> list = new ArrayList<>();
-        try (PreparedStatement ps = connection.prepareStatement("SELECT * FROM Patients ORDER BY created_at DESC LIMIT ?")) {
-            ps.setInt(1, limit);
-            try (ResultSet result = ps.executeQuery()) { while (result.next()) list.add(mapRow(result)); }
-        } catch (SQLException e) { throw new IllegalStateException("Không thể tải bệnh nhân gần đây", e); }
-        return list;
+    /** Loads total patient count and the dashboard list in one database round-trip. */
+    public StaffDashboardData loadStaffDashboard(String keyword, int limit) {
+        boolean searching = keyword != null && !keyword.isBlank();
+        String where = searching
+                ? " WHERE full_name ILIKE ? OR phone ILIKE ? OR health_insurance_no ILIKE ? OR national_id ILIKE ?"
+                : "";
+        String order = searching ? " ORDER BY full_name" : " ORDER BY created_at DESC";
+        String sql = "WITH total AS (SELECT COUNT(*) value FROM patients), data AS (SELECT * FROM patients"
+                + where + order + " LIMIT ?) SELECT d.*,t.value total FROM total t LEFT JOIN data d ON TRUE";
+        List<Patient> patients = new ArrayList<>();
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            int index = 1;
+            if (searching) {
+                String value = "%" + keyword.trim() + "%";
+                for (int i = 0; i < 4; i++) ps.setString(index++, value);
+            }
+            ps.setInt(index, limit);
+            try (ResultSet rows = ps.executeQuery()) {
+                int total = 0;
+                while (rows.next()) {
+                    total = rows.getInt("total");
+                    if (rows.getObject("patient_id") != null) patients.add(mapRow(rows));
+                }
+                return new StaffDashboardData(total, patients);
+            }
+        } catch (SQLException error) { throw databaseError("load staff dashboard", error); }
     }
+
+    public record StaffDashboardData(int totalPatients, List<Patient> patients) {}
 
     public List<Patient> search(String keyword) {
         List<Patient> list = new ArrayList<>();

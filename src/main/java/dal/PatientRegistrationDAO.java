@@ -10,7 +10,7 @@ import java.time.LocalDate;
 import vn.diabetes.auth.Passwords;
 
 /** Creates the portal account and patient profile atomically. */
-public class PatientRegistrationDAO extends DBContext {
+public class PatientRegistrationDAO extends DBContext implements vn.diabetes.service.PatientRegistrationGateway {
     public int register(String username, String password, String fullName, String phone,
                         String email, LocalDate dob, String gender, String address,
                         String insuranceNo, Integer createdBy) {

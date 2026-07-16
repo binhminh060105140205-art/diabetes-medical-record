@@ -20,16 +20,11 @@ public class StaffDashboardController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/Login"); return;
         }
         PatientDAO dao = new PatientDAO();
-        int total = dao.countAll();
-        request.setAttribute("totalPatients", total);
-
         String keyword = request.getParameter("keyword");
-        if (keyword != null && !keyword.isBlank()) {
-            request.setAttribute("recentPatients", dao.search(keyword.trim()).stream().limit(10).toList());
-            request.setAttribute("keyword", keyword.trim());
-        } else {
-            request.setAttribute("recentPatients", dao.getRecent(8));
-        }
+        PatientDAO.StaffDashboardData data = dao.loadStaffDashboard(keyword, keyword != null && !keyword.isBlank() ? 10 : 8);
+        request.setAttribute("totalPatients", data.totalPatients());
+        request.setAttribute("recentPatients", data.patients());
+        if (keyword != null && !keyword.isBlank()) request.setAttribute("keyword", keyword.trim());
 
         request.getRequestDispatcher("views/StaffDashboard.jsp").forward(request, response);
     }

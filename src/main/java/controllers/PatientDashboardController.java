@@ -37,7 +37,6 @@ public class PatientDashboardController extends HttpServlet {
         // [NEW V3]
         HealthAlertDAO   alertDAO  = new HealthAlertDAO();
 
-        List<MedicalRecord> records = recDAO.getByPatient(patient.getPatientId());
         PatientDailyLog todayLog = logDAO.getTodayLog(patient.getPatientId());
 
         // [NEW V3] HealthAlerts thay AIWarnings
@@ -45,8 +44,7 @@ public class PatientDashboardController extends HttpServlet {
         int alertCount = unacknowledgedAlerts.size();
 
         request.setAttribute("patient",               patient);
-        request.setAttribute("records",               records);
-        request.setAttribute("latestRecord",          records.isEmpty() ? null : records.get(0));
+        request.setAttribute("latestRecord",          recDAO.getLatestByPatient(patient.getPatientId()));
         request.setAttribute("todayLog",              todayLog);
         // [NEW V3]
         request.setAttribute("unacknowledgedAlerts",  unacknowledgedAlerts);
