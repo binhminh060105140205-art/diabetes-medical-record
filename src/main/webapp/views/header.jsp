@@ -5,7 +5,7 @@
 <div class="site-header">
     <div class="header-brand">
         <span class="header-icon">+</span>
-        <span class="header-title">DiaCare <small>Quản lý sức khỏe</small></span>
+        <span class="header-title">DiaCare <small>Hệ thống quản lý phòng khám</small></span>
     </div>
     <div class="header-actions">
         <c:choose>
@@ -14,7 +14,7 @@
                     Xin chào, <strong><c:out value="${sessionScope.user.fullName}"/></strong>
                     <span class="role-badge role-${sessionScope.user.role.toLowerCase()}">${sessionScope.user.role}</span>
                 </span>
-                <a href="${pageContext.request.contextPath}/Logout" class="btn btn-outline">Đăng Xuất</a>
+                <a href="${pageContext.request.contextPath}/Logout" class="btn btn-outline">Đăng xuất</a>
             </c:when>
             <c:otherwise>
                 <a href="${pageContext.request.contextPath}/Login" class="btn btn-primary">Đăng Nhập</a>

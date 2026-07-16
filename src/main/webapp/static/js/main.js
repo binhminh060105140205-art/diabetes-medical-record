@@ -53,6 +53,25 @@ document.addEventListener('DOMContentLoaded', function () {
     if (weightInput) weightInput.addEventListener('input', calcBMI);
 });
 
+// Accessible sidebar on tablet/mobile.
+document.addEventListener('DOMContentLoaded', function () {
+    const toggle = document.querySelector('.sidebar-toggle');
+    const backdrop = document.querySelector('.sidebar-backdrop');
+    const sidebar = document.getElementById('app-sidebar');
+    if (!toggle || !sidebar) return;
+    const close = function () {
+        document.body.classList.remove('sidebar-open');
+        toggle.setAttribute('aria-expanded', 'false');
+    };
+    toggle.addEventListener('click', function () {
+        const open = document.body.classList.toggle('sidebar-open');
+        toggle.setAttribute('aria-expanded', String(open));
+    });
+    if (backdrop) backdrop.addEventListener('click', close);
+    sidebar.querySelectorAll('a').forEach(function (link) { link.addEventListener('click', close); });
+    document.addEventListener('keydown', function (event) { if (event.key === 'Escape') close(); });
+});
+
 // Immediate feedback while a server-rendered page is loading.
 document.addEventListener('click', function (event) {
     const link = event.target.closest('a[href]');
