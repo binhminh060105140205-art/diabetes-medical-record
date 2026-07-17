@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Tạo Tài Khoản</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260717-perf4">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
@@ -127,7 +127,7 @@
     }
 </script>
 <jsp:include page="footer.jsp"/>
-<script src="${pageContext.request.contextPath}/static/js/main.js"></script>
-<script src="${pageContext.request.contextPath}/static/js/validate.js"></script>
+<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260717-perf4"></script>
+<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260717-perf4"></script>
 </body>
 </html>

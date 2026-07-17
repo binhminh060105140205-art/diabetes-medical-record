@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Hồ Sơ Bệnh Án</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260717-perf4">
     <style>
         .role-bar{padding:10px 16px;border-radius:8px;margin-bottom:16px;font-size:14px;font-weight:600;}
         .role-staff {background:#cff4fc;color:#055160;border-left:4px solid #0dcaf0;}
@@ -417,7 +417,7 @@
 
 </div><%-- end page-wrapper --%>
 
-<script src="${pageContext.request.contextPath}/static/js/main.js"></script>
+<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260717-perf4"></script>
 <script>
 function showTab(n) {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));

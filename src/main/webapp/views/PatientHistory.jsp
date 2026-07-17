@@ -6,7 +6,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Lịch Sử Khám Bệnh</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260717-perf4">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
@@ -101,7 +101,7 @@
     </div>
 
 </div>
-<script src="${pageContext.request.contextPath}/static/js/main.js"></script>
+<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260717-perf4"></script>
 <jsp:include page="footer.jsp"/>
 </body>
 </html>

@@ -6,7 +6,7 @@
     <head>
         <meta charset="UTF-8">
         <title>Danh Sách Bệnh Nhân</title>
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260717-perf4">
     </head>
     <body>
         <jsp:include page="header.jsp"/>
@@ -90,6 +90,6 @@
             </c:if>
         </div>
         <jsp:include page="footer.jsp"/>
-        <script src="${pageContext.request.contextPath}/static/js/main.js"></script>
+        <script src="${pageContext.request.contextPath}/static/js/main.js?v=20260717-perf4"></script>
     </body>
 </html>

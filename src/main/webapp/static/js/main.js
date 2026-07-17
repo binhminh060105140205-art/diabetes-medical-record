@@ -46,15 +46,23 @@ document.addEventListener('DOMContentLoaded', function () {
     document.addEventListener('keydown', function (event) { if (event.key === 'Escape') close(); });
 });
 
-// Immediate feedback while a server-rendered page is loading.
+// Show feedback only when a request is genuinely slow. Normal 150-300 ms
+// navigation should feel instant instead of flashing a misleading progress bar.
+let navigationFeedbackTimer;
 document.addEventListener('click', function (event) {
     const link = event.target.closest('a[href]');
     if (!link || link.target === '_blank' || event.ctrlKey || event.metaKey || event.shiftKey) return;
     const href = link.getAttribute('href');
     if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
-    document.body.classList.add('is-navigating');
+    clearTimeout(navigationFeedbackTimer);
+    navigationFeedbackTimer = setTimeout(function () {
+        document.body.classList.add('is-navigating');
+    }, 400);
 });
-window.addEventListener('pageshow', function () { document.body.classList.remove('is-navigating'); });
+window.addEventListener('pageshow', function () {
+    clearTimeout(navigationFeedbackTimer);
+    document.body.classList.remove('is-navigating');
+});
 
 // Tab switching (for MedicalRecordForm)
 function showTab(n) {

@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Sửa Thông Tin Tài Khoản</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260717-perf4">
     <style>
         .form-container {
             max-width: 600px;
@@ -104,6 +104,6 @@
     </div>
 </div>
 
-<script src="${pageContext.request.contextPath}/static/js/main.js"></script>
+<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260717-perf4"></script>
 </body>
 </html>
