@@ -827,3 +827,13 @@ td{border-bottom-color:#eef0f6;color:#333d59}tbody tr:hover{background:#f8f8ff}
 @media(max-width:1050px){.page-wrapper:before,.app-workspace:before{inset:68px 0 0 0}}
 @media(max-width:850px){.header-home-link{padding:0 12px}.header-home-link span{display:none}}
 @media(max-width:700px){.header-home-link{display:none}.header-actions{gap:7px}.page-wrapper:before,.app-workspace:before{inset:64px 0 0 0}}
+
+/* Strong branded header for every authenticated workspace. */
+.site-header{color:#fff;background:linear-gradient(108deg,#253a9f 0%,#4057c6 48%,#7651ca 100%);border-bottom-color:rgba(255,255,255,.12);box-shadow:0 9px 28px rgba(39,42,112,.17)}
+.site-header .header-title,.site-header .header-greeting,.site-header .header-greeting strong{color:#fff}
+.site-header .header-title small{color:#dfe3ff}
+.site-header .header-icon{color:#3448b0;background:#fff;box-shadow:0 8px 20px rgba(22,24,84,.2)}
+.site-header .header-home-link{color:#fff;border-color:rgba(255,255,255,.28);background:rgba(255,255,255,.13)}
+.site-header .header-home-link:hover{color:#fff;border-color:rgba(255,255,255,.52);background:rgba(255,255,255,.22)}
+.site-header .btn-outline{color:#fff!important;border-color:rgba(255,255,255,.32)!important;background:rgba(255,255,255,.12)!important}
+.site-header .btn-outline:hover{color:#3448b0!important;border-color:#fff!important;background:#fff!important}

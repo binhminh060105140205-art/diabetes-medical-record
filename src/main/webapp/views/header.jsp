@@ -1,5 +1,6 @@
 <%@taglib prefix="c" uri="jakarta.tags.core" %>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260717-ui3">
 <header class="site-header">
     <a class="header-brand" href="${pageContext.request.contextPath}/" aria-label="Về trang chính DiaCare">
         <span class="header-icon">+</span>
