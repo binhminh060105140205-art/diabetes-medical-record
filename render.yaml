@@ -18,6 +18,14 @@ services:
         sync: false
       - key: DB_POOL_SIZE
         value: "5"
+      - key: DB_POOL_MIN_IDLE
+        value: "3"
+      - key: FLYWAY_ENABLED
+        value: "false"
+      - key: BOOTSTRAP_ADMIN_ENABLED
+        value: "false"
+      - key: TLD_SKIP_PATTERNS
+        value: "*.jar"
       - key: DEVICE_API_KEY
         sync: false
       - key: BOOTSTRAP_ADMIN_USERNAME

@@ -20,13 +20,13 @@ public class DoctorDashboardController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/Login"); return;
         }
 
-        DoctorDAO        doctorDAO = new DoctorDAO();
-        MedicalRecordDAO recDAO    = new MedicalRecordDAO();
-        Doctor doctor = doctorDAO.getByUserId(user.getUserId());
+        MedicalRecordDAO recDAO = new MedicalRecordDAO();
+        MedicalRecordDAO.DoctorDashboardData data =
+                recDAO.loadDoctorDashboardForUser(user.getUserId());
+        Doctor doctor = data.doctor();
         request.setAttribute("doctor",        doctor);
 
         if (doctor != null) {
-            MedicalRecordDAO.DoctorDashboardData data = recDAO.loadDoctorDashboard(doctor.getDoctorId());
             request.setAttribute("totalPatients", data.totalPatients());
             request.setAttribute("totalMyRecords", data.totalRecords());
             request.setAttribute("myRecords", data.recent());

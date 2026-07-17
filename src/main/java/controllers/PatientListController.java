@@ -25,15 +25,18 @@ public class PatientListController extends HttpServlet {
         int currentPage = positiveInt(request.getParameter("page"), 1);
         
         String keyword = request.getParameter("keyword");
-        if (keyword != null && !keyword.trim().isEmpty()) {
-            request.setAttribute("patients", dao.search(keyword.trim()));
+        boolean searching = keyword != null && !keyword.isBlank();
+        PatientDAO.PatientListData data = dao.loadPatientList(keyword, currentPage, searching ? 50 : pageSize);
+        if (searching) {
+            request.setAttribute("patients", data.patients());
             request.setAttribute("keyword", keyword.trim());
         } else {
-            int totalPatients = dao.countAll();
-            int totalPages = Math.max(1, (int) Math.ceil((double) totalPatients / pageSize));
-            currentPage = Math.min(currentPage, totalPages);
-            
-            request.setAttribute("patients", dao.getWithPaging(currentPage, pageSize));
+            int totalPages = Math.max(1, (int) Math.ceil((double) data.total() / pageSize));
+            if (currentPage > totalPages) {
+                currentPage = totalPages;
+                data = dao.loadPatientList(null, currentPage, pageSize);
+            }
+            request.setAttribute("patients", data.patients());
             request.setAttribute("currentPage", currentPage);
             request.setAttribute("totalPages", totalPages);
         }

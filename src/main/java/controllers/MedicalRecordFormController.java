@@ -45,26 +45,28 @@ public class MedicalRecordFormController extends HttpServlet {
             int recordId = positiveId(ridParam);
             if (recordId == 0) { response.sendError(400, "Mã bệnh án không hợp lệ"); return; }
             MedicalRecordDAO recDAO = new MedicalRecordDAO();
-            MedicalRecord rec = recDAO.getById(recordId);
+            var formData = recDAO.loadFormData(recordId);
+            MedicalRecord rec = formData.record();
             if (rec == null) { response.sendRedirect(request.getContextPath() + "/PatientList"); return; }
+            Doctor assignedDoctor = formData.doctor();
             if ("DOCTOR".equals(user.getRole())) {
-                Integer doctorId = new ClinicWorkflowDAO().doctorIdForUser(user.getUserId());
-                if (doctorId == null || doctorId != rec.getDoctorId()) { response.sendError(403); return; }
+                if (assignedDoctor == null || assignedDoctor.getUserId() != user.getUserId()) {
+                    response.sendError(403); return;
+                }
             }
 
             request.setAttribute("record",   rec);
-            request.setAttribute("patient",  patDAO.getById(rec.getPatientId()));
+            request.setAttribute("patient",  formData.patient());
 
-            HealthIndicatorDAO hiDAO = new HealthIndicatorDAO();
-            HealthIndicator indicator = hiDAO.getByRecordId(recordId);
+            HealthIndicator indicator = formData.indicator();
             request.setAttribute("indicator", indicator);
-            request.setAttribute("prescriptionItems", recDAO.getPrescriptionItems(recordId));
+            request.setAttribute("prescriptionItems", formData.prescriptionItems());
 
             // [V3] Không còn load AIWarning cho Doctor dashboard
             // AIWarningDAO warnDAO = new AIWarningDAO();
             // request.setAttribute("warning", warnDAO.getByRecordId(recordId)); ← ĐÃ XÓA
 
-            if (rec.getDoctorId() > 0) request.setAttribute("assignedDoctor", docDAO.getById(rec.getDoctorId()));
+            if (assignedDoctor != null) request.setAttribute("assignedDoctor", assignedDoctor);
 
             boolean clinicalDone = indicator != null && (indicator.getHeight() > 0 || indicator.getSystolicBp() > 0);
             boolean labDone      = indicator != null && (indicator.getBloodGlucose() > 0 || indicator.getHba1c() > 0);
@@ -80,7 +82,7 @@ public class MedicalRecordFormController extends HttpServlet {
             if (encounterParam != null && !encounterParam.isBlank()) request.setAttribute("appointmentTime", new ClinicWorkflowDAO().appointmentTimeForEncounter(positiveId(encounterParam)));
         }
 
-        request.setAttribute("doctors", docDAO.getAll());
+        if ("STAFF".equals(user.getRole())) request.setAttribute("doctors", docDAO.getAll());
         request.getRequestDispatcher("views/MedicalRecordForm.jsp").forward(request, response);
     }
 

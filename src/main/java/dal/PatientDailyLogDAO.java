@@ -81,6 +81,34 @@ public class PatientDailyLogDAO extends DBContext {
         return list;
     }
 
+    /** Resolves the patient account and loads its journal in one database round-trip. */
+    public PatientJournalData loadJournalForUser(int userId, int limit) {
+        String sql = """
+            WITH subject AS (SELECT patient_id FROM patients WHERE user_id=?)
+            SELECT s.patient_id subject_patient_id,l.*
+            FROM subject s LEFT JOIN LATERAL (
+              SELECT * FROM patientdailylogs WHERE patient_id=s.patient_id
+              ORDER BY log_date DESC LIMIT ?
+            ) l ON TRUE
+            """;
+        List<PatientDailyLog> logs = new ArrayList<>();
+        Integer patientId = null;
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, userId); ps.setInt(2, limit);
+            try (ResultSet rows = ps.executeQuery()) {
+                while (rows.next()) {
+                    patientId = rows.getInt("subject_patient_id");
+                    if (rows.getObject("log_id") != null) logs.add(mapRow(rows));
+                }
+            }
+        } catch (SQLException error) {
+            throw databaseError("load patient journal", error);
+        }
+        return new PatientJournalData(patientId, logs);
+    }
+
+    public record PatientJournalData(Integer patientId, List<PatientDailyLog> logs) {}
+
     public PatientDailyLog getTodayLog(int patientId) {
         try {
             stm = connection.prepareStatement(

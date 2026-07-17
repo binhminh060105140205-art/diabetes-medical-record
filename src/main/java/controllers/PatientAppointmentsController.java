@@ -1,7 +1,6 @@
 package controllers;
 
 import dal.ClinicWorkflowDAO;
-import dal.DoctorDAO;
 import dal.PatientDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -17,10 +16,11 @@ public class PatientAppointmentsController extends HttpServlet {
     @Override protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         User user = patientUser(req);
         if (user == null) { resp.sendRedirect(req.getContextPath() + "/Login"); return; }
-        Patient patient = new PatientDAO().getByUserId(user.getUserId());
-        if (patient == null) { resp.sendError(409, "Tài khoản chưa liên kết hồ sơ bệnh nhân"); return; }
-        req.setAttribute("doctors", new DoctorDAO().getAll());
-        req.setAttribute("appointments", new ClinicWorkflowDAO().appointmentsForPatient(patient.getPatientId()));
+        ClinicWorkflowDAO.PatientAppointmentPageData data =
+                new ClinicWorkflowDAO().loadPatientAppointmentPage(user.getUserId());
+        if (data.patientId() == null) { resp.sendError(409, "Tài khoản chưa liên kết hồ sơ bệnh nhân"); return; }
+        req.setAttribute("doctors", data.doctors());
+        req.setAttribute("appointments", data.appointments());
         req.getRequestDispatcher("views/PatientAppointments.jsp").forward(req, resp);
     }
     @Override protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {

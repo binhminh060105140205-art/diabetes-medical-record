@@ -2,9 +2,13 @@
 FROM maven:3.9.11-eclipse-temurin-17 AS build
 WORKDIR /app
 COPY pom.xml ./
+RUN --mount=type=cache,target=/root/.m2 mvn -B -Pprecompile-jsp \
+      -Dmaven.test.skip=true \
+      -Dmaven.wagon.http.retryHandler.count=5 \
+      dependency:go-offline
 COPY src src
 RUN --mount=type=cache,target=/root/.m2 for attempt in 1 2 3; do \
-      mvn -B -Dmaven.test.skip=true \
+      mvn -B -Pprecompile-jsp -Dmaven.test.skip=true \
         -Dmaven.wagon.http.retryHandler.count=5 \
         package && exit 0; \
       echo "Maven build failed (attempt ${attempt}/3); retrying..."; \

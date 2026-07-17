@@ -49,7 +49,7 @@
             </div>
             <div style="display:flex;align-items:flex-end;gap:8px;">
                 <button class="btn btn-primary" onclick="uploadData()">📤 Gửi lên hệ thống</button>
-                <button class="btn" style="background:#f1f5f9;" onclick="fillExample()">📋 Điền ví dụ</button>
+                <button class="btn btn-outline-dark" onclick="fillExample()">📋 Điền ví dụ</button>
             </div>
         </div>
         <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px;">JSON từ thiết bị</label>
@@ -158,7 +158,7 @@
                     <div style="font-size:12px;font-weight:600;">${a.alertMessage}</div>
                     <div style="font-size:10px;color:#64748b;margin-top:3px;">${a.createdAt}</div>
                     <c:if test="${!a.acknowledged}">
-                        <button class="btn-ack" onclick="ackAlertDev(${a.alertId})" style="background:none;border:1px solid #94a3b8;border-radius:5px;padding:2px 8px;font-size:10px;cursor:pointer;color:#64748b;margin-top:4px;">✓ Đã hiểu</button>
+                        <button class="btn btn-sm btn-outline-dark" onclick="ackAlertDev(${a.alertId})">✓ Đã hiểu</button>
                     </c:if>
                 </div>
                 </c:forEach>

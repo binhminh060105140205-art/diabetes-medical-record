@@ -20,16 +20,14 @@ public class PatientHistoryController extends HttpServlet {
             response.sendError(403); return;
         }
 
-        PatientDAO patDAO = new PatientDAO();
-        int patientId = -1;
+        Integer patientId = null;
+        Integer patientUserId = null;
 
         String pidParam = request.getParameter("patientId");
         String uidParam = request.getParameter("userId");
 
         if ("PATIENT".equals(user.getRole())) {
-            Patient me = patDAO.getByUserId(user.getUserId());
-            if (me == null) { response.sendRedirect(request.getContextPath() + "/PatientDashboard"); return; }
-            patientId = me.getPatientId();
+            patientUserId = user.getUserId();
         } else if (pidParam != null && !pidParam.trim().isEmpty()) {
             try { patientId = Integer.parseInt(pidParam.trim()); }
             catch (NumberFormatException e) {
@@ -38,10 +36,7 @@ public class PatientHistoryController extends HttpServlet {
         } else if (uidParam != null && !uidParam.trim().isEmpty()) {
             try { 
                 int userId = Integer.parseInt(uidParam.trim()); 
-                Patient p = patDAO.getByUserId(userId);
-                if (p != null) {
-                    patientId = p.getPatientId();
-                }
+                patientUserId = userId;
             } catch (NumberFormatException e) {
                 response.sendRedirect(request.getContextPath() + "/AdminDashboard"); return;
             }
@@ -49,7 +44,10 @@ public class PatientHistoryController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/PatientList"); return;
         }
 
-        Patient patient = patDAO.getById(patientId);
+        Integer doctorUserId = "DOCTOR".equals(user.getRole()) ? user.getUserId() : null;
+        MedicalRecordDAO recDAO = new MedicalRecordDAO();
+        var history = recDAO.loadPatientHistory(patientId, patientUserId, doctorUserId);
+        Patient patient = history.patient();
         if (patient == null) {
             if (uidParam != null) {
                 response.sendRedirect(request.getContextPath() + "/AdminDashboard");
@@ -58,19 +56,10 @@ public class PatientHistoryController extends HttpServlet {
             }
             return;
         }
-        if ("DOCTOR".equals(user.getRole())) {
-            ClinicWorkflowDAO workflowDAO = new ClinicWorkflowDAO();
-            Integer doctorId = workflowDAO.doctorIdForUser(user.getUserId());
-            if (doctorId == null || !workflowDAO.doctorHasPatient(doctorId, patientId)) {
-                response.sendError(403); return;
-            }
-        }
-
-        MedicalRecordDAO recDAO  = new MedicalRecordDAO();
-        var records = recDAO.getByPatient(patientId);
+        if (!history.authorized()) { response.sendError(403); return; }
 
         request.setAttribute("patient", patient);
-        request.setAttribute("records", records);
+        request.setAttribute("records", history.records());
         request.getRequestDispatcher("views/PatientHistory.jsp").forward(request, response);
     }
 }

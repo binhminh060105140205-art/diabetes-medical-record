@@ -3,6 +3,7 @@ package dal;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
+import models.Doctor;
 
 public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.ClinicWorkflowGateway {
     private List<Map<String,Object>> query(String sql, Object... args) {
@@ -52,6 +53,61 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
           JOIN users u ON u.user_id=d.user_id
           WHERE a.patient_id=? ORDER BY a.appointment_at DESC LIMIT 30""", patientId);
     }
+
+    /** Loads the patient id, selectable doctors and appointments in one Aiven round-trip. */
+    public PatientAppointmentPageData loadPatientAppointmentPage(int userId) {
+        String sql = """
+          WITH subject AS (SELECT patient_id FROM patients WHERE user_id=?)
+          SELECT 'DOCTOR' row_type,s.patient_id,d.doctor_id,u.full_name doctor_name,d.specialty,
+                 NULL::INTEGER appointment_id,NULL::TIMESTAMP appointment_at,
+                 NULL::VARCHAR reason,NULL::VARCHAR note,NULL::VARCHAR status,NULL::TIMESTAMP sort_date
+          FROM subject s CROSS JOIN doctors d JOIN users u ON u.user_id=d.user_id
+          UNION ALL
+          SELECT 'APPOINTMENT',s.patient_id,a.doctor_id,u.full_name,d.specialty,
+                 a.appointment_id,a.appointment_at,a.reason,a.note,a.status,a.appointment_at
+          FROM subject s JOIN LATERAL (
+            SELECT * FROM appointments WHERE patient_id=s.patient_id
+            ORDER BY appointment_at DESC LIMIT 30
+          ) a ON TRUE
+          JOIN doctors d ON d.doctor_id=a.doctor_id JOIN users u ON u.user_id=d.user_id
+          ORDER BY row_type,sort_date DESC NULLS LAST,doctor_name
+          """;
+        List<Doctor> doctors = new ArrayList<>();
+        List<Map<String,Object>> appointments = new ArrayList<>();
+        Integer patientId = null;
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            try (ResultSet rows = ps.executeQuery()) {
+                while (rows.next()) {
+                    patientId = rows.getInt("patient_id");
+                    if ("DOCTOR".equals(rows.getString("row_type"))) {
+                        Doctor doctor = new Doctor();
+                        doctor.setDoctorId(rows.getInt("doctor_id"));
+                        doctor.setFullName(rows.getString("doctor_name"));
+                        doctor.setSpecialty(rows.getString("specialty"));
+                        doctors.add(doctor);
+                    } else {
+                        Map<String,Object> appointment = new LinkedHashMap<>();
+                        appointment.put("appointment_id", rows.getObject("appointment_id"));
+                        appointment.put("appointment_at", rows.getObject("appointment_at"));
+                        appointment.put("doctor_id", rows.getObject("doctor_id"));
+                        appointment.put("doctor_name", rows.getString("doctor_name"));
+                        appointment.put("specialty", rows.getString("specialty"));
+                        appointment.put("reason", rows.getString("reason"));
+                        appointment.put("note", rows.getString("note"));
+                        appointment.put("status", rows.getString("status"));
+                        appointments.add(appointment);
+                    }
+                }
+            }
+        } catch (SQLException error) {
+            throw databaseError("load patient appointment page", error);
+        }
+        return new PatientAppointmentPageData(patientId, doctors, appointments);
+    }
+
+    public record PatientAppointmentPageData(Integer patientId, List<Doctor> doctors,
+            List<Map<String,Object>> appointments) {}
     public void createAppointment(int patientId,int doctorId,LocalDateTime at,String reason,String note,int actor) {
         vn.diabetes.validation.AppointmentRules.validate(at,LocalDateTime.now());
         try {

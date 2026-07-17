@@ -25,26 +25,20 @@ public class PatientDashboardController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/Login"); return;
         }
 
-        PatientDAO patDAO = new PatientDAO();
-        Patient patient = patDAO.getByUserId(user.getUserId());
+        PatientDAO.PatientDashboardData data =
+                new PatientDAO().loadPatientDashboard(user.getUserId());
+        Patient patient = data.patient();
         if (patient == null) {
             request.setAttribute("msg", "Chưa có hồ sơ bệnh nhân. Vui lòng liên hệ nhân viên tiếp nhận.");
             request.getRequestDispatcher("views/PatientDashboard.jsp").forward(request, response); return;
         }
 
-        MedicalRecordDAO   recDAO    = new MedicalRecordDAO();
-        PatientDailyLogDAO logDAO    = new PatientDailyLogDAO();
-        // [NEW V3]
-        HealthAlertDAO   alertDAO  = new HealthAlertDAO();
-
-        PatientDailyLog todayLog = logDAO.getTodayLog(patient.getPatientId());
-
-        // [NEW V3] HealthAlerts thay AIWarnings
-        List<HealthAlert> unacknowledgedAlerts = alertDAO.getUnacknowledged(patient.getPatientId());
+        PatientDailyLog todayLog = data.todayLog();
+        List<HealthAlert> unacknowledgedAlerts = data.alerts();
         int alertCount = unacknowledgedAlerts.size();
 
         request.setAttribute("patient",               patient);
-        request.setAttribute("latestRecord",          recDAO.getLatestByPatient(patient.getPatientId()));
+        request.setAttribute("latestRecord",          data.latestRecord());
         request.setAttribute("todayLog",              todayLog);
         // [NEW V3]
         request.setAttribute("unacknowledgedAlerts",  unacknowledgedAlerts);
