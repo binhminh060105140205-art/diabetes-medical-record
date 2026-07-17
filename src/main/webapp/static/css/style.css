@@ -807,3 +807,23 @@ td{border-bottom-color:#eef0f6;color:#333d59}tbody tr:hover{background:#f8f8ff}
 .site-footer{color:var(--dc-muted);background:#fff}.site-footer strong{color:#29345d}
 .is-navigating:after{border-radius:999px;background:linear-gradient(120deg,#283ca3,#7353cf)}
 @media(max-width:700px){.card{border-radius:17px}.metric-card{border-radius:18px 18px 18px 7px}.btn{min-height:42px}.tab-btn{min-height:42px;white-space:nowrap}}
+
+/* DiaCare workspace shell — aligned with the public blue-violet homepage */
+.header-brand{display:inline-flex;align-items:center;text-decoration:none;min-width:max-content}
+.header-brand:hover{color:inherit;transform:translateY(-1px)}
+.header-actions{gap:12px}
+.header-home-link{min-height:38px;padding:0 15px;display:inline-flex;align-items:center;gap:7px;border:1px solid #dfe2f2;border-radius:999px;background:linear-gradient(135deg,#f3f6ff,#f7f1ff);color:#4755b8;font-size:12px;font-weight:800;text-decoration:none}
+.header-home-link span{font-size:17px;line-height:1}
+.header-home-link:hover{border-color:#bec8f5;background:linear-gradient(135deg,#e9efff,#f0e9ff);color:#694bc8;box-shadow:0 8px 20px rgba(62,69,150,.1)}
+.sidebar-main-link{margin-bottom:7px;border:1px solid rgba(188,195,255,.18);background:rgba(255,255,255,.06)}
+.sidebar-main-link span{color:#fff;background:linear-gradient(135deg,rgba(99,127,255,.72),rgba(154,95,225,.7))!important}
+.page-wrapper:before,.app-workspace:before{content:"";position:fixed;z-index:-1;inset:68px 0 0 260px;pointer-events:none;background:radial-gradient(circle at 88% 7%,rgba(118,88,220,.08),transparent 31%),radial-gradient(circle at 20% 82%,rgba(61,92,227,.07),transparent 34%)}
+.page-heading,.workspace-heading{padding:4px 2px}
+.page-heading .page-title,.workspace-heading h1{background:linear-gradient(100deg,#263b9e,#7250cb);background-clip:text;-webkit-background-clip:text;color:transparent}
+.card,.metric-card,.stat-card{backdrop-filter:saturate(115%)}
+.card-title:before{content:"";display:inline-block;width:6px;height:19px;margin-right:9px;border-radius:999px;background:linear-gradient(180deg,var(--dc-primary),var(--dc-accent));vertical-align:-4px}
+.site-footer{background:linear-gradient(110deg,#f8f9ff,#f5f1ff)}
+.site-footer strong{background:linear-gradient(100deg,#3049bb,#7451cf);background-clip:text;-webkit-background-clip:text;color:transparent}
+@media(max-width:1050px){.page-wrapper:before,.app-workspace:before{inset:68px 0 0 0}}
+@media(max-width:850px){.header-home-link{padding:0 12px}.header-home-link span{display:none}}
+@media(max-width:700px){.header-home-link{display:none}.header-actions{gap:7px}.page-wrapper:before,.app-workspace:before{inset:64px 0 0 0}}
