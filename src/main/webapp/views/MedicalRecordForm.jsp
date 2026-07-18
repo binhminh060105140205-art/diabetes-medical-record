@@ -52,6 +52,31 @@
         </c:when>
     </c:choose>
 
+    <%-- TÓM TẮT HỒ SƠ TIỂU ĐƯỜNG — chỉ đọc, hiển thị cho cả Staff và Bác sĩ --%>
+    <c:if test="${not empty diabetesProfile}">
+    <div class="card" style="border-left:4px solid #0d6efd;">
+        <div class="card-title">🩸 Tóm tắt hồ sơ tiểu đường</div>
+        <div class="indicator-grid">
+            <div class="indicator-item"><div class="ind-label">Loại tiểu đường</div>
+                <div class="ind-value">${diabetesProfile.diabetesType=='TYPE_1'?'Type 1':diabetesProfile.diabetesType=='TYPE_2'?'Type 2':'Chưa xác định'}</div></div>
+            <div class="indicator-item"><div class="ind-label">Ngày phát hiện</div>
+                <div class="ind-value">${not empty diabetesProfile.diagnosisDate?diabetesProfile.diagnosisDate:'—'}</div></div>
+            <div class="indicator-item"><div class="ind-label">Phương pháp điều trị</div>
+                <div class="ind-value">${diabetesProfile.treatmentMethod=='INSULIN'?'Insulin':diabetesProfile.treatmentMethod=='ORAL_MEDICATION'?'Thuốc uống':diabetesProfile.treatmentMethod=='LIFESTYLE'?'Ăn uống/vận động':diabetesProfile.treatmentMethod=='COMBINATION'?'Kết hợp':'—'}</div></div>
+            <div class="indicator-item"><div class="ind-label">Mục tiêu HbA1c</div>
+                <div class="ind-value">${not empty diabetesProfile.hba1cTarget?diabetesProfile.hba1cTarget:'—'}</div><div class="ind-unit">%</div></div>
+            <div class="indicator-item"><div class="ind-label">HbA1c gần nhất</div>
+                <div class="ind-value">${indicator.hba1c}</div><div class="ind-unit">%</div></div>
+            <div class="indicator-item"><div class="ind-label">Đường huyết gần nhất</div>
+                <div class="ind-value">${indicator.bloodGlucose}</div><div class="ind-unit">mg/dL</div></div>
+            <div class="indicator-item"><div class="ind-label">Huyết áp gần nhất</div>
+                <div class="ind-value">${indicator.systolicBp}/${indicator.diastolicBp}</div><div class="ind-unit">mmHg</div></div>
+            <div class="indicator-item"><div class="ind-label">BMI gần nhất</div>
+                <div class="ind-value">${indicator.bmi}</div></div>
+        </div>
+    </div>
+    </c:if>
+
     <%-- Server-side validation errors --%>
     <c:if test="${not empty serverErrors}">
     <div class="alert alert-danger">
@@ -321,6 +346,42 @@
     <div class="tab-panel" id="tab4">
     <c:choose>
     <c:when test="${sessionScope.user.role == 'DOCTOR'}">
+        <div class="card">
+            <div class="card-title">IV. Hồ sơ tiểu đường <span class="text-muted">(Bác sĩ xác nhận/cập nhật)</span></div>
+            <form action="${pageContext.request.contextPath}/MedicalRecordForm" method="post">
+                <input type="hidden" name="action" value="saveDiabetesProfile">
+                <input type="hidden" name="recordId" value="${record.recordId}">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Loại tiểu đường</label>
+                        <select name="diabetesType" class="form-control">
+                            <option value="UNKNOWN" ${diabetesProfile.diabetesType=='UNKNOWN'?'selected':''}>Chưa xác định</option>
+                            <option value="TYPE_1" ${diabetesProfile.diabetesType=='TYPE_1'?'selected':''}>Type 1</option>
+                            <option value="TYPE_2" ${diabetesProfile.diabetesType=='TYPE_2'?'selected':''}>Type 2</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Ngày phát hiện bệnh</label>
+                        <input type="date" name="diagnosisDate" class="form-control" value="${diabetesProfile.diagnosisDate}">
+                    </div>
+                    <div class="form-group">
+                        <label>Phương pháp điều trị</label>
+                        <select name="treatmentMethod" class="form-control">
+                            <option value="">-- Chưa xác định --</option>
+                            <option value="LIFESTYLE" ${diabetesProfile.treatmentMethod=='LIFESTYLE'?'selected':''}>Ăn uống/vận động</option>
+                            <option value="ORAL_MEDICATION" ${diabetesProfile.treatmentMethod=='ORAL_MEDICATION'?'selected':''}>Thuốc uống</option>
+                            <option value="INSULIN" ${diabetesProfile.treatmentMethod=='INSULIN'?'selected':''}>Insulin</option>
+                            <option value="COMBINATION" ${diabetesProfile.treatmentMethod=='COMBINATION'?'selected':''}>Kết hợp</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Mục tiêu HbA1c (%)</label>
+                        <input type="number" step="0.1" name="hba1cTarget" class="form-control" value="${diabetesProfile.hba1cTarget}" placeholder="7.0">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-outline">💾 Lưu hồ sơ tiểu đường</button>
+            </form>
+        </div>
         <div class="card">
             <div class="card-title">V. Kết luận của Bác sĩ</div>
             <c:if test="${not empty warning}">

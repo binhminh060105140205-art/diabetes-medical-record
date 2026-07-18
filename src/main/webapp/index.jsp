@@ -34,7 +34,7 @@
         <div class="nav-actions">
             <c:choose>
                 <c:when test="${not empty sessionScope.user}"><a class="home-btn home-btn-primary" href="${pageContext.request.contextPath}/Login">Vào hệ thống <span>→</span></a></c:when>
-                <c:otherwise><a class="nav-register" href="${pageContext.request.contextPath}/Register">Đăng ký</a><a class="home-btn home-btn-primary" href="${pageContext.request.contextPath}/Login">Đăng nhập <span>→</span></a></c:otherwise>
+                <c:otherwise><a class="home-btn home-btn-primary" href="${pageContext.request.contextPath}/Login">Đăng nhập <span>→</span></a></c:otherwise>
             </c:choose>
             <button class="mobile-toggle" type="button" aria-label="Mở menu" aria-controls="home-nav" onclick="document.getElementById('home-nav').classList.toggle('active')">☰</button>
         </div>
@@ -50,7 +50,7 @@
                 <h1>Chăm sóc chủ động.<br><span>Sống khỏe mỗi ngày.</span></h1>
                 <p class="hero-desc">Kết nối lịch hẹn, lượt khám, xét nghiệm và hồ sơ sức khỏe trong một hành trình rõ ràng — để người bệnh an tâm và đội ngũ y tế phối hợp tốt hơn.</p>
                 <div class="hero-buttons">
-                    <a class="home-btn home-btn-primary home-btn-large" href="${pageContext.request.contextPath}/Register">Đăng ký bệnh nhân <span>→</span></a>
+                    <a class="home-btn home-btn-primary home-btn-large" href="tel:18001234">Gọi hotline đặt lịch: 1800 1234 <span>→</span></a>
                     <a class="home-btn home-btn-ghost home-btn-large" href="${pageContext.request.contextPath}/Login">Đăng nhập hệ thống</a>
                 </div>
                 <div class="hero-trust">
@@ -77,8 +77,8 @@
     </section>
 
     <section class="home-quick" aria-label="Truy cập nhanh">
-        <a class="quick-pill" href="${pageContext.request.contextPath}/Register"><span class="quick-icon">01</span><div><strong>Tạo hồ sơ</strong><small>Đăng ký tài khoản bệnh nhân</small></div><b>→</b></a>
-        <a class="quick-pill quick-featured" href="${pageContext.request.contextPath}/Login"><span class="quick-icon">02</span><div><strong>Đặt lịch khám</strong><small>Chọn bác sĩ và khung giờ</small></div><b>→</b></a>
+        <a class="quick-pill" href="tel:18001234"><span class="quick-icon">01</span><div><strong>Gọi hotline</strong><small>Đặt lịch qua điện thoại hoặc đến trực tiếp</small></div><b>→</b></a>
+        <a class="quick-pill quick-featured" href="${pageContext.request.contextPath}/Login"><span class="quick-icon">02</span><div><strong>Đăng nhập hệ thống</strong><small>Dành cho bệnh nhân đã có tài khoản</small></div><b>→</b></a>
         <a class="quick-pill" href="#workflow"><span class="quick-icon">03</span><div><strong>Xem quy trình</strong><small>6 bước khám liên thông</small></div><b>↓</b></a>
     </section>
 

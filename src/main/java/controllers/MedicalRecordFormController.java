@@ -49,6 +49,7 @@ public class MedicalRecordFormController extends HttpServlet {
             MedicalRecord rec = formData.record();
             if (rec == null) { response.sendRedirect(request.getContextPath() + "/PatientList"); return; }
             Doctor assignedDoctor = formData.doctor();
+            request.setAttribute("diabetesProfile", new DiabetesProfileDAO().getByPatientId(rec.getPatientId()));
             if ("DOCTOR".equals(user.getRole())) {
                 if (assignedDoctor == null || assignedDoctor.getUserId() != user.getUserId()) {
                     response.sendError(403); return;
@@ -78,6 +79,7 @@ public class MedicalRecordFormController extends HttpServlet {
             Patient patient = patDAO.getById(patientId);
             if (patient == null) { response.sendError(404, "Không tìm thấy bệnh nhân"); return; }
             request.setAttribute("patient", patient);
+            request.setAttribute("diabetesProfile", new DiabetesProfileDAO().getByPatientId(patientId));
             request.setAttribute("encounterId", encounterParam);
             if (encounterParam != null && !encounterParam.isBlank()) request.setAttribute("appointmentTime", new ClinicWorkflowDAO().appointmentTimeForEncounter(positiveId(encounterParam)));
         }
@@ -184,6 +186,22 @@ public class MedicalRecordFormController extends HttpServlet {
             // Chỉ lưu chỉ số, redirect sang Tab 4 để bác sĩ kết luận
 
             response.sendRedirect(request.getContextPath() + "/MedicalRecordForm?recordId=" + recId + "&tab=4");
+
+        // ── HỒ SƠ TIỂU ĐƯỜNG: DOCTOR xác nhận/cập nhật loại bệnh ────────
+        } else if ("saveDiabetesProfile".equals(action)) {
+            if (!"DOCTOR".equals(user.getRole())) { response.sendRedirect(request.getContextPath() + "/Login"); return; }
+            MedicalRecord recForProfile = recDAO.getById(Integer.parseInt(ridParam));
+            if (recForProfile == null) { response.sendRedirect(request.getContextPath() + "/DoctorDashboard"); return; }
+            String diabetesType = request.getParameter("diabetesType");
+            String treatmentMethod = request.getParameter("treatmentMethod");
+            String diagnosisDateParam = request.getParameter("diagnosisDate");
+            String hba1cTargetParam = request.getParameter("hba1cTarget");
+            java.time.LocalDate diagnosisDate = (diagnosisDateParam == null || diagnosisDateParam.isBlank())
+                    ? null : java.time.LocalDate.parse(diagnosisDateParam);
+            Double hba1cTarget = (hba1cTargetParam == null || hba1cTargetParam.isBlank())
+                    ? null : Double.valueOf(hba1cTargetParam);
+            new DiabetesProfileDAO().update(recForProfile.getPatientId(), diabetesType, diagnosisDate, treatmentMethod, hba1cTarget);
+            response.sendRedirect(request.getContextPath() + "/MedicalRecordForm?recordId=" + ridParam + "&tab=4");
 
         // ── TAB 4: DOCTOR kết luận ───────────────────────────────────────
         } else if ("saveConclusion".equals(action)) {

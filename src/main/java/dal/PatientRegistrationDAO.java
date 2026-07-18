@@ -50,6 +50,7 @@ public class PatientRegistrationDAO extends DBContext implements vn.diabetes.ser
                 ps.executeUpdate();
                 try (ResultSet rs = ps.getGeneratedKeys()) { rs.next(); patientId = rs.getInt(1); }
             }
+            new DiabetesProfileDAO().createDefault(patientId);
             connection.commit();
             return patientId;
         } catch (IllegalArgumentException ex) {

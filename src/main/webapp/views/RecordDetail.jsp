@@ -13,6 +13,17 @@
 <div class="page-wrapper">
     <h1 class="page-title">📄 Hồ Sơ Bệnh Án #${detail.record.recordId}</h1>
 
+    <c:if test="${not empty diabetesProfile}">
+    <div class="card" style="border-left:4px solid #0d6efd;">
+        <div class="card-title">🩸 Hồ sơ tiểu đường hiện tại</div>
+        <table style="box-shadow:none;">
+            <tr><th style="width:220px">Loại tiểu đường</th><td><strong>${diabetesProfile.diabetesType=='TYPE_1'?'Type 1':diabetesProfile.diabetesType=='TYPE_2'?'Type 2':'Chưa xác định'}</strong></td>
+                <th style="width:180px">Ngày phát hiện</th><td>${not empty diabetesProfile.diagnosisDate?diabetesProfile.diagnosisDate:'—'}</td></tr>
+            <tr><th>Phương pháp điều trị</th><td colspan="3">${diabetesProfile.treatmentMethod=='INSULIN'?'Insulin':diabetesProfile.treatmentMethod=='ORAL_MEDICATION'?'Thuốc uống':diabetesProfile.treatmentMethod=='LIFESTYLE'?'Ăn uống/vận động':diabetesProfile.treatmentMethod=='COMBINATION'?'Kết hợp':'Chưa xác định'}</td></tr>
+        </table>
+    </div>
+    </c:if>
+
     <!-- I. PATIENT INFO -->
     <div class="card">
         <div class="card-title">I. Thông tin bệnh nhân</div>
