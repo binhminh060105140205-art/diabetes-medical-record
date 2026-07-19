@@ -40,4 +40,22 @@ class AppointmentRulesTest {
         assertThrows(IllegalArgumentException.class, () -> AppointmentRules.validate(
                 now.plusDays(91).withHour(9).withMinute(0), now));
     }
+
+    @Test
+    void acceptsSimpleDateRequestAndRejectsSunday() {
+        assertDoesNotThrow(() -> AppointmentRules.validateRequestedDate(
+                now.toLocalDate().plusDays(1), now.toLocalDate()));
+        assertThrows(IllegalArgumentException.class, () -> AppointmentRules.validateRequestedDate(
+                java.time.LocalDate.of(2026, 7, 19), now.toLocalDate()));
+    }
+
+    @Test
+    void assignmentMustMatchRequestedDateAndPeriod() {
+        assertDoesNotThrow(() -> AppointmentRules.validateAssignmentMatchesRequest(
+                LocalDateTime.of(2026, 7, 17, 9, 30),
+                java.time.LocalDate.of(2026, 7, 17), "MORNING"));
+        assertThrows(IllegalArgumentException.class, () -> AppointmentRules.validateAssignmentMatchesRequest(
+                LocalDateTime.of(2026, 7, 17, 14, 0),
+                java.time.LocalDate.of(2026, 7, 17), "MORNING"));
+    }
 }

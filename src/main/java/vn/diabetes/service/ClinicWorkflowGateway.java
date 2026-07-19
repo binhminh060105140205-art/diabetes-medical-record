@@ -1,6 +1,9 @@
 package vn.diabetes.service;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 public interface ClinicWorkflowGateway {
+ void createAppointmentRequest(int patientId,LocalDate preferredDate,String preferredPeriod,String reason,String note,int actor);
+ void assignAppointmentRequest(int appointmentId,int doctorId,LocalDateTime at,String note,int actor);
  void createAppointment(int patientId,int doctorId,LocalDateTime at,String reason,String note,int actor);
  void rescheduleAppointment(int appointmentId,LocalDateTime at,String note,int actor);
  void setAppointmentStatus(int appointmentId,String status,int actor);

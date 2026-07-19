@@ -43,6 +43,7 @@ public class ClinicWorkflowController extends HttpServlet {
     ClinicWorkflowDAO d=new ClinicWorkflowDAO();ClinicWorkflowService service=new ClinicWorkflowService(d);String a=req.getParameter("action"),view="encounters";
     try{
       if("createAppointment".equals(a)&&isReception(u)){service.createAppointment(i(req,"patientId"),i(req,"doctorId"),LocalDateTime.parse(required(req,"appointmentAt")),required(req,"reason"),req.getParameter("note"),u.getUserId());view="appointments";}
+      else if("assignAppointmentRequest".equals(a)&&isReception(u)){service.assignAppointmentRequest(i(req,"appointmentId"),i(req,"doctorId"),LocalDateTime.parse(required(req,"appointmentAt")),req.getParameter("note"),u.getUserId());view="appointments";}
       else if("rescheduleAppointment".equals(a)&&isReception(u)){service.rescheduleAppointment(i(req,"appointmentId"),LocalDateTime.parse(required(req,"appointmentAt")),req.getParameter("note"),u.getUserId());view="appointments";}
       else if("appointmentStatus".equals(a)&&isReception(u)){service.setAppointmentStatus(i(req,"appointmentId"),required(req,"status"),u.getUserId());view="appointments";}
       else if("checkIn".equals(a)&&isReception(u)){service.checkIn(i(req,"appointmentId"),u.getUserId());view="encounters";}

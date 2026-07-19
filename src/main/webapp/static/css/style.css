@@ -887,3 +887,12 @@ td{border-bottom-color:#eef0f6;color:#333d59}tbody tr:hover{background:#f8f8ff}
 .timeline-body>div{padding:14px;border:1px solid #eaebf5;border-radius:14px;background:linear-gradient(135deg,#fafbff,#f8f5ff);color:#333d59}
 .timeline-body small{display:block;margin-bottom:5px;color:var(--dc-muted);font-weight:700}
 @media(max-width:700px){.record-timeline{margin-left:5px;padding-left:24px}.timeline-card:before{left:-35px}.timeline-body{grid-template-columns:1fr}}
+
+/* Simplified appointment request and staff assignment. */
+.status-REQUESTED{background:#ede9fe;color:#5b21b6}
+.period-choice-grid{grid-template-columns:repeat(2,minmax(150px,1fr))}
+.period-choice-grid .choice-tile span{padding:16px;text-align:center}
+.period-choice-grid small{font-weight:500;color:#64748b}
+.request-assignment-form{display:grid;grid-template-columns:minmax(140px,1fr) minmax(190px,1.25fr) auto;gap:8px;align-items:center;min-width:520px}
+.request-assignment-form .form-control{margin:0}
+@media(max-width:900px){.request-assignment-form{grid-template-columns:1fr;min-width:260px}.period-choice-grid{grid-template-columns:1fr}}

@@ -6,7 +6,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import models.User;
 import java.io.IOException;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.Set;
 import vn.diabetes.service.ClinicWorkflowService;
@@ -26,7 +26,6 @@ public class PatientAppointmentsController extends HttpServlet {
         ClinicWorkflowDAO.PatientAppointmentPageData data =
                 new ClinicWorkflowDAO().loadPatientAppointmentPage(user.getUserId());
         if (data.patientId() == null) { resp.sendError(409, "Tài khoản chưa liên kết hồ sơ bệnh nhân"); return; }
-        req.setAttribute("doctors", data.doctors());
         req.setAttribute("appointments", data.appointments());
         req.getRequestDispatcher("views/PatientAppointmentsSimple.jsp").forward(req, resp);
     }
@@ -45,23 +44,21 @@ public class PatientAppointmentsController extends HttpServlet {
             ClinicWorkflowDAO.PatientAppointmentPageData page =
                     new ClinicWorkflowDAO().loadPatientAppointmentPage(user.getUserId());
             if (page.patientId() == null) throw new IllegalArgumentException("Tài khoản chưa liên kết hồ sơ bệnh nhân.");
-            int doctorId = positive(req.getParameter("doctorId"));
-            String appointmentAt = req.getParameter("appointmentAt");
-            if (appointmentAt == null || appointmentAt.isBlank()) {
-                appointmentAt = clean(req.getParameter("appointmentDate")) + "T" + clean(req.getParameter("appointmentTime"));
-            }
-            LocalDateTime at;
+            LocalDate preferredDate;
             try {
-                at = LocalDateTime.parse(appointmentAt);
+                preferredDate = LocalDate.parse(clean(req.getParameter("preferredDate")));
             } catch (DateTimeParseException ex) {
-                throw new IllegalArgumentException("Ngày hoặc giờ khám không hợp lệ.");
+                throw new IllegalArgumentException("Ngày khám không hợp lệ.");
             }
+            String preferredPeriod = clean(req.getParameter("preferredPeriod"));
             String reason = clean(req.getParameter("reason"));
             if (!PATIENT_REASONS.contains(reason)) {
                 throw new IllegalArgumentException("Vui lòng chọn một lý do khám trong danh sách.");
             }
-            service.createAppointment(page.patientId(), doctorId, at, reason, null, user.getUserId());
-            req.getSession().setAttribute("appointmentFlash", "Đặt lịch thành công. Vui lòng đến trước giờ hẹn 15 phút.");
+            service.createAppointmentRequest(page.patientId(), preferredDate, preferredPeriod,
+                    reason, null, user.getUserId());
+            req.getSession().setAttribute("appointmentFlash",
+                    "Đã gửi yêu cầu. Nhân viên sẽ xác nhận bác sĩ và giờ khám cụ thể.");
         } catch (IllegalArgumentException ex) {
             req.getSession().setAttribute("appointmentFlash", "Không thể đặt lịch: " + ex.getMessage());
         } catch (IllegalStateException ex) {
@@ -70,6 +67,6 @@ public class PatientAppointmentsController extends HttpServlet {
         resp.sendRedirect(req.getContextPath() + "/PatientAppointments");
     }
     private User patientUser(HttpServletRequest req) { HttpSession s=req.getSession(false); User u=s==null?null:(User)s.getAttribute("user"); return u!=null&&"PATIENT".equals(u.getRole())?u:null; }
-    private int positive(String value) { try { int id=Integer.parseInt(value); if(id>0)return id; } catch(Exception ignored){} throw new IllegalArgumentException("Bác sĩ không hợp lệ."); }
+    private int positive(String value) { try { int id=Integer.parseInt(value); if(id>0)return id; } catch(Exception ignored){} throw new IllegalArgumentException("Lịch hẹn không hợp lệ."); }
     private String clean(String value) { return value==null?"":value.trim(); }
 }

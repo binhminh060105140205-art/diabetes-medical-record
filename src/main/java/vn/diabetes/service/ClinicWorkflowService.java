@@ -1,6 +1,7 @@
 package vn.diabetes.service;
 
 import java.sql.Date;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -33,6 +34,27 @@ public class ClinicWorkflowService {
         reason = Validators.required(reason, "Lý do khám");
         if (reason.length() > 255) throw new IllegalArgumentException("Lý do khám tối đa 255 ký tự.");
         gateway.createAppointment(patientId, doctorId, at, reason,
+                Validators.max(note, 500, "Ghi chú"), actor);
+    }
+
+    public void createAppointmentRequest(int patientId, LocalDate preferredDate,
+            String preferredPeriod, String reason, String note, int actor) {
+        positive(patientId, "Bệnh nhân");
+        preferredPeriod = preferredPeriod == null ? "" : preferredPeriod.trim().toUpperCase();
+        AppointmentRules.validateRequestedDate(preferredDate, clock.get().toLocalDate());
+        AppointmentRules.validateRequestedPeriod(preferredPeriod);
+        reason = Validators.required(reason, "Lý do khám");
+        if (reason.length() > 255) throw new IllegalArgumentException("Lý do khám tối đa 255 ký tự.");
+        gateway.createAppointmentRequest(patientId, preferredDate, preferredPeriod, reason,
+                Validators.max(note, 500, "Ghi chú"), actor);
+    }
+
+    public void assignAppointmentRequest(int appointmentId, int doctorId,
+            LocalDateTime at, String note, int actor) {
+        positive(appointmentId, "Yêu cầu khám");
+        positive(doctorId, "Bác sĩ");
+        AppointmentRules.validate(at, clock.get());
+        gateway.assignAppointmentRequest(appointmentId, doctorId, at,
                 Validators.max(note, 500, "Ghi chú"), actor);
     }
 
