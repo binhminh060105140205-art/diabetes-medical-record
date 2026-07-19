@@ -93,6 +93,11 @@ public class AdminDoctorDetailController extends HttpServlet {
 
         int userId = targetUser.getUserId();
         try {
+            String focus = request.getParameter("diabetesFocus");
+            if (!java.util.Set.of("TYPE_1", "TYPE_2", "BOTH", "GENERAL").contains(focus)) {
+                throw new IllegalArgumentException("Nhóm tiểu đường không hợp lệ.");
+            }
+            new DoctorDAO().updateDiabetesFocus(doctor.getDoctorId(), focus);
             Part facePart    = request.getPart("faceImage");
             Part cccdPart    = request.getPart("cccdImage");
             Part licensePart = request.getPart("licenseImage");
@@ -107,7 +112,7 @@ public class AdminDoctorDetailController extends HttpServlet {
 
             session.setAttribute("toastMessage", "Cập nhật ảnh hồ sơ bác sĩ thành công!");
             session.setAttribute("toastType", "success");
-        } catch (IOException e) {
+        } catch (IOException | IllegalArgumentException e) {
             session.setAttribute("toastMessage", "Lỗi upload ảnh: " + e.getMessage());
             session.setAttribute("toastType", "danger");
         }

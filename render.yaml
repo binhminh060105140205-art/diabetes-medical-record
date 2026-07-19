@@ -21,7 +21,7 @@ services:
       - key: DB_POOL_MIN_IDLE
         value: "3"
       - key: FLYWAY_ENABLED
-        value: "false"
+        value: "true"
       - key: BOOTSTRAP_ADMIN_ENABLED
         value: "false"
       - key: TLD_SKIP_PATTERNS
@@ -38,5 +38,11 @@ services:
         sync: false
       - key: MAIL_PASSWORD
         sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-5.6-terra
+      - key: OPENAI_TIMEOUT_SECONDS
+        value: "20"
       - key: UPLOAD_DIR
         value: /app/uploads

@@ -18,6 +18,7 @@ public class DoctorDAO extends DBContext {
         d.setFaceImagePath(rs.getString("face_image_path"));
         d.setCccdImagePath(rs.getString("cccd_image_path"));
         d.setLicenseImagePath(rs.getString("license_image_path"));
+        try { d.setDiabetesFocus(rs.getString("diabetes_focus")); } catch (SQLException ignored) {}
         try { d.setFullName(rs.getString("full_name")); } catch (Exception ignored) {}
         return d;
     }
@@ -62,12 +63,13 @@ public class DoctorDAO extends DBContext {
     }
 
     public Doctor create(Doctor d) {
-        String sql = "INSERT INTO Doctors(user_id,specialty,license_no) VALUES(?,?,?)";
+        String sql = "INSERT INTO Doctors(user_id,specialty,license_no,diabetes_focus) VALUES(?,?,?,?)";
         try {
             stm = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             stm.setInt(1, d.getUserId());
             stm.setString(2, d.getSpecialty());
             stm.setString(3, d.getLicenseNo());
+            stm.setString(4, normalizeFocus(d.getDiabetesFocus()));
             int rows = stm.executeUpdate();
             if (rows > 0) {
                 rs = stm.getGeneratedKeys();
@@ -77,6 +79,22 @@ public class DoctorDAO extends DBContext {
             throw databaseError("create doctor", e);
         }
         return d;
+    }
+
+    public boolean updateDiabetesFocus(int doctorId, String focus) {
+        String sql = "UPDATE doctors SET diabetes_focus=? WHERE doctor_id=?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, normalizeFocus(focus));
+            ps.setInt(2, doctorId);
+            return ps.executeUpdate() == 1;
+        } catch (SQLException e) {
+            throw databaseError("update doctor diabetes focus", e);
+        }
+    }
+
+    private String normalizeFocus(String focus) {
+        return java.util.Set.of("TYPE_1", "TYPE_2", "BOTH", "GENERAL").contains(focus)
+                ? focus : "GENERAL";
     }
 
     // Cập nhật riêng 3 đường dẫn ảnh (khuôn mặt, CCCD, chứng chỉ hành nghề).

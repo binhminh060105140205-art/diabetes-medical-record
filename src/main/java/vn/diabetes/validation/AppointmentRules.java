@@ -3,12 +3,14 @@ package vn.diabetes.validation;
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 
 public final class AppointmentRules {
     public static final LocalTime OPEN_TIME = LocalTime.of(7, 30);
     public static final LocalTime CLOSE_TIME = LocalTime.of(17, 30);
     public static final int SLOT_MINUTES = 30;
     public static final int MAX_PATIENTS_PER_DOCTOR_PER_DAY = 20;
+    public static final int MAX_ADVANCE_DAYS = 90;
 
     private AppointmentRules() {}
 
@@ -18,6 +20,9 @@ public final class AppointmentRules {
         }
         if (appointmentAt.getDayOfWeek() == DayOfWeek.SUNDAY) {
             throw new IllegalArgumentException("Phòng khám nghỉ Chủ nhật.");
+        }
+        if (ChronoUnit.DAYS.between(now.toLocalDate(), appointmentAt.toLocalDate()) > MAX_ADVANCE_DAYS) {
+            throw new IllegalArgumentException("Chỉ được đặt lịch trong 90 ngày tới.");
         }
         LocalTime time = appointmentAt.toLocalTime();
         if (time.isBefore(OPEN_TIME) || time.isAfter(CLOSE_TIME.minusMinutes(SLOT_MINUTES))) {

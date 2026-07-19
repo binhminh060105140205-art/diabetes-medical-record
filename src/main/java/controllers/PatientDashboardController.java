@@ -30,7 +30,7 @@ public class PatientDashboardController extends HttpServlet {
         Patient patient = data.patient();
         if (patient == null) {
             request.setAttribute("msg", "Chưa có hồ sơ bệnh nhân. Vui lòng liên hệ nhân viên tiếp nhận.");
-            request.getRequestDispatcher("views/PatientDashboard.jsp").forward(request, response); return;
+            request.getRequestDispatcher("views/PatientToday.jsp").forward(request, response); return;
         }
 
         PatientDailyLog todayLog = data.todayLog();
@@ -38,12 +38,13 @@ public class PatientDashboardController extends HttpServlet {
         int alertCount = unacknowledgedAlerts.size();
 
         request.setAttribute("patient",               patient);
+        request.setAttribute("diabetesProfile",       data.diabetesProfile());
         request.setAttribute("latestRecord",          data.latestRecord());
         request.setAttribute("todayLog",              todayLog);
         // [NEW V3]
         request.setAttribute("unacknowledgedAlerts",  unacknowledgedAlerts);
         request.setAttribute("alertCount",            alertCount);
 
-        request.getRequestDispatcher("views/PatientDashboard.jsp").forward(request, response);
+        request.getRequestDispatcher("views/PatientToday.jsp").forward(request, response);
     }
 }

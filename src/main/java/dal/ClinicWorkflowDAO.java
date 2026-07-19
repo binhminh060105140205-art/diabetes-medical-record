@@ -4,6 +4,7 @@ import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
 import models.Doctor;
+import models.Patient;
 
 public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.ClinicWorkflowGateway {
     private List<Map<String,Object>> query(String sql, Object... args) {
@@ -57,34 +58,44 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
     /** Loads the patient id, selectable doctors and appointments in one Aiven round-trip. */
     public PatientAppointmentPageData loadPatientAppointmentPage(int userId) {
         String sql = """
-          WITH subject AS (SELECT patient_id FROM patients WHERE user_id=?)
-          SELECT 'DOCTOR' row_type,s.patient_id,d.doctor_id,u.full_name doctor_name,d.specialty,
+          WITH subject AS (
+            SELECT p.patient_id,COALESCE(dp.diabetes_type,'UNKNOWN') diabetes_type
+            FROM patients p LEFT JOIN diabetes_profiles dp ON dp.patient_id=p.patient_id
+            WHERE p.user_id=?
+          )
+          SELECT 'DOCTOR' row_type,s.patient_id,s.diabetes_type,d.doctor_id,u.full_name doctor_name,
+                 d.specialty,d.diabetes_focus,
                  NULL::INTEGER appointment_id,NULL::TIMESTAMP appointment_at,
-                 NULL::VARCHAR reason,NULL::VARCHAR note,NULL::VARCHAR status,NULL::TIMESTAMP sort_date
+                 NULL::VARCHAR reason,NULL::VARCHAR note,NULL::VARCHAR status,NULL::TIMESTAMP sort_date,
+                 CASE WHEN s.diabetes_type='UNKNOWN' THEN 0
+                      WHEN d.diabetes_focus IN (s.diabetes_type,'BOTH') THEN 0 ELSE 1 END focus_rank
           FROM subject s CROSS JOIN doctors d JOIN users u ON u.user_id=d.user_id
           UNION ALL
-          SELECT 'APPOINTMENT',s.patient_id,a.doctor_id,u.full_name,d.specialty,
-                 a.appointment_id,a.appointment_at,a.reason,a.note,a.status,a.appointment_at
+          SELECT 'APPOINTMENT',s.patient_id,s.diabetes_type,a.doctor_id,u.full_name,d.specialty,
+                 d.diabetes_focus,a.appointment_id,a.appointment_at,a.reason,a.note,a.status,a.appointment_at,0
           FROM subject s JOIN LATERAL (
             SELECT * FROM appointments WHERE patient_id=s.patient_id
             ORDER BY appointment_at DESC LIMIT 30
           ) a ON TRUE
           JOIN doctors d ON d.doctor_id=a.doctor_id JOIN users u ON u.user_id=d.user_id
-          ORDER BY row_type,sort_date DESC NULLS LAST,doctor_name
+          ORDER BY row_type,focus_rank,sort_date DESC NULLS LAST,doctor_name
           """;
         List<Doctor> doctors = new ArrayList<>();
         List<Map<String,Object>> appointments = new ArrayList<>();
         Integer patientId = null;
+        String diabetesType = "UNKNOWN";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, userId);
             try (ResultSet rows = ps.executeQuery()) {
                 while (rows.next()) {
                     patientId = rows.getInt("patient_id");
+                    diabetesType = rows.getString("diabetes_type");
                     if ("DOCTOR".equals(rows.getString("row_type"))) {
                         Doctor doctor = new Doctor();
                         doctor.setDoctorId(rows.getInt("doctor_id"));
                         doctor.setFullName(rows.getString("doctor_name"));
                         doctor.setSpecialty(rows.getString("specialty"));
+                        doctor.setDiabetesFocus(rows.getString("diabetes_focus"));
                         doctors.add(doctor);
                     } else {
                         Map<String,Object> appointment = new LinkedHashMap<>();
@@ -103,10 +114,80 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
         } catch (SQLException error) {
             throw databaseError("load patient appointment page", error);
         }
-        return new PatientAppointmentPageData(patientId, doctors, appointments);
+        return new PatientAppointmentPageData(patientId, diabetesType, doctors, appointments);
     }
 
-    public record PatientAppointmentPageData(Integer patientId, List<Doctor> doctors,
+    public record PatientAppointmentPageData(Integer patientId, String diabetesType, List<Doctor> doctors,
+            List<Map<String,Object>> appointments) {}
+
+    /** Loads patients, doctors and the latest appointments in one Aiven round-trip. */
+    public AppointmentOperationsPageData loadAppointmentOperationsPage() {
+        String sql = """
+          SELECT 'PATIENT' row_type,p.patient_id,NULL::INTEGER doctor_id,p.full_name display_name,
+                 p.phone,NULL::VARCHAR specialty,NULL::VARCHAR diabetes_focus,
+                 NULL::INTEGER appointment_id,NULL::TIMESTAMP appointment_at,
+                 NULL::VARCHAR reason,NULL::VARCHAR note,NULL::VARCHAR status,
+                 NULL::VARCHAR patient_name,NULL::VARCHAR patient_phone,NULL::VARCHAR doctor_name,
+                 p.created_at sort_date
+          FROM patients p
+          UNION ALL
+          SELECT 'DOCTOR',NULL,d.doctor_id,u.full_name,NULL,d.specialty,d.diabetes_focus,
+                 NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL
+          FROM doctors d JOIN users u ON u.user_id=d.user_id
+          UNION ALL
+          SELECT 'APPOINTMENT',a.patient_id,a.doctor_id,NULL,p.phone,NULL,NULL,
+                 a.appointment_id,a.appointment_at,a.reason,a.note,a.status,
+                 p.full_name,p.phone,u.full_name,a.appointment_at
+          FROM (
+            SELECT * FROM appointments ORDER BY appointment_at DESC LIMIT 50
+          ) a JOIN patients p ON p.patient_id=a.patient_id
+          JOIN doctors d ON d.doctor_id=a.doctor_id JOIN users u ON u.user_id=d.user_id
+          ORDER BY row_type,sort_date DESC NULLS LAST,display_name
+          """;
+        List<Patient> patients = new ArrayList<>();
+        List<Doctor> doctors = new ArrayList<>();
+        List<Map<String,Object>> appointments = new ArrayList<>();
+        try (PreparedStatement ps = connection.prepareStatement(sql); ResultSet rows = ps.executeQuery()) {
+            while (rows.next()) {
+                switch (rows.getString("row_type")) {
+                    case "PATIENT" -> {
+                        Patient patient = new Patient();
+                        patient.setPatientId(rows.getInt("patient_id"));
+                        patient.setFullName(rows.getString("display_name"));
+                        patient.setPhone(rows.getString("phone"));
+                        patients.add(patient);
+                    }
+                    case "DOCTOR" -> {
+                        Doctor doctor = new Doctor();
+                        doctor.setDoctorId(rows.getInt("doctor_id"));
+                        doctor.setFullName(rows.getString("display_name"));
+                        doctor.setSpecialty(rows.getString("specialty"));
+                        doctor.setDiabetesFocus(rows.getString("diabetes_focus"));
+                        doctors.add(doctor);
+                    }
+                    default -> {
+                        Map<String,Object> appointment = new LinkedHashMap<>();
+                        appointment.put("appointment_id", rows.getObject("appointment_id"));
+                        appointment.put("appointment_at", rows.getObject("appointment_at"));
+                        appointment.put("patient_id", rows.getObject("patient_id"));
+                        appointment.put("doctor_id", rows.getObject("doctor_id"));
+                        appointment.put("patient_name", rows.getString("patient_name"));
+                        appointment.put("patient_phone", rows.getString("patient_phone"));
+                        appointment.put("doctor_name", rows.getString("doctor_name"));
+                        appointment.put("reason", rows.getString("reason"));
+                        appointment.put("note", rows.getString("note"));
+                        appointment.put("status", rows.getString("status"));
+                        appointments.add(appointment);
+                    }
+                }
+            }
+        } catch (SQLException error) {
+            throw databaseError("load appointment operations page", error);
+        }
+        return new AppointmentOperationsPageData(patients, doctors, appointments);
+    }
+
+    public record AppointmentOperationsPageData(List<Patient> patients, List<Doctor> doctors,
             List<Map<String,Object>> appointments) {}
     public void createAppointment(int patientId,int doctorId,LocalDateTime at,String reason,String note,int actor) {
         vn.diabetes.validation.AppointmentRules.validate(at,LocalDateTime.now());
@@ -153,18 +234,38 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
         } catch(SQLException e) { throw new IllegalStateException("Không thể cập nhật lịch hẹn.",e); }
     }
 
+    public void cancelOwnAppointment(int appointmentId,int patientUserId,int actor) {
+        try {
+            int changed=update("""
+              UPDATE appointments a SET status='CANCELLED'
+              FROM patients p
+              WHERE a.patient_id=p.patient_id AND a.appointment_id=? AND p.user_id=?
+                AND a.status IN ('BOOKED','CONFIRMED')
+                AND a.appointment_at>CURRENT_TIMESTAMP""",appointmentId,patientUserId);
+            if(changed!=1) throw new IllegalArgumentException(
+                    "Chỉ có thể hủy lịch sắp tới thuộc tài khoản của bạn.");
+            audit(actor,"CANCEL","APPOINTMENT",String.valueOf(appointmentId),"patient self-cancel");
+        } catch(SQLException e) {
+            throw new IllegalStateException("Không thể hủy lịch hẹn.",e);
+        }
+    }
+
     private void lockAndValidateCapacity(int patientId,int doctorId,LocalDateTime at,Integer excludedId) throws SQLException {
         try(PreparedStatement lock=connection.prepareStatement("SELECT doctor_id FROM doctors WHERE doctor_id=? FOR UPDATE")) {
             lock.setInt(1,doctorId); try(ResultSet rs=lock.executeQuery()){if(!rs.next())throw new IllegalArgumentException("Bác sĩ không tồn tại.");}
         }
         String excluded=excludedId==null?"":" AND appointment_id<>?";
-        List<Object> args=new ArrayList<>(List.of(doctorId,at)); if(excludedId!=null)args.add(excludedId);
-        if(!query("SELECT 1 ok FROM appointments WHERE doctor_id=? AND appointment_at=? AND status NOT IN ('CANCELLED','NO_SHOW')"+excluded,args.toArray()).isEmpty()) throw new IllegalArgumentException("Bác sĩ đã có bệnh nhân trong khung giờ này.");
-        args=new ArrayList<>(List.of(patientId,at)); if(excludedId!=null)args.add(excludedId);
-        if(!query("SELECT 1 ok FROM appointments WHERE patient_id=? AND appointment_at=? AND status NOT IN ('CANCELLED','NO_SHOW')"+excluded,args.toArray()).isEmpty()) throw new IllegalArgumentException("Bệnh nhân đã có lịch trong khung giờ này.");
-        args=new ArrayList<>(List.of(doctorId,java.sql.Date.valueOf(at.toLocalDate()))); if(excludedId!=null)args.add(excludedId);
-        List<Map<String,Object>> count=query("SELECT COUNT(*) total FROM appointments WHERE doctor_id=? AND appointment_at::date=? AND status NOT IN ('CANCELLED','NO_SHOW')"+excluded,args.toArray());
-        if(((Number)count.get(0).get("total")).intValue()>=vn.diabetes.validation.AppointmentRules.MAX_PATIENTS_PER_DOCTOR_PER_DAY) throw new IllegalArgumentException("Bác sĩ đã đủ 20 bệnh nhân trong ngày này.");
+        List<Object> args=new ArrayList<>(List.of(doctorId,at,patientId,at,doctorId,java.sql.Date.valueOf(at.toLocalDate())));
+        if(excludedId!=null)args.add(excludedId);
+        Map<String,Object> capacity=query("""
+          SELECT COUNT(*) FILTER (WHERE doctor_id=? AND appointment_at=?) doctor_slot,
+                 COUNT(*) FILTER (WHERE patient_id=? AND appointment_at=?) patient_slot,
+                 COUNT(*) FILTER (WHERE doctor_id=? AND appointment_at::date=?) doctor_day
+          FROM appointments
+          WHERE status NOT IN ('CANCELLED','NO_SHOW')"""+excluded,args.toArray()).get(0);
+        if(((Number)capacity.get("doctor_slot")).intValue()>0) throw new IllegalArgumentException("Bác sĩ đã có bệnh nhân trong khung giờ này.");
+        if(((Number)capacity.get("patient_slot")).intValue()>0) throw new IllegalArgumentException("Bệnh nhân đã có lịch trong khung giờ này.");
+        if(((Number)capacity.get("doctor_day")).intValue()>=vn.diabetes.validation.AppointmentRules.MAX_PATIENTS_PER_DOCTOR_PER_DAY) throw new IllegalArgumentException("Bác sĩ đã đủ 20 bệnh nhân trong ngày này.");
     }
     public void checkIn(int appointmentId,int actor) {
         try {

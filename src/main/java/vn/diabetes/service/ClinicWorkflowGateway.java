@@ -4,6 +4,7 @@ public interface ClinicWorkflowGateway {
  void createAppointment(int patientId,int doctorId,LocalDateTime at,String reason,String note,int actor);
  void rescheduleAppointment(int appointmentId,LocalDateTime at,String note,int actor);
  void setAppointmentStatus(int appointmentId,String status,int actor);
+ void cancelOwnAppointment(int appointmentId,int patientUserId,int actor);
  void checkIn(int appointmentId,int actor);
  void setEncounterStatus(int encounterId,String status,int actor);
  void addAllergy(int patientId,String allergen,String reaction,String severity,int actor);

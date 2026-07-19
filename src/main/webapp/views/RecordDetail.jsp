@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Chi Tiết Hồ Sơ Bệnh Án</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260717-perf4">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260719-ai1">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
@@ -17,9 +17,10 @@
     <div class="card" style="border-left:4px solid #0d6efd;">
         <div class="card-title">🩸 Hồ sơ tiểu đường hiện tại</div>
         <table style="box-shadow:none;">
-            <tr><th style="width:220px">Loại tiểu đường</th><td><strong>${diabetesProfile.diabetesType=='TYPE_1'?'Type 1':diabetesProfile.diabetesType=='TYPE_2'?'Type 2':'Chưa xác định'}</strong></td>
+            <tr><th style="width:220px">Loại tiểu đường</th><td><strong>${diabetesProfile.diabetesTypeLabel}</strong></td>
                 <th style="width:180px">Ngày phát hiện</th><td>${not empty diabetesProfile.diagnosisDate?diabetesProfile.diagnosisDate:'—'}</td></tr>
-            <tr><th>Phương pháp điều trị</th><td colspan="3">${diabetesProfile.treatmentMethod=='INSULIN'?'Insulin':diabetesProfile.treatmentMethod=='ORAL_MEDICATION'?'Thuốc uống':diabetesProfile.treatmentMethod=='LIFESTYLE'?'Ăn uống/vận động':diabetesProfile.treatmentMethod=='COMBINATION'?'Kết hợp':'Chưa xác định'}</td></tr>
+            <tr><th>Phương pháp điều trị</th><td>${diabetesProfile.treatmentMethodLabel}</td>
+                <th>Mục tiêu HbA1c</th><td>${not empty diabetesProfile.hba1cTarget?diabetesProfile.hba1cTarget:'—'}<c:if test="${not empty diabetesProfile.hba1cTarget}">%</c:if></td></tr>
         </table>
     </div>
     </c:if>
@@ -161,6 +162,6 @@
     </div>
 </div>
 <jsp:include page="footer.jsp"/>
-<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260717-perf4"></script>
+<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260719-ai1"></script>
 </body>
 </html>

@@ -4,6 +4,7 @@ import models.MedicalRecord;
 import models.Patient;
 import models.Doctor;
 import models.HealthIndicator;
+import models.DiabetesProfile;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -71,11 +72,17 @@ public class MedicalRecordDAO extends DBContext {
         String sql = """
             WITH subject AS (
               SELECT p.*,
+                     COALESCE(dp.diabetes_type,'UNKNOWN') dp_type,
+                     dp.diagnosis_date dp_diagnosis_date,
+                     dp.treatment_method dp_treatment_method,
+                     dp.hba1c_target dp_hba1c_target,
+                     dp.updated_at dp_updated_at,
                      CASE WHEN ? IS NULL THEN TRUE ELSE EXISTS (
                        SELECT 1 FROM doctors d JOIN encounters e ON e.doctor_id=d.doctor_id
                        WHERE d.user_id=? AND e.patient_id=p.patient_id
                      ) END authorized
               FROM patients p
+              LEFT JOIN diabetes_profiles dp ON dp.patient_id=p.patient_id
               WHERE (? IS NOT NULL AND p.patient_id=?)
                  OR (? IS NOT NULL AND p.user_id=?)
               LIMIT 1
@@ -85,7 +92,8 @@ public class MedicalRecordDAO extends DBContext {
                    s.address p_address,s.health_insurance_no p_health_insurance_no,
                    s.national_id p_national_id,s.national_id_date p_national_id_date,
                    s.national_id_place p_national_id_place,s.created_by p_created_by,
-                   s.authorized,r.*
+                   s.dp_type,s.dp_diagnosis_date,s.dp_treatment_method,
+                   s.dp_hba1c_target,s.dp_updated_at,s.authorized,r.*
             FROM subject s LEFT JOIN medicalrecords r ON r.patient_id=s.patient_id
             ORDER BY r.visit_date DESC
             """;
@@ -98,6 +106,7 @@ public class MedicalRecordDAO extends DBContext {
             ps.setObject(6, patientUserId, Types.INTEGER);
             try (ResultSet rows = ps.executeQuery()) {
                 Patient patient = null;
+                DiabetesProfile diabetesProfile = null;
                 boolean authorized = doctorUserId == null;
                 List<MedicalRecord> records = new ArrayList<>();
                 while (rows.next()) {
@@ -117,18 +126,29 @@ public class MedicalRecordDAO extends DBContext {
                         if (nationalIdDate != null) patient.setNationalIdDate(nationalIdDate.toLocalDate());
                         patient.setNationalIdPlace(rows.getString("p_national_id_place"));
                         patient.setCreatedBy(rows.getInt("p_created_by"));
+                        diabetesProfile = new DiabetesProfile();
+                        diabetesProfile.setPatientId(patient.getPatientId());
+                        diabetesProfile.setDiabetesType(rows.getString("dp_type"));
+                        Date diagnosisDate = rows.getDate("dp_diagnosis_date");
+                        if (diagnosisDate != null) diabetesProfile.setDiagnosisDate(diagnosisDate.toLocalDate());
+                        diabetesProfile.setTreatmentMethod(rows.getString("dp_treatment_method"));
+                        Object target = rows.getObject("dp_hba1c_target");
+                        if (target instanceof Number number) diabetesProfile.setHba1cTarget(number.doubleValue());
+                        Timestamp updatedAt = rows.getTimestamp("dp_updated_at");
+                        if (updatedAt != null) diabetesProfile.setUpdatedAt(updatedAt.toLocalDateTime());
                         authorized = rows.getBoolean("authorized");
                     }
                     if (rows.getObject("record_id") != null) records.add(mapRow(rows));
                 }
-                return new PatientHistoryData(patient, records, authorized);
+                return new PatientHistoryData(patient, diabetesProfile, records, authorized);
             }
         } catch (SQLException error) {
             throw databaseError("load patient history", error);
         }
     }
 
-    public record PatientHistoryData(Patient patient, List<MedicalRecord> records,
+    public record PatientHistoryData(Patient patient, DiabetesProfile diabetesProfile,
+            List<MedicalRecord> records,
             boolean authorized) {}
 
     /** Loads every read-only section of the medical-record form in one database round-trip. */
@@ -140,12 +160,24 @@ public class MedicalRecordDAO extends DBContext {
                    p.health_insurance_no p_health_insurance_no,p.national_id p_national_id,
                    p.national_id_date p_national_id_date,p.national_id_place p_national_id_place,
                    p.created_by p_created_by,
+                   dp.diabetes_type dp_type,dp.diagnosis_date dp_diagnosis_date,
+                   dp.treatment_method dp_treatment_method,dp.hba1c_target dp_hba1c_target,
+                   dp.updated_at dp_updated_at,
                    h.indicator_id h_indicator_id,h.entered_by_staff h_entered_by_staff,
                    h.height h_height,h.weight h_weight,h.bmi h_bmi,h.systolic_bp h_systolic_bp,
                    h.diastolic_bp h_diastolic_bp,h.heart_rate h_heart_rate,
                    h.temperature h_temperature,h.blood_glucose h_blood_glucose,
                    h.hba1c h_hba1c,h.cholesterol h_cholesterol,h.triglyceride h_triglyceride,
                    h.hdl_c h_hdl_c,h.ldl_c h_ldl_c,h.measured_at h_measured_at,
+                   lh.indicator_id lh_indicator_id,lh.height lh_height,lh.weight lh_weight,lh.bmi lh_bmi,
+                   lh.systolic_bp lh_systolic_bp,lh.diastolic_bp lh_diastolic_bp,
+                   lh.heart_rate lh_heart_rate,lh.temperature lh_temperature,
+                   lh.blood_glucose lh_blood_glucose,lh.hba1c lh_hba1c,
+                   lh.cholesterol lh_cholesterol,lh.triglyceride lh_triglyceride,
+                   lh.hdl_c lh_hdl_c,lh.ldl_c lh_ldl_c,lh.measured_at lh_measured_at,
+                   (SELECT string_agg(l.test_name||': '||COALESCE(l.result_value,'Chưa có kết quả')||
+                           CASE WHEN l.result_unit IS NULL THEN '' ELSE ' '||l.result_unit END,' | ' ORDER BY l.ordered_at)
+                    FROM lab_orders l WHERE l.encounter_id=r.encounter_id) lab_summary,
                    d.user_id d_user_id,d.specialty d_specialty,d.license_no d_license_no,
                    d.face_image_path d_face_image_path,d.cccd_image_path d_cccd_image_path,
                    d.license_image_path d_license_image_path,u.full_name d_full_name,
@@ -153,7 +185,14 @@ public class MedicalRecordDAO extends DBContext {
                    pi.frequency pi_frequency,pi.duration_days pi_duration_days
             FROM medicalrecords r
             JOIN patients p ON p.patient_id=r.patient_id
+            LEFT JOIN diabetes_profiles dp ON dp.patient_id=p.patient_id
             LEFT JOIN healthindicators h ON h.record_id=r.record_id
+            LEFT JOIN LATERAL (
+              SELECT hi.* FROM healthindicators hi
+              JOIN medicalrecords mr ON mr.record_id=hi.record_id
+              WHERE mr.patient_id=r.patient_id
+              ORDER BY hi.measured_at DESC LIMIT 1
+            ) lh ON TRUE
             LEFT JOIN doctors d ON d.doctor_id=r.doctor_id
             LEFT JOIN users u ON u.user_id=d.user_id
             LEFT JOIN prescriptionitems pi ON pi.record_id=r.record_id
@@ -166,6 +205,9 @@ public class MedicalRecordDAO extends DBContext {
                 Patient patient = null;
                 Doctor doctor = null;
                 HealthIndicator indicator = null;
+                HealthIndicator latestIndicator = null;
+                DiabetesProfile diabetesProfile = null;
+                String labSummary = null;
                 List<Map<String, Object>> prescriptions = new ArrayList<>();
                 while (rows.next()) {
                     if (record == null) {
@@ -185,6 +227,17 @@ public class MedicalRecordDAO extends DBContext {
                         if (nationalIdDate != null) patient.setNationalIdDate(nationalIdDate.toLocalDate());
                         patient.setNationalIdPlace(rows.getString("p_national_id_place"));
                         patient.setCreatedBy(rows.getInt("p_created_by"));
+                        diabetesProfile = new DiabetesProfile();
+                        diabetesProfile.setPatientId(record.getPatientId());
+                        diabetesProfile.setDiabetesType(rows.getString("dp_type"));
+                        Date diagnosisDate = rows.getDate("dp_diagnosis_date");
+                        if (diagnosisDate != null) diabetesProfile.setDiagnosisDate(diagnosisDate.toLocalDate());
+                        diabetesProfile.setTreatmentMethod(rows.getString("dp_treatment_method"));
+                        Object target = rows.getObject("dp_hba1c_target");
+                        if (target instanceof Number number) diabetesProfile.setHba1cTarget(number.doubleValue());
+                        Timestamp profileUpdatedAt = rows.getTimestamp("dp_updated_at");
+                        if (profileUpdatedAt != null) diabetesProfile.setUpdatedAt(profileUpdatedAt.toLocalDateTime());
+                        labSummary = rows.getString("lab_summary");
                         if (rows.getObject("d_user_id") != null) {
                             doctor = new Doctor();
                             doctor.setDoctorId(record.getDoctorId());
@@ -217,6 +270,25 @@ public class MedicalRecordDAO extends DBContext {
                             Timestamp measuredAt = rows.getTimestamp("h_measured_at");
                             if (measuredAt != null) indicator.setMeasuredAt(measuredAt.toLocalDateTime());
                         }
+                        if (rows.getObject("lh_indicator_id") != null) {
+                            latestIndicator = new HealthIndicator();
+                            latestIndicator.setIndicatorId(rows.getInt("lh_indicator_id"));
+                            latestIndicator.setHeight(rows.getDouble("lh_height"));
+                            latestIndicator.setWeight(rows.getDouble("lh_weight"));
+                            latestIndicator.setBmi(rows.getDouble("lh_bmi"));
+                            latestIndicator.setSystolicBp(rows.getInt("lh_systolic_bp"));
+                            latestIndicator.setDiastolicBp(rows.getInt("lh_diastolic_bp"));
+                            latestIndicator.setHeartRate(rows.getInt("lh_heart_rate"));
+                            latestIndicator.setTemperature(rows.getDouble("lh_temperature"));
+                            latestIndicator.setBloodGlucose(rows.getDouble("lh_blood_glucose"));
+                            latestIndicator.setHba1c(rows.getDouble("lh_hba1c"));
+                            latestIndicator.setCholesterol(rows.getDouble("lh_cholesterol"));
+                            latestIndicator.setTriglyceride(rows.getDouble("lh_triglyceride"));
+                            latestIndicator.setHdlC(rows.getDouble("lh_hdl_c"));
+                            latestIndicator.setLdlC(rows.getDouble("lh_ldl_c"));
+                            Timestamp latestMeasuredAt = rows.getTimestamp("lh_measured_at");
+                            if (latestMeasuredAt != null) latestIndicator.setMeasuredAt(latestMeasuredAt.toLocalDateTime());
+                        }
                     }
                     if (rows.getObject("pi_id") != null) {
                         Map<String, Object> item = new LinkedHashMap<>();
@@ -227,7 +299,8 @@ public class MedicalRecordDAO extends DBContext {
                         prescriptions.add(item);
                     }
                 }
-                return new MedicalRecordFormData(record, patient, doctor, indicator, prescriptions);
+                return new MedicalRecordFormData(record, patient, doctor, indicator, latestIndicator,
+                        diabetesProfile, labSummary, prescriptions);
             }
         } catch (SQLException error) {
             throw databaseError("load medical record form", error);
@@ -235,7 +308,8 @@ public class MedicalRecordDAO extends DBContext {
     }
 
     public record MedicalRecordFormData(MedicalRecord record, Patient patient, Doctor doctor,
-            HealthIndicator indicator, List<Map<String, Object>> prescriptionItems) {}
+            HealthIndicator indicator, HealthIndicator latestIndicator, DiabetesProfile diabetesProfile,
+            String labSummary, List<Map<String, Object>> prescriptionItems) {}
 
     public MedicalRecord getLatestByPatient(int patientId) {
         String sql = "SELECT * FROM MedicalRecords WHERE patient_id=? ORDER BY visit_date DESC LIMIT 1";

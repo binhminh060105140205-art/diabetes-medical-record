@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Tạo Tài Khoản</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260717-perf4">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260719-ai1">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
@@ -97,6 +97,16 @@
                         <label>Học vị / Bằng cấp</label>
                         <input type="text" name="degree" class="form-control" placeholder="Thạc sĩ, Bác sĩ CKI...">
                     </div>
+                    <div class="form-group">
+                        <label>Nhóm tiểu đường ưu tiên</label>
+                        <select name="diabetesFocus" class="form-control">
+                            <option value="GENERAL">Chuyên khoa hỗ trợ</option>
+                            <option value="TYPE_1">Ưu tiên Type 1</option>
+                            <option value="TYPE_2">Ưu tiên Type 2</option>
+                            <option value="BOTH">Type 1 &amp; Type 2</option>
+                        </select>
+                        <small>Chỉ dùng để gợi ý khi đặt lịch, không khóa lựa chọn.</small>
+                    </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -127,7 +137,7 @@
     }
 </script>
 <jsp:include page="footer.jsp"/>
-<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260717-perf4"></script>
-<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260717-perf4"></script>
+<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260719-ai1"></script>
+<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260719-ai1"></script>
 </body>
 </html>

@@ -27,6 +27,7 @@ public class DoctorDashboardController extends HttpServlet {
         request.setAttribute("doctor",        doctor);
 
         if (doctor != null) {
+            session.setAttribute("clinicDoctorId", doctor.getDoctorId());
             request.setAttribute("totalPatients", data.totalPatients());
             request.setAttribute("totalMyRecords", data.totalRecords());
             request.setAttribute("myRecords", data.recent());

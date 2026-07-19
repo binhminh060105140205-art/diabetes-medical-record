@@ -62,6 +62,7 @@ public class AdminCreateUserController extends HttpServlet {
         String specialty = request.getParameter("specialty");
         String licenseNo = request.getParameter("licenseNo");
         String degree    = request.getParameter("degree");
+        String diabetesFocus = request.getParameter("diabetesFocus");
 
         try {
             username=Validators.username(username); password=Validators.password(password,"Mật khẩu");
@@ -70,6 +71,7 @@ public class AdminCreateUserController extends HttpServlet {
             if("PATIENT".equals(role))throw new IllegalArgumentException("Hãy tạo tài khoản bệnh nhân tại màn Tiếp nhận bệnh nhân.");
             specialty=Validators.max(specialty,100,"Chuyên khoa"); licenseNo=Validators.max(licenseNo,50,"Số chứng chỉ"); degree=Validators.max(degree,100,"Học vị");
             if("DOCTOR".equals(role)){specialty=Validators.required(specialty,"Chuyên khoa");licenseNo=Validators.required(licenseNo,"Số chứng chỉ hành nghề");}
+            if (diabetesFocus == null || !java.util.Set.of("TYPE_1","TYPE_2","BOTH","GENERAL").contains(diabetesFocus)) diabetesFocus="GENERAL";
         } catch(IllegalArgumentException ex) {
             request.setAttribute("err",ex.getMessage()); request.getRequestDispatcher("views/AdminCreateUser.jsp").forward(request,response); return;
         }
@@ -104,6 +106,7 @@ public class AdminCreateUserController extends HttpServlet {
             doc.setSpecialty(specialty);
             doc.setLicenseNo(licenseNo);
             doc.setDegree(degree);
+            doc.setDiabetesFocus(diabetesFocus);
             docDAO.create(doc);
 
             try {

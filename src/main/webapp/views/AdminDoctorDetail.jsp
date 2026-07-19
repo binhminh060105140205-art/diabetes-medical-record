@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hồ Sơ Bác Sĩ - Admin</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260717-perf4">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260719-ai1">
     <style>
         .form-container {
             max-width: 820px;
@@ -85,6 +85,7 @@
             <div><b>Chuyên khoa</b>${doctor.specialty}</div>
             <div><b>Số chứng chỉ hành nghề</b>${doctor.licenseNo}</div>
             <div><b>Học vị / Bằng cấp</b>${doctor.degree}</div>
+            <div><b>Nhóm tiểu đường ưu tiên</b>${doctor.diabetesFocusLabel}</div>
         </div>
         </c:if>
 
@@ -95,6 +96,16 @@
         <c:otherwise>
             <form action="${pageContext.request.contextPath}/AdminDoctorDetail" method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="userId" value="${targetUser.userId}">
+                <div class="form-group">
+                    <label>Nhóm tiểu đường ưu tiên</label>
+                    <select name="diabetesFocus" class="form-control">
+                        <option value="GENERAL" ${doctor.diabetesFocus=='GENERAL'?'selected':''}>Chuyên khoa hỗ trợ</option>
+                        <option value="TYPE_1" ${doctor.diabetesFocus=='TYPE_1'?'selected':''}>Ưu tiên Type 1</option>
+                        <option value="TYPE_2" ${doctor.diabetesFocus=='TYPE_2'?'selected':''}>Ưu tiên Type 2</option>
+                        <option value="BOTH" ${doctor.diabetesFocus=='BOTH'?'selected':''}>Type 1 &amp; Type 2</option>
+                    </select>
+                    <small>Chỉ dùng để sắp xếp gợi ý bác sĩ; bệnh nhân vẫn có thể chọn bác sĩ khác.</small>
+                </div>
                 <div class="doc-image-row">
                     <div class="doc-image-box">
                         <label>Ảnh khuôn mặt</label>
@@ -140,6 +151,6 @@
 </div>
 
 <jsp:include page="footer.jsp"/>
-<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260717-perf4"></script>
+<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260719-ai1"></script>
 </body>
 </html>

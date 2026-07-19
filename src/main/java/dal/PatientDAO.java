@@ -4,6 +4,7 @@ import models.Patient;
 import models.HealthAlert;
 import models.MedicalRecord;
 import models.PatientDailyLog;
+import models.DiabetesProfile;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -127,6 +128,11 @@ public class PatientDAO extends DBContext {
     public PatientDashboardData loadPatientDashboard(int userId) {
         String sql = """
             SELECT p.*,
+                   COALESCE(dp.diabetes_type,'UNKNOWN') dp_type,
+                   dp.diagnosis_date dp_diagnosis_date,
+                   dp.treatment_method dp_treatment_method,
+                   dp.hba1c_target dp_hba1c_target,
+                   dp.updated_at dp_updated_at,
                    r.record_id latest_record_id,r.doctor_id latest_doctor_id,
                    r.visit_date latest_visit_date,r.final_diagnosis latest_final_diagnosis,
                    r.status latest_record_status,
@@ -135,14 +141,9 @@ public class PatientDAO extends DBContext {
                    l.diastolic_bp today_diastolic_bp,l.weight today_weight,
                    l.symptoms today_symptoms,l.note today_note,
                    l.heart_rate today_heart_rate,l.spo2 today_spo2,
-                   l.meal_type today_meal_type,l.created_at today_created_at,
-                   a.alert_id alert_id,a.indicator_type alert_indicator_type,
-                   a.value alert_value,a.threshold alert_threshold,
-                   a.alert_level alert_level,a.alert_message alert_message,
-                   a.data_source alert_data_source,a.source_record_id alert_source_record_id,
-                   a.is_acknowledged alert_acknowledged,
-                   a.acknowledged_at alert_acknowledged_at,a.created_at alert_created_at
+                   l.meal_type today_meal_type,l.created_at today_created_at
             FROM patients p
+            LEFT JOIN diabetes_profiles dp ON dp.patient_id=p.patient_id
             LEFT JOIN LATERAL (
               SELECT record_id,doctor_id,visit_date,final_diagnosis,status
               FROM medicalrecords WHERE patient_id=p.patient_id
@@ -150,22 +151,28 @@ public class PatientDAO extends DBContext {
             ) r ON TRUE
             LEFT JOIN patientdailylogs l
               ON l.patient_id=p.patient_id AND l.log_date=CURRENT_DATE
-            LEFT JOIN healthalerts a
-              ON a.patient_id=p.patient_id AND a.is_acknowledged=FALSE
             WHERE p.user_id=?
-            ORDER BY CASE a.alert_level WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END,
-                     a.created_at DESC
             """;
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, userId);
             try (ResultSet rows = ps.executeQuery()) {
                 Patient patient = null;
+                DiabetesProfile diabetesProfile = null;
                 MedicalRecord latestRecord = null;
                 PatientDailyLog todayLog = null;
                 List<HealthAlert> alerts = new ArrayList<>();
                 while (rows.next()) {
                     if (patient == null) {
                         patient = mapRow(rows);
+                        diabetesProfile = new DiabetesProfile();
+                        diabetesProfile.setPatientId(patient.getPatientId());
+                        diabetesProfile.setDiabetesType(rows.getString("dp_type"));
+                        Date diagnosisDate = rows.getDate("dp_diagnosis_date");
+                        if (diagnosisDate != null) diabetesProfile.setDiagnosisDate(diagnosisDate.toLocalDate());
+                        diabetesProfile.setTreatmentMethod(rows.getString("dp_treatment_method"));
+                        setNullableDouble(rows, "dp_hba1c_target", diabetesProfile::setHba1cTarget);
+                        Timestamp profileUpdated = rows.getTimestamp("dp_updated_at");
+                        if (profileUpdated != null) diabetesProfile.setUpdatedAt(profileUpdated.toLocalDateTime());
                         if (rows.getObject("latest_record_id") != null) {
                             latestRecord = new MedicalRecord();
                             latestRecord.setRecordId(rows.getInt("latest_record_id"));
@@ -195,9 +202,8 @@ public class PatientDAO extends DBContext {
                             if (created != null) todayLog.setCreatedAt(created.toLocalDateTime());
                         }
                     }
-                    if (rows.getObject("alert_id") != null) alerts.add(mapDashboardAlert(rows, patient.getPatientId()));
                 }
-                return new PatientDashboardData(patient, latestRecord, todayLog, alerts);
+                return new PatientDashboardData(patient, diabetesProfile, latestRecord, todayLog, alerts);
             }
         } catch (SQLException error) {
             throw databaseError("load patient dashboard", error);
@@ -236,7 +242,7 @@ public class PatientDAO extends DBContext {
         if (value != null) setter.accept(((Number) value).intValue());
     }
 
-    public record PatientDashboardData(Patient patient, MedicalRecord latestRecord,
+    public record PatientDashboardData(Patient patient, DiabetesProfile diabetesProfile, MedicalRecord latestRecord,
             PatientDailyLog todayLog, List<HealthAlert> alerts) {}
 
     public Patient create(Patient p) {

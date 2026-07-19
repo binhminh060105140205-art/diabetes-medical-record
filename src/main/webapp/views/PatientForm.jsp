@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Hồ Sơ Bệnh Nhân</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260717-perf4">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260719-ai1">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
@@ -95,8 +95,8 @@
     </div>
 </div>
 
-<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260717-perf4"></script>
-<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260717-perf4"></script>
+<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260719-ai1"></script>
+<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260719-ai1"></script>
 <jsp:include page="footer.jsp"/>
 </body>
 </html>

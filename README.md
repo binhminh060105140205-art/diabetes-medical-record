@@ -26,6 +26,9 @@ BOOTSTRAP_ADMIN_PASSWORD=Admin@123
 BOOTSTRAP_ADMIN_NAME=System Administrator
 MAIL_USERNAME=
 MAIL_PASSWORD=
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-5.6-terra
+OPENAI_TIMEOUT_SECONDS=20
 UPLOAD_DIR=./uploads
 ```
 
@@ -39,6 +42,16 @@ Mở [http://localhost:8082](http://localhost:8082). Spring Boot tự đọc `.e
 ## Deploy Render
 
 Repository đã có `Dockerfile` và `render.yaml`. Trên Render cấu hình `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `BOOTSTRAP_ADMIN_PASSWORD` và `DEVICE_API_KEY`.
+
+Để bật tư vấn sức khỏe hằng ngày, thêm `OPENAI_API_KEY` trong Environment của Render. Nếu để trống, hệ thống vẫn hoạt động và dùng bộ quy tắc an toàn tại máy chủ.
+
+## Tư vấn sức khỏe AI và quyền riêng tư
+
+- Chỉ gọi AI khi bệnh nhân chủ động tích xác nhận và nhấn nút nhận tư vấn.
+- Dữ liệu gửi đi đã được tối thiểu hóa: nhóm tuổi, loại tiểu đường, nhóm điều trị, mục tiêu HbA1c và thống kê chỉ số gần đây.
+- Không gửi họ tên, ngày sinh chính xác, số điện thoại, email, địa chỉ, CCCD, BHYT, username, mã bệnh nhân, tên/liều thuốc hoặc ghi chú thô.
+- Request dùng `store: false`; lời khuyên cùng ngữ cảnh được cache trong ngày để giảm thời gian chờ và số lần gọi API.
+- AI chỉ hỗ trợ giáo dục sức khỏe, không chẩn đoán và không tự thay đổi thuốc. Quy tắc an toàn của hệ thống luôn có quyền ưu tiên hơn nội dung do AI sinh.
 
 ## Cấu trúc
 

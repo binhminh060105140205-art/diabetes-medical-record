@@ -13,6 +13,7 @@ public class Doctor {
     private String licenseIssuedBy;
     private String degree;
     private BigDecimal consultationFee;
+    private String diabetesFocus = "GENERAL";
 
     // Đường dẫn (tên file) ảnh lưu trên server — xem thêm util.FileStorageUtil
     private String faceImagePath;
@@ -68,6 +69,19 @@ public class Doctor {
 
     public BigDecimal getConsultationFee()           { return consultationFee; }
     public void setConsultationFee(BigDecimal v)     { this.consultationFee = v; }
+
+    public String getDiabetesFocus()                 { return diabetesFocus; }
+    public void setDiabetesFocus(String v)           { this.diabetesFocus = v; }
+
+    public String getDiabetesFocusLabel() {
+        if (diabetesFocus == null) return "Chuyên khoa hỗ trợ";
+        return switch (diabetesFocus) {
+            case "TYPE_1" -> "Ưu tiên Type 1";
+            case "TYPE_2" -> "Ưu tiên Type 2";
+            case "BOTH" -> "Type 1 & Type 2";
+            default -> "Chuyên khoa hỗ trợ";
+        };
+    }
 
     public String getFaceImagePath()          { return faceImagePath; }
     public void setFaceImagePath(String v)    { this.faceImagePath = v; }

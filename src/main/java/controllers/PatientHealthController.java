@@ -5,7 +5,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import java.io.IOException;
-import java.util.List;
 import models.*;
 
 /** Patient self-monitoring. A future local AI model can consume this data separately. */
@@ -23,16 +22,20 @@ public class PatientHealthController extends HttpServlet {
         if (patient == null) { resp.sendError(404); return; }
         String action = req.getParameter("action");
         if ("saveLog".equals(action)) {
-            PatientDailyLog log = new PatientDailyLog(); log.setPatientId(patient.getPatientId());
-            log.setBloodGlucose(decimal(req,"bloodGlucose")); log.setSystolicBp(integer(req,"systolicBp"));
-            log.setDiastolicBp(integer(req,"diastolicBp")); log.setWeight(decimal(req,"weight"));
-            log.setHeartRate(integer(req,"heartRate")); log.setSpo2(decimal(req,"spo2"));
-            log.setMealType(text(req,"mealType")); log.setSymptoms(text(req,"symptoms")); log.setNote(text(req,"note"));
-            try { validate(log); } catch(IllegalArgumentException e) { resp.setStatus(400); resp.getWriter().print("{\"success\":false,\"error\":\""+json(e.getMessage())+"\"}"); return; }
-            PatientDailyLog saved = new PatientDailyLogDAO().save(log);
-            List<HealthAlert> alerts = AlertEngine.analyzeLog(saved); HealthAlertDAO dao = new HealthAlertDAO();
-            for (HealthAlert alert : alerts) dao.save(alert);
-            resp.getWriter().printf("{\"success\":true,\"message\":\"Đã lưu chỉ số hôm nay\",\"alerts_created\":%d,\"has_alerts\":%s}", alerts.size(), !alerts.isEmpty()); return;
+            try {
+                PatientDailyLog log = new PatientDailyLog(); log.setPatientId(patient.getPatientId());
+                log.setBloodGlucose(decimal(req,"bloodGlucose")); log.setSystolicBp(integer(req,"systolicBp"));
+                log.setDiastolicBp(integer(req,"diastolicBp")); log.setWeight(decimal(req,"weight"));
+                log.setHeartRate(integer(req,"heartRate")); log.setSpo2(decimal(req,"spo2"));
+                log.setMealType(text(req,"mealType")); log.setSymptoms(text(req,"symptoms")); log.setNote(text(req,"note"));
+                validate(log);
+                new PatientDailyLogDAO().save(log);
+                resp.getWriter().print("{\"success\":true,\"message\":\"Đã lưu chỉ số hôm nay\"}");
+            } catch (IllegalArgumentException | ServletException error) {
+                resp.setStatus(400);
+                resp.getWriter().print("{\"success\":false,\"error\":\""+json(error.getMessage())+"\"}");
+            }
+            return;
         }
         if ("acknowledgeAlert".equals(action)) {
             Integer id = integer(req,"alertId");
@@ -50,6 +53,7 @@ public class PatientHealthController extends HttpServlet {
         if(log.getSystolicBp()!=null&&log.getDiastolicBp()!=null&&log.getSystolicBp()<=log.getDiastolicBp()) throw new IllegalArgumentException("Huyết áp tâm thu phải lớn hơn tâm trương.");
         if(log.getSymptoms()!=null&&log.getSymptoms().length()>500) throw new IllegalArgumentException("Triệu chứng tối đa 500 ký tự.");
         if(log.getNote()!=null&&log.getNote().length()>1000) throw new IllegalArgumentException("Ghi chú tối đa 1000 ký tự.");
+        if(log.getMealType()!=null&&!java.util.Set.of("FASTING","AFTER_MEAL","BEDTIME","OTHER").contains(log.getMealType())) throw new IllegalArgumentException("Thời điểm đo không hợp lệ.");
     }
     private void range(Number value,double min,double max,String label){if(value!=null&&(value.doubleValue()<min||value.doubleValue()>max))throw new IllegalArgumentException(label+" ngoài khoảng hợp lệ ("+min+"–"+max+").");}
     private String json(String value){return value.replace("\\","\\\\").replace("\"","\\\"");}

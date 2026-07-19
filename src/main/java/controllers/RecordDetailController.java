@@ -55,9 +55,7 @@ public class RecordDetailController extends HttpServlet {
         request.setAttribute("prescriptionItems", data.prescriptionItems());
 
         request.setAttribute("detail", detail);
-        if (data.patient() != null) {
-            request.setAttribute("diabetesProfile", new DiabetesProfileDAO().getByPatientId(data.patient().getPatientId()));
-        }
+        request.setAttribute("diabetesProfile", data.diabetesProfile());
         request.getRequestDispatcher("views/RecordDetail.jsp").forward(request, response);
     }
 }

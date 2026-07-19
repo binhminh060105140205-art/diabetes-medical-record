@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Hồ Sơ Bệnh Án</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260717-perf4">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260719-ai1">
     <style>
         .role-bar{padding:10px 16px;border-radius:8px;margin-bottom:16px;font-size:14px;font-weight:600;}
         .role-staff {background:#cff4fc;color:#055160;border-left:4px solid #0dcaf0;}
@@ -22,6 +22,7 @@
 <jsp:include page="header.jsp"/>
 <jsp:include page="topnav.jsp"/>
 <div class="page-wrapper">
+    <c:if test="${not empty sessionScope.recordFlash}"><div class="alert alert-danger"><c:out value="${sessionScope.recordFlash}"/></div><c:remove var="recordFlash" scope="session"/></c:if>
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px;">
         <h1 class="page-title" style="margin:0;">📋 Hồ Sơ Bệnh Án</h1>
         <div>
@@ -38,16 +39,13 @@
         <c:when test="${sessionScope.user.role == 'STAFF'}">
         <div class="role-bar role-staff">
             👩‍💼 <strong>Nhân viên tiếp nhận:</strong>
-            Tab 1 — Nhập thông tin khám ban đầu.
-            Tab 2 — Nhập chỉ số lâm sàng (chiều cao, cân nặng, huyết áp, nhịp tim).
-            Tab 3 — Nhập chỉ số xét nghiệm từ phòng lab (Glucose, HbA1c, Cholesterol...). Sau khi lưu AI tự phân tích.
-            Tab 4 — Do Bác sĩ nhập kết luận.
+            Nhập thông tin ban đầu rồi đo sinh hiệu. Kết quả xét nghiệm được nhập tại mục Xét nghiệm để tránh trùng dữ liệu.
         </div>
         </c:when>
         <c:when test="${sessionScope.user.role == 'DOCTOR'}">
         <div class="role-bar role-doctor">
             🩺 <strong>Bác sĩ:</strong>
-            Tab 4 — Nhập kết luận, đơn thuốc và lịch tái khám.
+            Xem tóm tắt tiểu đường, nhật ký sức khỏe, kết quả xét nghiệm rồi nhập kết luận, đơn thuốc và ngày tái khám.
         </div>
         </c:when>
     </c:choose>
@@ -55,24 +53,24 @@
     <%-- TÓM TẮT HỒ SƠ TIỂU ĐƯỜNG — chỉ đọc, hiển thị cho cả Staff và Bác sĩ --%>
     <c:if test="${not empty diabetesProfile}">
     <div class="card" style="border-left:4px solid #0d6efd;">
-        <div class="card-title">🩸 Tóm tắt hồ sơ tiểu đường</div>
+        <div class="card-title">🩸 Tóm tắt hồ sơ tiểu đường <c:if test="${sessionScope.user.role=='DOCTOR'}"><a class="btn btn-outline-dark btn-sm" href="${pageContext.request.contextPath}/DoctorPatientJournal?patientId=${patient.patientId}">Xem nhật ký 30 ngày</a></c:if></div>
         <div class="indicator-grid">
             <div class="indicator-item"><div class="ind-label">Loại tiểu đường</div>
-                <div class="ind-value">${diabetesProfile.diabetesType=='TYPE_1'?'Type 1':diabetesProfile.diabetesType=='TYPE_2'?'Type 2':'Chưa xác định'}</div></div>
+                <div class="ind-value">${diabetesProfile.diabetesTypeLabel}</div></div>
             <div class="indicator-item"><div class="ind-label">Ngày phát hiện</div>
                 <div class="ind-value">${not empty diabetesProfile.diagnosisDate?diabetesProfile.diagnosisDate:'—'}</div></div>
             <div class="indicator-item"><div class="ind-label">Phương pháp điều trị</div>
-                <div class="ind-value">${diabetesProfile.treatmentMethod=='INSULIN'?'Insulin':diabetesProfile.treatmentMethod=='ORAL_MEDICATION'?'Thuốc uống':diabetesProfile.treatmentMethod=='LIFESTYLE'?'Ăn uống/vận động':diabetesProfile.treatmentMethod=='COMBINATION'?'Kết hợp':'—'}</div></div>
+                <div class="ind-value">${diabetesProfile.treatmentMethodLabel}</div></div>
             <div class="indicator-item"><div class="ind-label">Mục tiêu HbA1c</div>
                 <div class="ind-value">${not empty diabetesProfile.hba1cTarget?diabetesProfile.hba1cTarget:'—'}</div><div class="ind-unit">%</div></div>
             <div class="indicator-item"><div class="ind-label">HbA1c gần nhất</div>
-                <div class="ind-value">${indicator.hba1c}</div><div class="ind-unit">%</div></div>
+                <div class="ind-value">${latestIndicator.hba1c}</div><div class="ind-unit">%</div></div>
             <div class="indicator-item"><div class="ind-label">Đường huyết gần nhất</div>
-                <div class="ind-value">${indicator.bloodGlucose}</div><div class="ind-unit">mg/dL</div></div>
+                <div class="ind-value">${latestIndicator.bloodGlucose}</div><div class="ind-unit">mg/dL</div></div>
             <div class="indicator-item"><div class="ind-label">Huyết áp gần nhất</div>
-                <div class="ind-value">${indicator.systolicBp}/${indicator.diastolicBp}</div><div class="ind-unit">mmHg</div></div>
+                <div class="ind-value">${latestIndicator.systolicBp}/${latestIndicator.diastolicBp}</div><div class="ind-unit">mmHg</div></div>
             <div class="indicator-item"><div class="ind-label">BMI gần nhất</div>
-                <div class="ind-value">${indicator.bmi}</div></div>
+                <div class="ind-value">${latestIndicator.bmi}</div></div>
         </div>
     </div>
     </c:if>
@@ -93,10 +91,8 @@
                 onclick="showTab(1)" id="btn1">1️⃣ Thông tin khám</button>
         <button class="tab-btn ${sessionScope.user.role!='STAFF'?'locked':''} ${clinicalDone?'done':''}"
                 onclick="showTab(2)" id="btn2">2️⃣ Lâm sàng <small>(Staff)</small></button>
-        <button class="tab-btn ${sessionScope.user.role!='STAFF'?'locked':''} ${labDone?'done':''}"
-                onclick="showTab(3)" id="btn3">3️⃣ Xét nghiệm <small>(Staff)</small></button>
         <button class="tab-btn ${sessionScope.user.role!='DOCTOR'?'locked':''}"
-                onclick="showTab(4)" id="btn5">5️⃣ Kết luận <small>(Bác sĩ)</small></button>
+                onclick="showTab(4)" id="btn4">3️⃣ Kết luận <small>(Bác sĩ)</small></button>
     </div>
 
     <%-- ══ TAB 1: THÔNG TIN KHÁM (STAFF) ══════════════════════════════ --%>
@@ -182,7 +178,7 @@
             <div class="card-title">II. Chỉ số lâm sàng <span style="font-size:13px;color:#0dcaf0;">(Nhân viên nhập)</span></div>
             <div class="alert alert-info" style="margin-bottom:14px;font-size:13px;">
                 ✏️ Tab này Staff nhập các chỉ số đo trực tiếp tại phòng khám.
-                Chỉ số xét nghiệm (Glucose, HbA1c...) sẽ do Bác sĩ nhập ở Tab 3.
+                Kết quả xét nghiệm được nhập tại mục Xét nghiệm của luồng khám để tránh trùng dữ liệu.
             </div>
             <form action="${pageContext.request.contextPath}/MedicalRecordForm" method="post">
                 <input type="hidden" name="action" value="saveClinical">
@@ -256,92 +252,6 @@
     </c:choose>
     </div>
 
-    <%-- ══ TAB 3: XÉT NGHIỆM (STAFF) ════════════════════════════════ --%>
-    <div class="tab-panel" id="tab3">
-    <c:choose>
-    <c:when test="${sessionScope.user.role == 'STAFF'}">
-        <div class="card">
-            <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
-                <span>III. Chỉ số xét nghiệm <span style="font-size:13px;color:#0dcaf0;">(Nhân viên nhập từ kết quả lab)</span></span>
-            </div>
-            <div class="alert alert-success" style="margin-bottom:14px;font-size:13px;">
-                🩺 Bác sĩ nhập kết quả xét nghiệm từ phòng lab. AI sẽ tự phân tích ngay sau khi lưu.
-            </div>
-            <form action="${pageContext.request.contextPath}/MedicalRecordForm" method="post">
-                <input type="hidden" name="action" value="saveLabIndicators">
-                <input type="hidden" name="recordId" value="${record.recordId}">
-
-                <div id="warningBox" class="warning-box"></div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Đường huyết lúc đói (mg/dL) <span class="range-hint">BT &lt;100</span></label>
-                        <input type="number" step="0.1" name="bloodGlucose" class="form-control"
-                               value="${indicator.bloodGlucose}" placeholder="90" min="20" max="600"
-                               oninput="hintBG(this)">
-                        <span id="hint_bg" class="err-msg" style="color:#888;"></span>
-                    </div>
-                    <div class="form-group">
-                        <label>HbA1c (%) <span class="range-hint">BT &lt;5.7 | Hợp lệ: 3–20%</span></label>
-                        <input type="number" step="0.1" name="hba1c" class="form-control"
-                               value="${indicator.hba1c}" placeholder="5.5" min="3" max="20"
-                               oninput="hintHba1c(this)">
-                        <span id="hint_hba1c" class="err-msg" style="color:#888;"></span>
-                    </div>
-                    <div class="form-group">
-                        <label>Cholesterol (mg/dL) <span class="range-hint">BT &lt;200</span></label>
-                        <input type="number" step="0.1" name="cholesterol" class="form-control"
-                               value="${indicator.cholesterol}" placeholder="180" min="50" max="700">
-                    </div>
-                    <div class="form-group">
-                        <label>Triglyceride (mg/dL) <span class="range-hint">BT &lt;150</span></label>
-                        <input type="number" step="0.1" name="triglyceride" class="form-control"
-                               value="${indicator.triglyceride}" placeholder="130" min="20" max="2000">
-                    </div>
-                    <div class="form-group">
-                        <label>HDL-C (mg/dL) <span class="range-hint">BT &gt;40</span></label>
-                        <input type="number" step="0.1" name="hdlC" class="form-control"
-                               value="${indicator.hdlC}" placeholder="55" min="10" max="150">
-                    </div>
-                    <div class="form-group">
-                        <label>LDL-C (mg/dL) <span class="range-hint">BT &lt;100</span></label>
-                        <input type="number" step="0.1" name="ldlC" class="form-control"
-                               value="${indicator.ldlC}" placeholder="100" min="10" max="400">
-                    </div>
-                </div>
-
-                <div class="alert alert-success" style="margin-top:8px;font-size:13px;">
-                    📊 Sau khi bấm Lưu, AI sẽ <strong>tự động phân tích</strong> ngầm và lưu kết quả. Bác sĩ sẽ xem trong hồ sơ chi tiết.
-                </div>
-                <button type="submit" class="btn btn-success" style="font-size:15px;">
-                    💾 Lưu chỉ số xét nghiệm →
-                </button>
-            </form>
-        </div>
-    </c:when>
-    <c:otherwise>
-        <div class="card">
-            <div class="card-title">III. Chỉ số xét nghiệm</div>
-            <c:choose>
-            <c:when test="${labDone}">
-                <div class="indicator-grid">
-                    <div class="indicator-item"><div class="ind-label">Đường huyết</div><div class="ind-value">${indicator.bloodGlucose}</div><div class="ind-unit">mg/dL</div></div>
-                    <div class="indicator-item"><div class="ind-label">HbA1c</div><div class="ind-value">${indicator.hba1c}</div><div class="ind-unit">%</div></div>
-                    <div class="indicator-item"><div class="ind-label">Cholesterol</div><div class="ind-value">${indicator.cholesterol}</div><div class="ind-unit">mg/dL</div></div>
-                    <div class="indicator-item"><div class="ind-label">Triglyceride</div><div class="ind-value">${indicator.triglyceride}</div><div class="ind-unit">mg/dL</div></div>
-                    <div class="indicator-item"><div class="ind-label">HDL-C</div><div class="ind-value">${indicator.hdlC}</div><div class="ind-unit">mg/dL</div></div>
-                    <div class="indicator-item"><div class="ind-label">LDL-C</div><div class="ind-value">${indicator.ldlC}</div><div class="ind-unit">mg/dL</div></div>
-                </div>
-            </c:when>
-            <c:otherwise>
-                <div class="alert alert-info">⏳ Chờ Bác sĩ nhập kết quả xét nghiệm.</div>
-            </c:otherwise>
-            </c:choose>
-        </div>
-    </c:otherwise>
-    </c:choose>
-    </div>
-
     <%-- ══ TAB 4: KẾT LUẬN (DOCTOR) ══════════════════════════════════ --%>
     <div class="tab-panel" id="tab4">
     <c:choose>
@@ -353,8 +263,8 @@
                 <input type="hidden" name="recordId" value="${record.recordId}">
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Loại tiểu đường</label>
-                        <select name="diabetesType" class="form-control">
+                        <label>Loại tiểu đường (bác sĩ xác nhận)</label>
+                        <select id="diabetesType" name="diabetesType" class="form-control" onchange="syncDiabetesTreatmentOptions()">
                             <option value="UNKNOWN" ${diabetesProfile.diabetesType=='UNKNOWN'?'selected':''}>Chưa xác định</option>
                             <option value="TYPE_1" ${diabetesProfile.diabetesType=='TYPE_1'?'selected':''}>Type 1</option>
                             <option value="TYPE_2" ${diabetesProfile.diabetesType=='TYPE_2'?'selected':''}>Type 2</option>
@@ -366,7 +276,7 @@
                     </div>
                     <div class="form-group">
                         <label>Phương pháp điều trị</label>
-                        <select name="treatmentMethod" class="form-control">
+                        <select id="treatmentMethod" name="treatmentMethod" class="form-control">
                             <option value="">-- Chưa xác định --</option>
                             <option value="LIFESTYLE" ${diabetesProfile.treatmentMethod=='LIFESTYLE'?'selected':''}>Ăn uống/vận động</option>
                             <option value="ORAL_MEDICATION" ${diabetesProfile.treatmentMethod=='ORAL_MEDICATION'?'selected':''}>Thuốc uống</option>
@@ -376,7 +286,7 @@
                     </div>
                     <div class="form-group">
                         <label>Mục tiêu HbA1c (%)</label>
-                        <input type="number" step="0.1" name="hba1cTarget" class="form-control" value="${diabetesProfile.hba1cTarget}" placeholder="7.0">
+                        <input type="number" min="4" max="15" step="0.1" name="hba1cTarget" class="form-control" value="${diabetesProfile.hba1cTarget}" placeholder="Do bác sĩ đặt">
                     </div>
                 </div>
                 <button type="submit" class="btn btn-outline">💾 Lưu hồ sơ tiểu đường</button>
@@ -384,12 +294,10 @@
         </div>
         <div class="card">
             <div class="card-title">V. Kết luận của Bác sĩ</div>
-            <c:if test="${not empty warning}">
-            <div class="ai-panel ${warning.riskLevel}" style="padding:10px 16px;margin-bottom:16px;">
-                <small>🤖 AI: <strong><span class="risk-badge risk-${warning.riskLevel}">${warning.riskLevel}</span></strong>
-                — Điểm: ${warning.aiScore} | ${warning.warningMessage}</small>
-            </div>
-            </c:if>
+            <c:if test="${diabetesProfile.diabetesType=='TYPE_1'}"><div class="alert alert-info"><strong>Gợi ý ghi nhận Type 1:</strong> loại insulin, liều và thời điểm dùng; số lần đo đường huyết; triệu chứng hạ đường huyết. Đây chỉ là nhắc nhập liệu, bác sĩ quyết định điều trị.</div></c:if>
+            <c:if test="${diabetesProfile.diabetesType=='TYPE_2'}"><div class="alert alert-info"><strong>Gợi ý ghi nhận Type 2:</strong> thuốc đang dùng, cân nặng/BMI, huyết áp, mỡ máu và chế độ ăn/vận động. Đây chỉ là nhắc nhập liệu, bác sĩ quyết định điều trị.</div></c:if>
+            <c:if test="${not empty labSummary}"><div class="alert alert-info"><strong>Kết quả xét nghiệm:</strong> <c:out value="${labSummary}"/></div></c:if>
+            <c:if test="${empty labSummary}"><div class="alert alert-info">Chưa có chỉ định hoặc kết quả xét nghiệm cho lượt khám này. Bác sĩ có thể kết luận nếu không cần xét nghiệm.</div></c:if>
             <form action="${pageContext.request.contextPath}/MedicalRecordForm" method="post">
                 <input type="hidden" name="action" value="saveConclusion">
                 <input type="hidden" name="recordId" value="${record.recordId}">
@@ -478,15 +386,15 @@
 
 </div><%-- end page-wrapper --%>
 
-<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260717-perf4"></script>
+<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260719-ai1"></script>
 <script>
 function showTab(n) {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     var panel = document.getElementById('tab'+n);
-    var btns  = document.querySelectorAll('.tab-btn');
+    var button = document.getElementById('btn'+n);
     if (panel) panel.classList.add('active');
-    if (btns[n-1]) btns[n-1].classList.add('active');
+    if (button) button.classList.add('active');
     var u = new URL(window.location.href);
     u.searchParams.set('tab', n); window.history.replaceState({}, '', u);
 }
@@ -502,24 +410,16 @@ function calcBMI() {
     }
 }
 
-function hintBG(el) {
-    var v = parseFloat(el.value);
-    var hint = document.getElementById('hint_bg');
-    if (!hint || !v) return;
-    if (v < 70) hint.innerHTML = '<span style="color:#dc2626">⚠ Thấp — có thể hạ đường huyết</span>';
-    else if (v <= 99) hint.innerHTML = '<span style="color:#16a34a">✓ Bình thường</span>';
-    else if (v <= 125) hint.innerHTML = '<span style="color:#d97706">⚠ Tiền tiểu đường</span>';
-    else hint.innerHTML = '<span style="color:#dc2626">⛔ Cao — nguy cơ tiểu đường</span>';
-}
-
-function hintHba1c(el) {
-    var v = parseFloat(el.value);
-    var hint = document.getElementById('hint_hba1c');
-    if (!hint || !v) return;
-    if (v < 3 || v > 20) hint.innerHTML = '<span style="color:#dc2626">⛔ Ngoài khoảng hợp lệ (3%–20%)</span>';
-    else if (v < 5.7) hint.innerHTML = '<span style="color:#16a34a">✓ Bình thường</span>';
-    else if (v < 6.5) hint.innerHTML = '<span style="color:#d97706">⚠ Tiền tiểu đường</span>';
-    else hint.innerHTML = '<span style="color:#dc2626">⛔ Tiểu đường — cần điều trị</span>';
+function syncDiabetesTreatmentOptions() {
+    var type = document.getElementById('diabetesType');
+    var method = document.getElementById('treatmentMethod');
+    if (!type || !method) return;
+    var type1 = type.value === 'TYPE_1';
+    ['LIFESTYLE', 'ORAL_MEDICATION'].forEach(function(value) {
+        var option = method.querySelector('option[value="' + value + '"]');
+        if (option) option.hidden = type1;
+    });
+    if (type1 && (method.value === 'LIFESTYLE' || method.value === 'ORAL_MEDICATION')) method.value = '';
 }
 
 var urlTab = new URLSearchParams(window.location.search).get('tab');
@@ -529,6 +429,7 @@ var defaultTab = serverErrTab ? parseInt(serverErrTab)
                : urlTab ? parseInt(urlTab)
                : (role === 'DOCTOR' ? 4 : 1);
 showTab(defaultTab);
+syncDiabetesTreatmentOptions();
 </script>
 <jsp:include page="footer.jsp"/>
 </body>

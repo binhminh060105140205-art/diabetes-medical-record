@@ -59,7 +59,8 @@ public class PatientHistoryController extends HttpServlet {
         if (!history.authorized()) { response.sendError(403); return; }
 
         request.setAttribute("patient", patient);
+        request.setAttribute("diabetesProfile", history.diabetesProfile());
         request.setAttribute("records", history.records());
-        request.getRequestDispatcher("views/PatientHistory.jsp").forward(request, response);
+        request.getRequestDispatcher("views/PatientTimeline.jsp").forward(request, response);
     }
 }

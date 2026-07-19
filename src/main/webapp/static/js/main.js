@@ -1,3 +1,6 @@
+if (!window.__diaCareMainLoaded) {
+window.__diaCareMainLoaded = true;
+
 // ================================================
 
 //  main.js — DiabetesMedicalRecord
@@ -108,3 +111,5 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 5000);
     });
 });
+
+}

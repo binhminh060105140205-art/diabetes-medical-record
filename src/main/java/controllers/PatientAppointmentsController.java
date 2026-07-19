@@ -1,18 +1,25 @@
 package controllers;
 
 import dal.ClinicWorkflowDAO;
-import dal.PatientDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
-import models.Patient;
 import models.User;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
+import java.util.Set;
 import vn.diabetes.service.ClinicWorkflowService;
 
 @WebServlet("/PatientAppointments")
 public class PatientAppointmentsController extends HttpServlet {
+    private static final Set<String> PATIENT_REASONS = Set.of(
+            "Tái khám tiểu đường định kỳ",
+            "Kiểm tra đường huyết và HbA1c",
+            "Tư vấn thuốc hoặc insulin",
+            "Có triệu chứng bất thường",
+            "Khám lần đầu");
+
     @Override protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         User user = patientUser(req);
         if (user == null) { resp.sendRedirect(req.getContextPath() + "/Login"); return; }
@@ -21,19 +28,39 @@ public class PatientAppointmentsController extends HttpServlet {
         if (data.patientId() == null) { resp.sendError(409, "Tài khoản chưa liên kết hồ sơ bệnh nhân"); return; }
         req.setAttribute("doctors", data.doctors());
         req.setAttribute("appointments", data.appointments());
-        req.getRequestDispatcher("views/PatientAppointments.jsp").forward(req, resp);
+        req.getRequestDispatcher("views/PatientAppointmentsSimple.jsp").forward(req, resp);
     }
     @Override protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         req.setCharacterEncoding("UTF-8"); User user = patientUser(req);
         if (user == null) { resp.sendRedirect(req.getContextPath() + "/Login"); return; }
-        Patient patient = new PatientDAO().getByUserId(user.getUserId());
         try {
+            ClinicWorkflowService service = new ClinicWorkflowService(new ClinicWorkflowDAO());
+            if ("cancel".equals(req.getParameter("action"))) {
+                service.cancelOwnAppointment(positive(req.getParameter("appointmentId")),
+                        user.getUserId(), user.getUserId());
+                req.getSession().setAttribute("appointmentFlash", "Đã hủy lịch hẹn.");
+                resp.sendRedirect(req.getContextPath() + "/PatientAppointments");
+                return;
+            }
+            ClinicWorkflowDAO.PatientAppointmentPageData page =
+                    new ClinicWorkflowDAO().loadPatientAppointmentPage(user.getUserId());
+            if (page.patientId() == null) throw new IllegalArgumentException("Tài khoản chưa liên kết hồ sơ bệnh nhân.");
             int doctorId = positive(req.getParameter("doctorId"));
-            LocalDateTime at = LocalDateTime.parse(req.getParameter("appointmentAt"));
-            String reason = clean(req.getParameter("reason")); String note = clean(req.getParameter("note"));
-            if (reason.length() < 5 || reason.length() > 255) throw new IllegalArgumentException("Lý do khám phải có từ 5 đến 255 ký tự.");
-            if (note.length() > 500) throw new IllegalArgumentException("Ghi chú tối đa 500 ký tự.");
-            new ClinicWorkflowService(new ClinicWorkflowDAO()).createAppointment(patient.getPatientId(), doctorId, at, reason, note, user.getUserId());
+            String appointmentAt = req.getParameter("appointmentAt");
+            if (appointmentAt == null || appointmentAt.isBlank()) {
+                appointmentAt = clean(req.getParameter("appointmentDate")) + "T" + clean(req.getParameter("appointmentTime"));
+            }
+            LocalDateTime at;
+            try {
+                at = LocalDateTime.parse(appointmentAt);
+            } catch (DateTimeParseException ex) {
+                throw new IllegalArgumentException("Ngày hoặc giờ khám không hợp lệ.");
+            }
+            String reason = clean(req.getParameter("reason"));
+            if (!PATIENT_REASONS.contains(reason)) {
+                throw new IllegalArgumentException("Vui lòng chọn một lý do khám trong danh sách.");
+            }
+            service.createAppointment(page.patientId(), doctorId, at, reason, null, user.getUserId());
             req.getSession().setAttribute("appointmentFlash", "Đặt lịch thành công. Vui lòng đến trước giờ hẹn 15 phút.");
         } catch (IllegalArgumentException ex) {
             req.getSession().setAttribute("appointmentFlash", "Không thể đặt lịch: " + ex.getMessage());

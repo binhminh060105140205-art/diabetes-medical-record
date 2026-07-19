@@ -37,16 +37,17 @@ public class DiabetesProfileDAO extends DBContext {
     public void update(int patientId, String diabetesType, LocalDate diagnosisDate,
                         String treatmentMethod, Double hba1cTarget) {
         try (PreparedStatement ps = connection.prepareStatement("""
-                UPDATE diabetes_profiles SET diabetes_type=?, diagnosis_date=?, treatment_method=?,
-                       hba1c_target=?, updated_at=CURRENT_TIMESTAMP
-                WHERE patient_id=?""")) {
-            ps.setString(1, diabetesType);
-            if (diagnosisDate == null) ps.setNull(2, Types.DATE); else ps.setDate(2, Date.valueOf(diagnosisDate));
-            if (treatmentMethod == null || treatmentMethod.isBlank()) ps.setNull(3, Types.VARCHAR); else ps.setString(3, treatmentMethod);
-            if (hba1cTarget == null) ps.setNull(4, Types.NUMERIC); else ps.setDouble(4, hba1cTarget);
-            ps.setInt(5, patientId);
-            int changed = ps.executeUpdate();
-            if (changed == 0) throw new IllegalArgumentException("Bệnh nhân chưa có hồ sơ tiểu đường.");
+                INSERT INTO diabetes_profiles(patient_id,diabetes_type,diagnosis_date,treatment_method,hba1c_target)
+                VALUES(?,?,?,?,?)
+                ON CONFLICT(patient_id) DO UPDATE SET diabetes_type=EXCLUDED.diabetes_type,
+                  diagnosis_date=EXCLUDED.diagnosis_date,treatment_method=EXCLUDED.treatment_method,
+                  hba1c_target=EXCLUDED.hba1c_target,updated_at=CURRENT_TIMESTAMP""")) {
+            ps.setInt(1, patientId);
+            ps.setString(2, diabetesType);
+            if (diagnosisDate == null) ps.setNull(3, Types.DATE); else ps.setDate(3, Date.valueOf(diagnosisDate));
+            if (treatmentMethod == null || treatmentMethod.isBlank()) ps.setNull(4, Types.VARCHAR); else ps.setString(4, treatmentMethod);
+            if (hba1cTarget == null) ps.setNull(5, Types.NUMERIC); else ps.setDouble(5, hba1cTarget);
+            ps.executeUpdate();
         } catch (SQLException e) { throw databaseError("update diabetes profile", e); }
     }
 

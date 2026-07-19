@@ -33,39 +33,28 @@ public class PatientDailyLogDAO extends DBContext {
     }
 
     public PatientDailyLog save(PatientDailyLog log) {
-        PatientDailyLog today = getTodayLog(log.getPatientId());
-        if (today != null) {
-            // [MODIFIED V3] thêm heart_rate, spo2, meal_type vào UPDATE
-            String sql = "UPDATE PatientDailyLogs SET blood_glucose=?,systolic_bp=?,diastolic_bp=?," +
-                "weight=?,symptoms=?,note=?,heart_rate=?,spo2=?,meal_type=? WHERE log_id=?";
-            try {
-                stm = connection.prepareStatement(sql);
-                setND(stm,1,log.getBloodGlucose()); setNI(stm,2,log.getSystolicBp());
-                setNI(stm,3,log.getDiastolicBp());  setND(stm,4,log.getWeight());
-                stm.setString(5, log.getSymptoms()); stm.setString(6, log.getNote());
-                setNI(stm,7,log.getHeartRate());    setND(stm,8,log.getSpo2());
-                stm.setString(9, log.getMealType()); stm.setInt(10, today.getLogId());
-                stm.executeUpdate();
-                log.setLogId(today.getLogId());
-            } catch (SQLException e) { throw databaseError("update patient daily log", e); }
-        } else {
-            // [MODIFIED V3] thêm heart_rate, spo2, meal_type vào INSERT
-            String sql = "INSERT INTO PatientDailyLogs(patient_id,log_date,blood_glucose," +
-                "systolic_bp,diastolic_bp,weight,symptoms,note,heart_rate,spo2,meal_type) " +
-                "VALUES(?,CURRENT_DATE,?,?,?,?,?,?,?,?,?)";
-            try {
-                stm = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-                stm.setInt(1, log.getPatientId());
-                setND(stm,2,log.getBloodGlucose()); setNI(stm,3,log.getSystolicBp());
-                setNI(stm,4,log.getDiastolicBp());  setND(stm,5,log.getWeight());
-                stm.setString(6, log.getSymptoms()); stm.setString(7, log.getNote());
-                setNI(stm,8,log.getHeartRate());    setND(stm,9,log.getSpo2());
-                stm.setString(10, log.getMealType());
-                stm.executeUpdate();
-                rs = stm.getGeneratedKeys();
-                if (rs.next()) log.setLogId(rs.getInt(1));
-            } catch (SQLException e) { throw databaseError("create patient daily log", e); }
-        }
+        String sql = """
+            INSERT INTO patientdailylogs(patient_id,log_date,blood_glucose,systolic_bp,diastolic_bp,
+              weight,symptoms,note,heart_rate,spo2,meal_type)
+            VALUES(?,CURRENT_DATE,?,?,?,?,?,?,?,?,?)
+            ON CONFLICT (patient_id,log_date) DO UPDATE SET
+              blood_glucose=EXCLUDED.blood_glucose,systolic_bp=EXCLUDED.systolic_bp,
+              diastolic_bp=EXCLUDED.diastolic_bp,weight=EXCLUDED.weight,
+              symptoms=EXCLUDED.symptoms,note=EXCLUDED.note,heart_rate=EXCLUDED.heart_rate,
+              spo2=EXCLUDED.spo2,meal_type=EXCLUDED.meal_type
+            RETURNING log_id
+            """;
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, log.getPatientId());
+            setND(ps,2,log.getBloodGlucose()); setNI(ps,3,log.getSystolicBp());
+            setNI(ps,4,log.getDiastolicBp());  setND(ps,5,log.getWeight());
+            ps.setString(6, log.getSymptoms()); ps.setString(7, log.getNote());
+            setNI(ps,8,log.getHeartRate());    setND(ps,9,log.getSpo2());
+            ps.setString(10, log.getMealType());
+            try (ResultSet rows = ps.executeQuery()) {
+                if (rows.next()) log.setLogId(rows.getInt(1));
+            }
+        } catch (SQLException e) { throw databaseError("save patient daily log", e); }
         return log;
     }
 

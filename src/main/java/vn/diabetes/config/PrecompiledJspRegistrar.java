@@ -20,7 +20,6 @@ public class PrecompiledJspRegistrar implements ServletContextInitializer {
                 Class<? extends Servlet> servlet = Class.forName(page.getValue()).asSubclass(Servlet.class);
                 var registration = context.addServlet("precompiled-" + page.getKey(), servlet);
                 if (registration != null) {
-                    registration.setLoadOnStartup(1);
                     registration.addMapping(page.getKey());
                 }
             } catch (ClassNotFoundException ignored) {
@@ -37,8 +36,9 @@ public class PrecompiledJspRegistrar implements ServletContextInitializer {
             "AdminCreateUser", "AdminDashboard", "AdminDoctorDetail", "ClinicWorkflow",
             "DeviceDataView", "DoctorDashboard", "DoctorPatientJournal", "doctorProfile",
             "editProfile", "footer", "header", "Login", "MedicalRecordForm",
-            "PatientAppointments", "PatientDashboard", "PatientForm", "PatientHistory",
-            "PatientJournal", "PatientList", "RecordDetail", "Register", "StaffDashboard", "topnav"
+            "PatientAppointmentsSimple", "PatientForm",
+            "PatientJournal", "PatientList", "PatientTimeline", "PatientToday", "RecordDetail", "Register",
+            "StaffDashboard", "topnav"
         };
         for (String view : views) {
             pages.put("/views/" + view + ".jsp", "org.apache.jsp.views." + view + "_jsp");

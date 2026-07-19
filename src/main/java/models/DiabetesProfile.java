@@ -37,4 +37,21 @@ public class DiabetesProfile {
     public void setUpdatedAt(LocalDateTime v)      { this.updatedAt = v; }
 
     public boolean isUnknown() { return diabetesType == null || "UNKNOWN".equals(diabetesType); }
+
+    public String getDiabetesTypeLabel() {
+        if ("TYPE_1".equals(diabetesType)) return "Tiểu đường Type 1";
+        if ("TYPE_2".equals(diabetesType)) return "Tiểu đường Type 2";
+        return "Chưa xác định loại";
+    }
+
+    public String getTreatmentMethodLabel() {
+        if (treatmentMethod == null) return "Chưa xác định";
+        return switch (treatmentMethod) {
+            case "INSULIN" -> "Insulin";
+            case "ORAL_MEDICATION" -> "Thuốc uống";
+            case "LIFESTYLE" -> "Điều chỉnh lối sống";
+            case "COMBINATION" -> "Kết hợp";
+            default -> "Chưa xác định";
+        };
+    }
 }
