@@ -3,7 +3,7 @@ services:
     name: diabetes-medical-record
     runtime: docker
     dockerfilePath: ./Dockerfile
-    healthCheckPath: /health
+    healthCheckPath: /ready
     autoDeploy: true
     disk:
       name: doctor-uploads

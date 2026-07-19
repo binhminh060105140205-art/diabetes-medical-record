@@ -19,7 +19,7 @@ public class RequestConnectionFilter implements Filter {
         HttpServletRequest http = (HttpServletRequest) request;
         String path = http.getRequestURI().substring(http.getContextPath().length());
         if (path.startsWith("/static/") || path.startsWith("/uploads/")
-                || path.equals("/health") || path.equals("/favicon.ico")) {
+                || path.equals("/health") || path.equals("/ready") || path.equals("/favicon.ico")) {
             chain.doFilter(request, response);
             return;
         }
