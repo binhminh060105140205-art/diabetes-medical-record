@@ -20,6 +20,7 @@ DB_URL=jdbc:postgresql://YOUR_HOST:YOUR_PORT/diabetes_medical_record?sslmode=req
 DB_USERNAME=avnadmin
 DB_PASSWORD=YOUR_DATABASE_PASSWORD
 DB_POOL_SIZE=5
+DB_POOL_MIN_IDLE=0
 DB_STATEMENT_TIMEOUT_MS=10000
 DEVICE_API_KEY=replace-with-a-long-random-value
 BOOTSTRAP_ADMIN_USERNAME=admin
@@ -31,6 +32,7 @@ MAIL_HOST=smtp.gmail.com
 MAIL_PORT=587
 MAIL_STARTTLS=true
 MAIL_FROM_NAME=DiaCare
+SPRING_LAZY_INITIALIZATION=true
 OPENAI_API_KEY=
 OPENAI_MODEL=gpt-5.6-terra
 OPENAI_TIMEOUT_SECONDS=20
@@ -58,6 +60,8 @@ Không dùng mật khẩu Gmail thông thường. Thông báo trên giao diện 
 ## Deploy Render
 
 Kho mã đã có `Dockerfile` và `render.yaml`. Trên Render cấu hình `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `BOOTSTRAP_ADMIN_PASSWORD`, `DEVICE_API_KEY`, `MAIL_USERNAME` và `MAIL_PASSWORD`.
+
+Để triển khai nhanh, đặt `Health Check Path` của dịch vụ thành `/health`. Đường dẫn này chỉ xác nhận ứng dụng đã khởi động; `/ready` vẫn được giữ để kiểm tra riêng kết nối PostgreSQL khi cần chẩn đoán. Với dịch vụ Render đã tạo trước đó, kiểm tra lại mục Settings vì thay đổi trong `render.yaml` chỉ có hiệu lực khi Blueprint được đồng bộ.
 
 Để bật tư vấn sức khỏe hằng ngày, thêm `OPENAI_API_KEY` trong Environment của Render. Nếu để trống, hệ thống vẫn hoạt động và dùng bộ quy tắc an toàn tại máy chủ.
 

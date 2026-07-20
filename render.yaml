@@ -3,7 +3,7 @@ services:
     name: diabetes-medical-record
     runtime: docker
     dockerfilePath: ./Dockerfile
-    healthCheckPath: /ready
+    healthCheckPath: /health
     autoDeploy: true
     disk:
       name: doctor-uploads
@@ -19,7 +19,7 @@ services:
       - key: DB_POOL_SIZE
         value: "5"
       - key: DB_POOL_MIN_IDLE
-        value: "3"
+        value: "0"
       - key: DB_STATEMENT_TIMEOUT_MS
         value: "10000"
       - key: FLYWAY_ENABLED
@@ -28,6 +28,8 @@ services:
         value: "false"
       - key: TLD_SKIP_PATTERNS
         value: "*.jar"
+      - key: SPRING_LAZY_INITIALIZATION
+        value: "true"
       - key: DEVICE_API_KEY
         sync: false
       - key: BOOTSTRAP_ADMIN_USERNAME
