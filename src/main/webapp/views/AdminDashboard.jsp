@@ -30,6 +30,7 @@
         </div>
     </div>
 
+    <c:if test="${not empty adminDashboardMessage}"><div class="alert alert-info"><c:out value="${adminDashboardMessage}"/></div></c:if>
     <c:url var="patientRoleUrl" value="/AdminDashboard"><c:param name="filterRole" value="PATIENT"/><c:param name="filterStatus" value="${filterStatus}"/><c:param name="sortOrder" value="${sortOrder}"/></c:url>
     <c:url var="doctorRoleUrl" value="/AdminDashboard"><c:param name="filterRole" value="DOCTOR"/><c:param name="filterStatus" value="${filterStatus}"/><c:param name="sortOrder" value="${sortOrder}"/></c:url>
     <c:url var="staffRoleUrl" value="/AdminDashboard"><c:param name="filterRole" value="STAFF"/><c:param name="filterStatus" value="${filterStatus}"/><c:param name="sortOrder" value="${sortOrder}"/></c:url>
@@ -106,9 +107,9 @@
                                         <input type="hidden" name="id" value="${u.userId}"><input type="hidden" name="filterRole" value="${filterRole}"><input type="hidden" name="filterStatus" value="${filterStatus}"><input type="hidden" name="sortOrder" value="${sortOrder}"><input type="hidden" name="keyword" value="${fn:escapeXml(keyword)}"><input type="hidden" name="page" value="${currentPage}">
                                         <button class="btn btn-sm ${u.status=='ACTIVE'?'btn-danger':'btn-success'}" type="submit">${u.status=='ACTIVE'?'Khóa':'Mở khóa'}</button>
                                     </form>
-                                    <form method="post" action="${pageContext.request.contextPath}/AdminTrash" class="inline-form" onsubmit="return confirm('Đưa tài khoản này vào thùng rác?')">
-                                        <input type="hidden" name="action" value="softDelete"><input type="hidden" name="userId" value="${u.userId}">
-                                        <button class="btn btn-sm btn-light" type="submit">Xóa mềm</button>
+                                    <form method="post" action="${pageContext.request.contextPath}/AdminTrash" class="inline-form" onsubmit="return confirm('Xóa tài khoản này? Nếu còn lịch khám, lượt khám hoặc bệnh án đang xử lý, hệ thống sẽ từ chối.')">
+                                        <input type="hidden" name="action" value="deleteUser"><input type="hidden" name="userId" value="${u.userId}">
+                                        <button class="btn btn-sm btn-light" type="submit">Xóa tài khoản</button>
                                     </form>
                                 </c:if>
                             </div>

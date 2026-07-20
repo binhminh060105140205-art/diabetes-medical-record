@@ -68,6 +68,7 @@ public class AdminDAO extends DBContext {
             if ("DELETED".equals(user.get("status"))) {
                 throw new IllegalArgumentException("Tài khoản đã ở trong thùng rác.");
             }
+            ensureUserCanBeDeleted(user);
             String details = "Tên đăng nhập: " + value(user, "username")
                     + " | Email: " + value(user, "email")
                     + " | Vai trò: " + value(user, "role");
@@ -77,6 +78,95 @@ public class AdminDAO extends DBContext {
             update("UPDATE users SET status='DELETED' WHERE user_id=?", userId);
             audit(adminId, "SOFT_DELETE", "USER", String.valueOf(userId), details);
         });
+    }
+
+    /** Safe account deletion entry point used by the Admin dashboard. */
+    public void deleteUser(int userId, int adminId) {
+        softDeleteUser(userId, adminId);
+    }
+
+    /** Prevents removing an account that still owns active clinical work. */
+    private void ensureUserCanBeDeleted(Map<String, Object> user) throws SQLException {
+        int userId = ((Number) user.get("user_id")).intValue();
+        String role = value(user, "role");
+        List<String> blockers = new ArrayList<>();
+        if ("PATIENT".equalsIgnoreCase(role)) {
+            if (count("""
+                    SELECT COUNT(*) FROM appointments a
+                    JOIN patients p ON p.patient_id=a.patient_id
+                    WHERE p.user_id=? AND a.status IN ('REQUESTED','BOOKED','CONFIRMED','CHECKED_IN')""", userId) > 0) {
+                blockers.add("bệnh nhân còn lịch hẹn đang chờ hoặc đang khám");
+            }
+            if (count("""
+                    SELECT COUNT(*) FROM encounters e
+                    JOIN patients p ON p.patient_id=e.patient_id
+                    WHERE p.user_id=? AND e.status NOT IN ('COMPLETED','CANCELLED')""", userId) > 0) {
+                blockers.add("bệnh nhân đang ở hàng đợi hoặc trong lượt khám");
+            }
+            if (count("""
+                    SELECT COUNT(*) FROM medicalrecords r
+                    JOIN patients p ON p.patient_id=r.patient_id
+                    WHERE p.user_id=? AND r.status='DRAFT'""", userId) > 0) {
+                blockers.add("bệnh án của bệnh nhân chưa được bác sĩ hoàn tất");
+            }
+        } else if ("DOCTOR".equalsIgnoreCase(role)) {
+            if (count("""
+                    SELECT COUNT(*) FROM appointments a
+                    JOIN doctors d ON d.doctor_id=a.doctor_id
+                    WHERE d.user_id=? AND a.status IN ('BOOKED','CONFIRMED','CHECKED_IN')""", userId) > 0) {
+                blockers.add("bác sĩ còn lịch hẹn đã phân công");
+            }
+            if (count("""
+                    SELECT COUNT(*) FROM encounters e
+                    JOIN doctors d ON d.doctor_id=e.doctor_id
+                    WHERE d.user_id=? AND e.status NOT IN ('COMPLETED','CANCELLED')""", userId) > 0) {
+                blockers.add("bác sĩ đang có lượt khám chưa hoàn tất");
+            }
+            if (count("""
+                    SELECT COUNT(*) FROM medicalrecords r
+                    JOIN doctors d ON d.doctor_id=r.doctor_id
+                    WHERE d.user_id=? AND r.status='DRAFT'""", userId) > 0) {
+                blockers.add("bác sĩ còn bệnh án đang xử lý");
+            }
+            if (count("""
+                    SELECT COUNT(*) FROM lab_orders l
+                    JOIN doctors d ON d.doctor_id=l.doctor_id
+                    WHERE d.user_id=? AND l.status IN ('ORDERED','COLLECTED','RESULTED')""", userId) > 0) {
+                blockers.add("bác sĩ còn phiếu xét nghiệm chưa hoàn tất");
+            }
+        } else if ("STAFF".equalsIgnoreCase(role)) {
+            if (count("""
+                    SELECT COUNT(*) FROM encounters
+                    WHERE created_by=? AND status NOT IN ('COMPLETED','CANCELLED')""", userId) > 0) {
+                blockers.add("nhân viên còn lượt tiếp nhận đang xử lý");
+            }
+            if (count("""
+                    SELECT COUNT(*) FROM medicalrecords
+                    WHERE created_by_staff=? AND status='DRAFT'""", userId) > 0) {
+                blockers.add("nhân viên còn bệnh án nhập dở");
+            }
+            if (count("""
+                    SELECT COUNT(*) FROM lab_orders
+                    WHERE resulted_by=? AND status='RESULTED'""", userId) > 0) {
+                blockers.add("nhân viên còn kết quả xét nghiệm chờ bác sĩ xác nhận");
+            }
+            if (count("""
+                    SELECT COUNT(*) FROM appointments
+                    WHERE created_by=? AND status IN ('REQUESTED','BOOKED','CONFIRMED','CHECKED_IN')""", userId) > 0) {
+                blockers.add("nhân viên còn lịch hẹn đang điều phối");
+            }
+        }
+        if (!blockers.isEmpty()) {
+            throw new IllegalArgumentException("Không thể xóa tài khoản này vì "
+                    + String.join("; ", blockers)
+                    + ". Hãy hoàn tất hoặc hủy các công việc trước.");
+        }
+    }
+
+    private long count(String sql, Object... parameters) throws SQLException {
+        Map<String, Object> row = one(sql, parameters);
+        if (row == null || row.get("count") == null) return 0;
+        return ((Number) row.get("count")).longValue();
     }
 
     public void restore(long trashId, int adminId) {

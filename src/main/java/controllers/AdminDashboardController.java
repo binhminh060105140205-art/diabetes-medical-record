@@ -53,6 +53,9 @@ public class AdminDashboardController extends HttpServlet {
         request.setAttribute("sortOrder",    sortOrder);
         request.setAttribute("keyword",      keyword);
         request.setAttribute("pageSize",     PAGE_SIZE);
+        Object dashboardMessage = request.getSession().getAttribute("adminDashboardMessage");
+        request.setAttribute("adminDashboardMessage", dashboardMessage);
+        request.getSession().removeAttribute("adminDashboardMessage");
 
         request.setAttribute("totalPatients", data.patients());
         request.setAttribute("totalDoctors",  data.doctors());

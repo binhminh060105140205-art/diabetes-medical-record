@@ -33,10 +33,12 @@ public class AdminTrashController extends HttpServlet {
             response.sendError(HttpServletResponse.SC_FORBIDDEN);
             return;
         }
+        String action = ControllerSupport.clean(request.getParameter("action"));
+        String redirectPath = "deleteUser".equals(action) ? "/AdminDashboard" : "/AdminTrash";
         try {
             AdminDAO dao = new AdminDAO();
-            switch (ControllerSupport.clean(request.getParameter("action"))) {
-                case "softDelete" -> dao.softDeleteUser(
+            switch (action) {
+                case "softDelete", "deleteUser" -> dao.deleteUser(
                         ControllerSupport.positiveId(request.getParameter("userId"), "Mã tài khoản"),
                         admin.getUserId());
                 case "restore" -> dao.restore(positiveLong(request.getParameter("trashId")),
@@ -45,11 +47,18 @@ public class AdminTrashController extends HttpServlet {
                         admin.getUserId());
                 default -> throw new IllegalArgumentException("Thao tác thùng rác không hợp lệ.");
             }
-            ControllerSupport.flash(request, "adminTrashMessage", "Đã cập nhật thùng rác.");
+            String successMessage = "restore".equals(action) ? "Đã khôi phục tài khoản."
+                    : "purge".equals(action) ? "Đã xóa vĩnh viễn tài khoản."
+                    : "Đã đưa tài khoản vào thùng rác.";
+            ControllerSupport.flash(request,
+                    "deleteUser".equals(action) ? "adminDashboardMessage" : "adminTrashMessage",
+                    successMessage);
         } catch (IllegalArgumentException error) {
-            ControllerSupport.flash(request, "adminTrashMessage", error.getMessage());
+            ControllerSupport.flash(request,
+                    "deleteUser".equals(action) ? "adminDashboardMessage" : "adminTrashMessage",
+                    error.getMessage());
         }
-        response.sendRedirect(request.getContextPath() + "/AdminTrash");
+        response.sendRedirect(request.getContextPath() + redirectPath);
     }
 
     private long positiveLong(String value) {
