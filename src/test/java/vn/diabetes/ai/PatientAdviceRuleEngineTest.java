@@ -19,6 +19,8 @@ class PatientAdviceRuleEngineTest {
         assertTrue(type1.fallbackAdvice().stream().anyMatch(value -> value.contains("insulin")));
         assertTrue(type1.fallbackAdvice().stream().anyMatch(value -> value.contains("hạ đường huyết")));
         assertTrue(type2.fallbackAdvice().stream().anyMatch(value -> value.contains("đồ uống nhiều đường")));
+        assertTrue(type1.fallbackAdvice().size() >= 6);
+        assertTrue(type2.fallbackAdvice().size() >= 6);
         assertNotEquals(type1.fallbackAdvice(), type2.fallbackAdvice());
     }
 

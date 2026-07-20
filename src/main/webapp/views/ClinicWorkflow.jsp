@@ -325,7 +325,13 @@
                             <td><c:choose><c:when test="${not empty l.result_value}"><strong><c:out value="${l.result_value}"/> <c:out value="${l.result_unit}"/></strong><small class="table-sub"><c:out value="${l.reference_range}"/> · <c:out value="${l.result_flag}"/></small></c:when><c:otherwise><span class="text-muted">Chưa có kết quả</span></c:otherwise></c:choose></td>
                             <td><span class="status-pill status-${l.status}">${l.status=='ORDERED'?'Chờ kết quả':l.status=='RESULTED'?'Đã có kết quả':l.status=='REVIEWED'?'Đã xem xét':l.status=='CANCELLED'?'Đã hủy':'Đang xử lý'}</span></td>
                             <td>
-                                <c:if test="${(sessionScope.user.role=='STAFF'||sessionScope.user.role=='ADMIN')&&l.status!='REVIEWED'&&l.status!='CANCELLED'}">
+                                <c:if test="${sessionScope.user.role=='DOCTOR' && not empty l.record_id}">
+                                    <a class="btn btn-light btn-sm" href="${pageContext.request.contextPath}/MedicalRecordForm?recordId=${l.record_id}&tab=3">Mở phiếu xét nghiệm</a>
+                                </c:if>
+                                <c:if test="${sessionScope.user.role=='STAFF' && not empty l.record_id && (l.test_code=='GLU'||l.test_code=='GLU_FASTING'||l.test_code=='HBA1C'||l.test_code=='LIPID') && l.status!='REVIEWED'&&l.status!='CANCELLED'}">
+                                    <a class="btn btn-primary btn-sm" href="${pageContext.request.contextPath}/MedicalRecordForm?recordId=${l.record_id}&tab=3">Nhập theo phiếu xét nghiệm</a>
+                                </c:if>
+                                <c:if test="${(sessionScope.user.role=='STAFF'||sessionScope.user.role=='ADMIN') && (empty l.record_id || !(l.test_code=='GLU'||l.test_code=='GLU_FASTING'||l.test_code=='HBA1C'||l.test_code=='LIPID')) && l.status!='REVIEWED'&&l.status!='CANCELLED'}">
                                     <button class="btn btn-primary btn-sm" type="button"
                                             onclick="document.getElementById('lab-result-${l.lab_order_id}').showModal()">Nhập kết quả</button>
                                     <dialog class="lab-result-dialog" id="lab-result-${l.lab_order_id}"

@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <title>Hồ Sơ Bệnh Án</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui7">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui8">
     <style>
         .role-bar{padding:10px 16px;border-radius:8px;margin-bottom:16px;font-size:14px;font-weight:600;}
         .role-staff {background:#cff4fc;color:#055160;border-left:4px solid #0dcaf0;}
@@ -24,8 +24,9 @@
 <jsp:include page="topnav.jsp"/>
 <div class="page-wrapper">
     <c:if test="${not empty sessionScope.recordFlash}"><div class="alert alert-danger"><c:out value="${sessionScope.recordFlash}"/></div><c:remove var="recordFlash" scope="session"/></c:if>
+    <c:if test="${not empty sessionScope.recordSuccess}"><div class="alert alert-success"><c:out value="${sessionScope.recordSuccess}"/></div><c:remove var="recordSuccess" scope="session"/></c:if>
     <div class="page-heading">
-        <div><div class="eyebrow">HỒ SƠ LƯỢT KHÁM</div><h1 class="page-title">Bệnh án ${not empty record?'#'.concat(record.recordId):'mới'}</h1><p class="text-muted">Chỉ nhập phần thuộc vai trò của bạn; dữ liệu đã lưu được giữ nguyên giữa các bước.</p></div>
+        <div><div class="eyebrow">HỒ SƠ LƯỢT KHÁM</div><h1 class="page-title">Bệnh án ${not empty record?'#'.concat(record.recordId):'mới'}</h1></div>
         <a class="btn btn-light" href="${pageContext.request.contextPath}/ClinicWorkflow?view=encounters">Quay lại lượt khám</a>
     </div>
     <div class="patient-summary-bar">
@@ -33,32 +34,11 @@
         <div class="patient-summary-meta"><span>SĐT: <c:out value="${patient.phone}" default="—"/></span><span>BHYT: <c:out value="${patient.healthInsuranceNo}" default="—"/></span><c:if test="${not empty assignedDoctor}"><span>Bác sĩ: <strong><c:out value="${assignedDoctor.fullName}"/></strong></span></c:if></div>
     </div>
 
-    <%-- Hướng dẫn theo vai trò --%>
-    <c:choose>
-        <c:when test="${sessionScope.user.role == 'STAFF'}">
-        <div class="role-bar role-staff">
-            👩‍💼 <strong>Nhân viên tiếp nhận:</strong>
-            Nhập thông tin ban đầu rồi đo sinh hiệu. Kết quả xét nghiệm được nhập tại mục Xét nghiệm để tránh trùng dữ liệu.
-        </div>
-        </c:when>
-        <c:when test="${sessionScope.user.role == 'DOCTOR'}">
-        <div class="role-bar role-doctor">
-            🩺 <strong>Bác sĩ:</strong>
-            Xem tóm tắt tiểu đường, nhật ký sức khỏe, kết quả xét nghiệm rồi nhập kết luận, đơn thuốc và ngày tái khám.
-        </div>
-        </c:when>
-        <c:when test="${sessionScope.user.role == 'ADMIN'}">
-        <div class="role-bar role-admin-readonly">
-            👁 <strong>Quản trị viên:</strong>
-            Bạn đang xem bệnh án ở chế độ chỉ đọc. Dữ liệu chuyên môn chỉ do nhân viên tiếp nhận và bác sĩ phụ trách cập nhật.
-        </div>
-        </c:when>
-    </c:choose>
-
     <div class="record-progress" aria-label="Tiến độ bệnh án">
         <div class="record-step ${not empty record?'done':sessionScope.user.role=='STAFF'?'active':''}">1. Thông tin khám</div>
         <div class="record-step ${clinicalDone?'done':not empty record&&sessionScope.user.role=='STAFF'?'active':''}">2. Sinh hiệu</div>
-        <div class="record-step ${record.status=='COMPLETED'?'done':sessionScope.user.role=='DOCTOR'?'active':''}">3. Kết luận bác sĩ</div>
+        <div class="record-step ${labReviewed?'done':labResultsReady?'active':''}">3. Xét nghiệm</div>
+        <div class="record-step ${record.status=='COMPLETED'?'done':sessionScope.user.role=='DOCTOR'?'active':''}">4. Kết luận</div>
     </div>
 
     <%-- TÓM TẮT HỒ SƠ TIỂU ĐƯỜNG — chỉ đọc, hiển thị cho nhân viên và bác sĩ --%>
@@ -75,9 +55,9 @@
             <div class="indicator-item"><div class="ind-label">Mục tiêu HbA1c</div>
                 <div class="ind-value">${not empty diabetesProfile.hba1cTarget?diabetesProfile.hba1cTarget:'—'}</div><div class="ind-unit">%</div></div>
             <div class="indicator-item"><div class="ind-label">HbA1c gần nhất</div>
-                <div class="ind-value">${latestIndicator.hba1c}</div><div class="ind-unit">%</div></div>
+                <div class="ind-value">${not empty latestIndicator.hba1c?latestIndicator.hba1c:'—'}</div><div class="ind-unit"><c:if test="${not empty latestIndicator.hba1c}">%</c:if></div></div>
             <div class="indicator-item"><div class="ind-label">Đường huyết gần nhất</div>
-                <div class="ind-value">${latestIndicator.bloodGlucose}</div><div class="ind-unit">mg/dL</div></div>
+                <div class="ind-value">${not empty latestIndicator.bloodGlucose?latestIndicator.bloodGlucose:'—'}</div><div class="ind-unit"><c:if test="${not empty latestIndicator.bloodGlucose}">mmol/L</c:if></div></div>
             <div class="indicator-item"><div class="ind-label">Huyết áp gần nhất</div>
                 <div class="ind-value">${latestIndicator.systolicBp}/${latestIndicator.diastolicBp}</div><div class="ind-unit">mmHg</div></div>
                 <div class="indicator-item"><div class="ind-label">BMI gần nhất <span>(chỉ số khối cơ thể)</span></div>
@@ -102,8 +82,10 @@
                 onclick="showTab(1)" id="btn1">1. Thông tin khám</button>
         <button class="tab-btn ${sessionScope.user.role!='STAFF'?'locked':''} ${clinicalDone?'done':''}"
                 onclick="showTab(2)" id="btn2">2. Sinh hiệu <small>(Nhân viên)</small></button>
+        <button class="tab-btn ${labReviewed?'done':''}"
+                onclick="showTab(3)" id="btn3">3. Xét nghiệm</button>
         <button class="tab-btn ${sessionScope.user.role!='DOCTOR'?'locked':''}"
-                onclick="showTab(4)" id="btn4">3. Kết luận <small>(Bác sĩ)</small></button>
+                onclick="showTab(4)" id="btn4">4. Kết luận <small>(Bác sĩ)</small></button>
     </div>
 
     <%-- ══ TAB 1: THÔNG TIN KHÁM (STAFF) ══════════════════════════════ --%>
@@ -116,19 +98,26 @@
                 <input type="hidden" name="action" value="saveBasic">
                 <input type="hidden" name="patientId" value="${patient.patientId}">
                 <input type="hidden" name="encounterId" value="${encounterId}">
-                <div class="form-group"><label>Ngày giờ khám</label><input class="form-control" value="${not empty appointmentTime?appointmentTime:record.visitDate}" readonly><small>Ngày khám lấy từ lịch hẹn hoặc thời điểm ghi nhận đến khám và không chỉnh sửa tại bệnh án.</small></div>
+                <div class="form-group"><label>Ngày giờ khám</label><input class="form-control" value="${not empty appointmentTime?appointmentTime:record.visitDate}" readonly></div>
 
                 <div class="form-group">
                     <label class="required">Bác sĩ phụ trách</label>
-                    <select name="doctorId" class="form-control" required>
-                        <option value="">-- Chọn bác sĩ --</option>
-                        <c:forEach var="doc" items="${doctors}">
-                            <option value="${doc.doctorId}"
-                                <c:if test="${record.doctorId==doc.doctorId}">selected</c:if>>
-                                ${doc.fullName} — ${doc.specialty}
-                            </option>
-                        </c:forEach>
-                    </select>
+                    <c:choose>
+                        <c:when test="${not empty encounterId && not empty assignedDoctor}">
+                            <input type="hidden" name="doctorId" value="${assignedDoctor.doctorId}">
+                            <input class="form-control ind-readonly" value="${assignedDoctor.fullName} — ${assignedDoctor.specialty}" readonly>
+                        </c:when>
+                        <c:otherwise>
+                            <select name="doctorId" class="form-control" required>
+                                <option value="">-- Chọn bác sĩ --</option>
+                                <c:forEach var="doc" items="${doctors}">
+                                    <option value="${doc.doctorId}" <c:if test="${record.doctorId==doc.doctorId}">selected</c:if>>
+                                        ${doc.fullName} — ${doc.specialty}
+                                    </option>
+                                </c:forEach>
+                            </select>
+                        </c:otherwise>
+                    </c:choose>
                 </div>
                 <div class="form-group">
                     <label class="required">Lý do đến khám</label>
@@ -187,10 +176,6 @@
     <c:when test="${sessionScope.user.role == 'STAFF'}">
         <div class="card">
             <div class="card-title">II. Chỉ số lâm sàng <span class="role-inline-note">Nhân viên nhập</span></div>
-            <div class="alert alert-info compact-alert">
-                Nhân viên nhập các chỉ số đo trực tiếp tại phòng khám ở bước này.
-                Kết quả xét nghiệm được nhập tại mục Xét nghiệm của luồng khám để tránh trùng dữ liệu.
-            </div>
             <form action="${pageContext.request.contextPath}/MedicalRecordForm" method="post">
                 <input type="hidden" name="action" value="saveClinical">
                 <input type="hidden" name="recordId" value="${record.recordId}">
@@ -263,6 +248,71 @@
     </c:choose>
     </div>
 
+    <%-- TAB 3: KẾT QUẢ XÉT NGHIỆM --%>
+    <div class="tab-panel" id="tab3">
+        <div class="card">
+            <div class="card-title">III. Kết quả xét nghiệm</div>
+            <c:choose>
+                <c:when test="${empty labOrders}">
+                    <div class="empty-state">Bác sĩ chưa tạo chỉ định xét nghiệm cho lượt khám này.</div>
+                </c:when>
+                <c:otherwise>
+                    <div class="table-scroll lab-order-summary">
+                        <table>
+                            <thead><tr><th>Xét nghiệm</th><th>Kết quả</th><th>Trạng thái</th></tr></thead>
+                            <tbody>
+                            <c:forEach var="lab" items="${labOrders}">
+                                <tr>
+                                    <td><strong><c:out value="${lab.test_name}"/></strong><small class="table-sub"><c:out value="${lab.test_code}"/></small></td>
+                                    <td><c:choose><c:when test="${not empty lab.result_value}"><c:out value="${lab.result_value}"/> <c:out value="${lab.result_unit}"/></c:when><c:otherwise>Chưa nhập</c:otherwise></c:choose></td>
+                                    <td><span class="status-pill status-${lab.status}">${lab.status=='ORDERED'?'Chờ kết quả':lab.status=='RESULTED'?'Chờ bác sĩ xác nhận':lab.status=='REVIEWED'?'Đã xác nhận':lab.status=='CANCELLED'?'Đã hủy':'Đang xử lý'}</span></td>
+                                </tr>
+                            </c:forEach>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <c:if test="${sessionScope.user.role=='STAFF' && !labReviewed}">
+                        <form action="${pageContext.request.contextPath}/MedicalRecordForm" method="post" class="lab-values-form">
+                            <input type="hidden" name="action" value="saveLabResults">
+                            <input type="hidden" name="recordId" value="${record.recordId}">
+                            <div class="lab-values-grid">
+                                <div class="form-group"><label>Đường huyết lúc đói (mmol/L)</label><input type="number" step="0.01" min="1" max="40" name="bloodGlucose" class="form-control" value="${indicator.bloodGlucose}" placeholder="5.6"></div>
+                                <div class="form-group"><label>HbA1c (%)</label><input type="number" step="0.01" min="2" max="20" name="hba1c" class="form-control" value="${indicator.hba1c}" placeholder="6.5"></div>
+                                <div class="form-group"><label>Cholesterol (mmol/L)</label><input type="number" step="0.01" min="0.1" max="30" name="cholesterol" class="form-control" value="${indicator.cholesterol}" placeholder="5.0"></div>
+                                <div class="form-group"><label>Triglyceride (mmol/L)</label><input type="number" step="0.01" min="0.1" max="30" name="triglyceride" class="form-control" value="${indicator.triglyceride}" placeholder="1.7"></div>
+                                <div class="form-group"><label>HDL-C (mmol/L)</label><input type="number" step="0.01" min="0.1" max="15" name="hdlC" class="form-control" value="${indicator.hdlC}" placeholder="1.3"></div>
+                                <div class="form-group"><label>LDL-C (mmol/L)</label><input type="number" step="0.01" min="0.1" max="20" name="ldlC" class="form-control" value="${indicator.ldlC}" placeholder="2.6"></div>
+                            </div>
+                            <div class="form-actions"><button type="submit" class="btn btn-primary">Lưu kết quả xét nghiệm</button></div>
+                        </form>
+                    </c:if>
+
+                    <c:if test="${sessionScope.user.role!='STAFF'}">
+                        <div class="indicator-grid lab-indicator-grid">
+                            <div class="indicator-item"><div class="ind-label">Đường huyết lúc đói</div><div class="ind-value">${not empty indicator.bloodGlucose?indicator.bloodGlucose:'—'}</div><div class="ind-unit"><c:if test="${not empty indicator.bloodGlucose}">mmol/L</c:if></div></div>
+                            <div class="indicator-item"><div class="ind-label">HbA1c</div><div class="ind-value">${not empty indicator.hba1c?indicator.hba1c:'—'}</div><div class="ind-unit"><c:if test="${not empty indicator.hba1c}">%</c:if></div></div>
+                            <div class="indicator-item"><div class="ind-label">Cholesterol</div><div class="ind-value">${not empty indicator.cholesterol?indicator.cholesterol:'—'}</div><div class="ind-unit"><c:if test="${not empty indicator.cholesterol}">mmol/L</c:if></div></div>
+                            <div class="indicator-item"><div class="ind-label">Triglyceride</div><div class="ind-value">${not empty indicator.triglyceride?indicator.triglyceride:'—'}</div><div class="ind-unit"><c:if test="${not empty indicator.triglyceride}">mmol/L</c:if></div></div>
+                            <div class="indicator-item"><div class="ind-label">HDL-C</div><div class="ind-value">${not empty indicator.hdlC?indicator.hdlC:'—'}</div><div class="ind-unit"><c:if test="${not empty indicator.hdlC}">mmol/L</c:if></div></div>
+                            <div class="indicator-item"><div class="ind-label">LDL-C</div><div class="ind-value">${not empty indicator.ldlC?indicator.ldlC:'—'}</div><div class="ind-unit"><c:if test="${not empty indicator.ldlC}">mmol/L</c:if></div></div>
+                        </div>
+                    </c:if>
+
+                    <c:if test="${sessionScope.user.role=='DOCTOR' && labResultsReady && !labReviewed}">
+                        <form action="${pageContext.request.contextPath}/MedicalRecordForm" method="post" class="form-actions">
+                            <input type="hidden" name="action" value="reviewLab">
+                            <input type="hidden" name="recordId" value="${record.recordId}">
+                            <button type="submit" class="btn btn-success">Xác nhận kết quả xét nghiệm</button>
+                        </form>
+                    </c:if>
+                    <c:if test="${labReviewed}"><div class="alert alert-success compact-alert">Bác sĩ đã xác nhận kết quả xét nghiệm.</div></c:if>
+                    <c:if test="${sessionScope.user.role=='DOCTOR' && !labResultsReady}"><div class="alert alert-info compact-alert">Chờ nhân viên nhập đủ kết quả theo chỉ định.</div></c:if>
+                </c:otherwise>
+            </c:choose>
+        </div>
+    </div>
+
     <%-- ══ TAB 4: KẾT LUẬN (DOCTOR) ══════════════════════════════════ --%>
     <div class="tab-panel" id="tab4">
     <c:choose>
@@ -304,7 +354,6 @@
                     <article data-diabetes-type="TYPE_1" class="diabetes-type-card ${diabetesProfile.diabetesType=='TYPE_1'?'active':''}"><strong>Đái tháo đường típ 1</strong><p>Hệ thống chỉ chấp nhận insulin hoặc điều trị phối hợp có insulin; nhắc theo dõi hạ đường huyết, liều và thời điểm tiêm.</p></article>
                     <article data-diabetes-type="TYPE_2" class="diabetes-type-card ${diabetesProfile.diabetesType=='TYPE_2'?'active':''}"><strong>Đái tháo đường típ 2</strong><p>Cho phép điều chỉnh lối sống, thuốc uống, insulin hoặc phối hợp; ưu tiên theo dõi cân nặng, huyết áp và mỡ máu.</p></article>
                 </div>
-                <p class="form-hint">Mục “ưu tiên típ 1/típ 2” trong hồ sơ bác sĩ chỉ hỗ trợ tra cứu, hiện chưa tự động phân bác sĩ khi xếp lịch.</p>
                 <div class="form-actions"><button type="submit" class="btn btn-light">Lưu hồ sơ đái tháo đường</button></div>
             </form>
         </div>
@@ -333,19 +382,28 @@
                         placeholder="Điều chỉnh lối sống, thuốc uống, insulin...">${record.treatmentPlan}</textarea>
                 </div>
                 <div class="form-group">
-                    <label>Đơn thuốc cơ bản</label>
-                    <p class="text-muted">Chỉ nhập các thuốc cần thiết. Để trống dòng không sử dụng.</p>
+                    <div class="field-heading"><label>Đơn thuốc</label><button type="button" class="btn btn-light btn-sm" onclick="addMedicineRow()">+ Thêm thuốc</button></div>
                     <table class="prescription-table">
-                        <thead><tr><th>Tên thuốc</th><th>Liều dùng</th><th>Số lần/ngày</th><th>Số ngày</th></tr></thead>
-                        <tbody>
-                        <c:forEach begin="0" end="2" var="i">
+                        <thead><tr><th>Tên thuốc</th><th>Liều dùng</th><th>Số lần/ngày</th><th>Số ngày</th><th></th></tr></thead>
+                        <tbody id="medicineRows">
+                        <c:forEach var="item" items="${prescriptionItems}">
                             <tr>
-                                <td><input name="medicineName" class="form-control" maxlength="150" value="${prescriptionItems[i].medicineName}" placeholder="Metformin 500mg"></td>
-                                <td><input name="dosage" class="form-control" maxlength="100" value="${prescriptionItems[i].dosage}" placeholder="1 viên/lần"></td>
-                                <td><input name="frequency" class="form-control" maxlength="100" value="${prescriptionItems[i].frequency}" placeholder="2 lần/ngày"></td>
-                                <td><input name="durationDays" type="number" min="1" max="365" class="form-control" value="${prescriptionItems[i].durationDays}" placeholder="30"></td>
+                                <td><input name="medicineName" class="form-control" maxlength="150" value="${item.medicineName}" placeholder="Metformin 500mg"></td>
+                                <td><input name="dosage" class="form-control" maxlength="100" value="${item.dosage}" placeholder="1 viên/lần"></td>
+                                <td><input name="frequency" class="form-control" maxlength="100" value="${item.frequency}" placeholder="2 lần/ngày"></td>
+                                <td><input name="durationDays" type="number" min="1" max="365" class="form-control" value="${item.durationDays}" placeholder="30"></td>
+                                <td><button class="icon-button danger" type="button" onclick="removeMedicineRow(this)" aria-label="Xóa thuốc">×</button></td>
                             </tr>
                         </c:forEach>
+                        <c:if test="${empty prescriptionItems}">
+                            <tr>
+                                <td><input name="medicineName" class="form-control" maxlength="150" placeholder="Metformin 500mg"></td>
+                                <td><input name="dosage" class="form-control" maxlength="100" placeholder="1 viên/lần"></td>
+                                <td><input name="frequency" class="form-control" maxlength="100" placeholder="2 lần/ngày"></td>
+                                <td><input name="durationDays" type="number" min="1" max="365" class="form-control" placeholder="30"></td>
+                                <td><button class="icon-button danger" type="button" onclick="removeMedicineRow(this)" aria-label="Xóa thuốc">×</button></td>
+                            </tr>
+                        </c:if>
                         </tbody>
                     </table>
                     <label class="top-gap">Ghi chú chung</label>
@@ -370,7 +428,7 @@
                                value="${record.doctorNote}">
                     </div>
                 </div>
-                <div class="form-actions conclusion-actions"><span class="form-hint">Sau khi hoàn tất, lượt khám và hàng đợi sẽ được đóng.</span><button type="submit" class="btn btn-success btn-lg">Hoàn tất hồ sơ bệnh án</button></div>
+                <div class="form-actions conclusion-actions"><button type="submit" class="btn btn-success btn-lg">Hoàn tất hồ sơ bệnh án</button></div>
             </form>
         </div>
     </c:when>
@@ -436,6 +494,29 @@ function syncDiabetesTreatmentOptions() {
     document.querySelectorAll('[data-diabetes-type]').forEach(function(panel) {
         panel.classList.toggle('active', panel.dataset.diabetesType === type.value);
     });
+}
+
+function addMedicineRow() {
+    var body = document.getElementById('medicineRows');
+    if (!body) return;
+    var row = document.createElement('tr');
+    row.innerHTML = '<td><input name="medicineName" class="form-control" maxlength="150" placeholder="Tên thuốc"></td>'
+        + '<td><input name="dosage" class="form-control" maxlength="100" placeholder="Liều dùng"></td>'
+        + '<td><input name="frequency" class="form-control" maxlength="100" placeholder="Số lần/ngày"></td>'
+        + '<td><input name="durationDays" type="number" min="1" max="365" class="form-control" placeholder="Số ngày"></td>'
+        + '<td><button class="icon-button danger" type="button" onclick="removeMedicineRow(this)" aria-label="Xóa thuốc">×</button></td>';
+    body.appendChild(row);
+    row.querySelector('input').focus();
+}
+
+function removeMedicineRow(button) {
+    var body = document.getElementById('medicineRows');
+    if (!body) return;
+    if (body.rows.length === 1) {
+        body.querySelectorAll('input').forEach(function(input) { input.value = ''; });
+        return;
+    }
+    button.closest('tr').remove();
 }
 
 var urlTab = new URLSearchParams(window.location.search).get('tab');

@@ -620,19 +620,21 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
     }
     public List<Map<String, Object>> labOrders() {
         return query("""
-                SELECT l.*,p.full_name patient_name,u.full_name doctor_name FROM lab_orders l
+                SELECT l.*,m.record_id,p.full_name patient_name,u.full_name doctor_name FROM lab_orders l
                 JOIN patients p ON p.patient_id=l.patient_id
                 JOIN doctors d ON d.doctor_id=l.doctor_id
                 JOIN users u ON u.user_id=d.user_id
+                LEFT JOIN medicalrecords m ON m.encounter_id=l.encounter_id
                 ORDER BY l.ordered_at DESC LIMIT 50""");
     }
 
     public List<Map<String, Object>> labOrdersForDoctor(int doctorId) {
         return query("""
-                SELECT l.*,p.full_name patient_name,u.full_name doctor_name FROM lab_orders l
+                SELECT l.*,m.record_id,p.full_name patient_name,u.full_name doctor_name FROM lab_orders l
                 JOIN patients p ON p.patient_id=l.patient_id
                 JOIN doctors d ON d.doctor_id=l.doctor_id
                 JOIN users u ON u.user_id=d.user_id
+                LEFT JOIN medicalrecords m ON m.encounter_id=l.encounter_id
                 WHERE l.doctor_id=? ORDER BY l.ordered_at DESC LIMIT 50""", doctorId);
     }
 
@@ -670,17 +672,130 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
             if (changed != 1) {
                 throw new IllegalArgumentException("Chỉ định không tồn tại hoặc không thể trả kết quả");
             }
-            update("""
-                    UPDATE encounters e SET status='LAB_COMPLETED'
-                    WHERE e.encounter_id=(SELECT encounter_id FROM lab_orders WHERE lab_order_id=?)
-                      AND NOT EXISTS (
-                          SELECT 1 FROM lab_orders l
-                          WHERE l.encounter_id=e.encounter_id
-                            AND l.status NOT IN ('RESULTED','REVIEWED','CANCELLED'))""", orderId);
             audit(actor, "RESULT", "LAB_ORDER", String.valueOf(orderId), value + " " + unit);
         } catch (SQLException error) {
             throw new IllegalStateException("Không thể lưu kết quả xét nghiệm.", error);
         }
+    }
+
+    /** Maps the structured result form to the doctor's existing orders for the visit. */
+    public void resultStructuredLabs(int recordId, int actor, Double bloodGlucose, Double hba1c,
+            Double cholesterol, Double triglyceride, Double hdlC, Double ldlC) {
+        List<Map<String, Object>> records = query("""
+                SELECT r.encounter_id FROM medicalrecords r
+                WHERE r.record_id=? AND EXISTS (
+                    SELECT 1 FROM lab_orders l WHERE l.encounter_id=r.encounter_id
+                      AND l.status NOT IN ('REVIEWED','CANCELLED'))""", recordId);
+        if (records.isEmpty() || records.get(0).get("encounter_id") == null) {
+            throw new IllegalArgumentException("Bác sĩ chưa tạo chỉ định xét nghiệm cho lượt khám này");
+        }
+        int encounterId = ((Number) records.get(0).get("encounter_id")).intValue();
+        inTransaction("Không thể lưu kết quả xét nghiệm.", () -> {
+            saveStructuredOrder(encounterId, actor, bloodGlucose, "mmol/L", "3.9-7.0",
+                    flag(bloodGlucose, 3.9, 7.0), "GLU", "GLU_FASTING");
+            saveStructuredOrder(encounterId, actor, hba1c, "%", "4.0-6.5",
+                    flag(hba1c, 4.0, 6.5), "HBA1C");
+
+            String lipidValue = lipidSummary(cholesterol, triglyceride, hdlC, ldlC);
+            if (lipidValue != null) {
+                String lipidFlag = lipidFlag(cholesterol, triglyceride, hdlC, ldlC);
+                update("""
+                        UPDATE lab_orders SET result_value=?,result_unit='mmol/L',
+                            reference_range='Theo từng chỉ số',result_flag=?,resulted_by=?,
+                            resulted_at=CURRENT_TIMESTAMP,status='RESULTED'
+                        WHERE encounter_id=? AND test_code='LIPID'
+                          AND status NOT IN ('REVIEWED','CANCELLED')""",
+                        lipidValue, lipidFlag, actor, encounterId);
+            }
+            audit(actor, "RESULT", "LAB_ORDER", String.valueOf(encounterId),
+                    "Nhập bộ kết quả xét nghiệm từ bệnh án #" + recordId);
+        });
+    }
+
+    /** The encounter only becomes lab-complete after its assigned doctor reviews every result. */
+    public void reviewLabResults(int encounterId, int doctorId, int actor) {
+        inTransaction("Không thể xác nhận kết quả xét nghiệm.", () -> {
+            List<Map<String, Object>> state = query("""
+                    SELECT COUNT(*) FILTER (WHERE status IN ('ORDERED','COLLECTED')) pending,
+                           COUNT(*) FILTER (WHERE status IN ('RESULTED','REVIEWED')) available
+                    FROM lab_orders WHERE encounter_id=? AND doctor_id=?
+                      AND status<>'CANCELLED'""", encounterId, doctorId);
+            Number pending = (Number) state.get(0).get("pending");
+            Number available = (Number) state.get(0).get("available");
+            if (available.longValue() == 0) {
+                throw new IllegalArgumentException("Chưa có kết quả xét nghiệm để xác nhận");
+            }
+            if (pending.longValue() > 0) {
+                throw new IllegalArgumentException("Vẫn còn chỉ định chưa có kết quả");
+            }
+            update("""
+                    UPDATE lab_orders SET status='REVIEWED'
+                    WHERE encounter_id=? AND doctor_id=? AND status='RESULTED'""",
+                    encounterId, doctorId);
+            update("""
+                    UPDATE encounters SET status='LAB_COMPLETED'
+                    WHERE encounter_id=? AND doctor_id=? AND status<>'COMPLETED'""",
+                    encounterId, doctorId);
+            audit(actor, "REVIEW", "LAB_ORDER", String.valueOf(encounterId),
+                    "Bác sĩ xác nhận kết quả xét nghiệm");
+        });
+    }
+
+    public boolean hasUnreviewedLabOrders(int encounterId) {
+        return !query("""
+                SELECT 1 ok FROM lab_orders
+                WHERE encounter_id=? AND status IN ('ORDERED','COLLECTED','RESULTED')
+                LIMIT 1""", encounterId).isEmpty();
+    }
+
+    public boolean hasOpenLabOrdersForRecord(int recordId) {
+        return !query("""
+                SELECT 1 ok FROM medicalrecords r JOIN lab_orders l ON l.encounter_id=r.encounter_id
+                WHERE r.record_id=? AND l.status NOT IN ('REVIEWED','CANCELLED') LIMIT 1""",
+                recordId).isEmpty();
+    }
+
+    private void saveStructuredOrder(int encounterId, int actor, Double value, String unit,
+            String range, String resultFlag, String... codes) throws SQLException {
+        if (value == null) return;
+        String placeholders = String.join(",", Collections.nCopies(codes.length, "?"));
+        List<Object> parameters = new ArrayList<>();
+        parameters.add(String.valueOf(value));
+        parameters.add(unit);
+        parameters.add(range);
+        parameters.add(resultFlag);
+        parameters.add(actor);
+        parameters.add(encounterId);
+        parameters.addAll(Arrays.asList(codes));
+        String sql = "UPDATE lab_orders SET result_value=?,result_unit=?,reference_range=?,"
+                + "result_flag=?,resulted_by=?,resulted_at=CURRENT_TIMESTAMP,status='RESULTED' "
+                + "WHERE encounter_id=? AND test_code IN (" + placeholders + ") "
+                + "AND status NOT IN ('REVIEWED','CANCELLED')";
+        update(sql, parameters.toArray());
+    }
+
+    private String flag(Double value, double low, double high) {
+        if (value == null) return "NORMAL";
+        if (value < low) return "LOW";
+        if (value > high) return "HIGH";
+        return "NORMAL";
+    }
+
+    private String lipidSummary(Double cholesterol, Double triglyceride, Double hdlC, Double ldlC) {
+        List<String> values = new ArrayList<>();
+        if (cholesterol != null) values.add("Cholesterol " + cholesterol);
+        if (triglyceride != null) values.add("Triglyceride " + triglyceride);
+        if (hdlC != null) values.add("HDL-C " + hdlC);
+        if (ldlC != null) values.add("LDL-C " + ldlC);
+        return values.isEmpty() ? null : String.join("; ", values);
+    }
+
+    private String lipidFlag(Double cholesterol, Double triglyceride, Double hdlC, Double ldlC) {
+        if ((cholesterol != null && cholesterol > 5.2)
+                || (triglyceride != null && triglyceride > 1.7)
+                || (ldlC != null && ldlC > 3.4)
+                || (hdlC != null && hdlC < 1.0)) return "HIGH";
+        return "NORMAL";
     }
 
     public Integer doctorIdForUser(int userId) {

@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Nhật ký sức khỏe — DiaCare</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui7">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui8">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
@@ -16,10 +16,15 @@
         <div><div class="eyebrow">THEO DÕI CÁ NHÂN</div><h1 class="page-title">Nhật ký sức khỏe</h1><p class="text-muted">Các chỉ số trong 30 ngày gần nhất, sắp theo ngày để dễ theo dõi xu hướng.</p></div>
         <a class="btn btn-primary" href="${pageContext.request.contextPath}/PatientDashboard">Nhập chỉ số hôm nay</a>
     </div>
-    <div class="stats-row">
-        <div class="stat-card"><strong>${empty avgGlucose?'—':avgGlucose}</strong><span>Đường huyết trung bình</span></div>
-        <div class="stat-card"><strong>${empty avgSystolic?'—':avgSystolic}</strong><span>Huyết áp tâm thu trung bình</span></div>
-    </div>
+    <section class="card journal-summary-card">
+        <div class="section-header"><div><h2>Tóm tắt chỉ số 30 ngày</h2><p>Chỉ số được tổng hợp từ nhật ký bạn đã nhập, không thay thế kết luận của bác sĩ.</p></div><span class="data-count">${measurementDays} ngày có dữ liệu</span></div>
+        <div class="stats-row">
+            <div class="stat-card"><strong>${empty latestLog.bloodGlucose?'—':latestLog.bloodGlucose}</strong><span>Đường huyết gần nhất</span><small>Trung bình: ${empty avgGlucose?'—':avgGlucose} mg/dL · ${glucoseTrend}</small></div>
+            <div class="stat-card"><strong>${empty latestLog.systolicBp?'—':latestLog.systolicBp}/${empty latestLog.diastolicBp?'—':latestLog.diastolicBp}</strong><span>Huyết áp gần nhất</span><small>Trung bình: ${empty avgSystolic?'—':avgSystolic}/${empty avgDiastolic?'—':avgDiastolic} mmHg</small></div>
+            <div class="stat-card"><strong>${empty latestLog.weight?'—':latestLog.weight}</strong><span>Cân nặng gần nhất</span><small>Trung bình: ${empty avgWeight?'—':avgWeight} kg</small></div>
+            <div class="stat-card"><strong>${measurementDays}</strong><span>Ngày đã ghi nhận</span><small>Trong 30 ngày gần nhất</small></div>
+        </div>
+    </section>
     <section class="card">
         <div class="section-header"><div><h2>Lịch sử chỉ số</h2><p>Dữ liệu do bạn tự ghi; hãy mang theo khi tái khám nếu có bất thường kéo dài.</p></div></div>
         <div class="table-scroll">

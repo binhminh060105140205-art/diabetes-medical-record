@@ -86,33 +86,33 @@
             </div>
             <div class="indicator-item">
                 <div class="ind-label">Đường huyết</div>
-                <div class="ind-value">${detail.indicator.bloodGlucose}</div>
-                <div class="ind-unit">mg/dL</div>
+                <div class="ind-value">${not empty detail.indicator.bloodGlucose?detail.indicator.bloodGlucose:'—'}</div>
+                <div class="ind-unit"><c:if test="${not empty detail.indicator.bloodGlucose}">mmol/L</c:if></div>
             </div>
             <div class="indicator-item">
                 <div class="ind-label">HbA1c</div>
-                <div class="ind-value">${detail.indicator.hba1c}</div>
-                <div class="ind-unit">%</div>
+                <div class="ind-value">${not empty detail.indicator.hba1c?detail.indicator.hba1c:'—'}</div>
+                <div class="ind-unit"><c:if test="${not empty detail.indicator.hba1c}">%</c:if></div>
             </div>
             <div class="indicator-item">
                 <div class="ind-label">Cholesterol</div>
-                <div class="ind-value">${detail.indicator.cholesterol}</div>
-                <div class="ind-unit">mg/dL</div>
+                <div class="ind-value">${not empty detail.indicator.cholesterol?detail.indicator.cholesterol:'—'}</div>
+                <div class="ind-unit"><c:if test="${not empty detail.indicator.cholesterol}">mmol/L</c:if></div>
             </div>
             <div class="indicator-item">
                 <div class="ind-label">Triglyceride</div>
-                <div class="ind-value">${detail.indicator.triglyceride}</div>
-                <div class="ind-unit">mg/dL</div>
+                <div class="ind-value">${not empty detail.indicator.triglyceride?detail.indicator.triglyceride:'—'}</div>
+                <div class="ind-unit"><c:if test="${not empty detail.indicator.triglyceride}">mmol/L</c:if></div>
             </div>
             <div class="indicator-item">
                 <div class="ind-label">HDL-C</div>
-                <div class="ind-value">${detail.indicator.hdlC}</div>
-                <div class="ind-unit">mg/dL</div>
+                <div class="ind-value">${not empty detail.indicator.hdlC?detail.indicator.hdlC:'—'}</div>
+                <div class="ind-unit"><c:if test="${not empty detail.indicator.hdlC}">mmol/L</c:if></div>
             </div>
             <div class="indicator-item">
                 <div class="ind-label">LDL-C</div>
-                <div class="ind-value">${detail.indicator.ldlC}</div>
-                <div class="ind-unit">mg/dL</div>
+                <div class="ind-value">${not empty detail.indicator.ldlC?detail.indicator.ldlC:'—'}</div>
+                <div class="ind-unit"><c:if test="${not empty detail.indicator.ldlC}">mmol/L</c:if></div>
             </div>
         </div>
     </div>

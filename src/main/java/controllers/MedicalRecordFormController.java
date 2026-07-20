@@ -40,6 +40,7 @@ public class MedicalRecordFormController extends HttpServlet {
             request.setAttribute("diabetesProfile", formData.diabetesProfile());
             request.setAttribute("latestIndicator", formData.latestIndicator());
             request.setAttribute("labSummary", formData.labSummary());
+            request.setAttribute("labOrders", formData.labOrders());
             if ("DOCTOR".equals(user.getRole())) {
                 if (assignedDoctor == null || assignedDoctor.getUserId() != user.getUserId()) {
                     response.sendError(403); return;
@@ -56,9 +57,13 @@ public class MedicalRecordFormController extends HttpServlet {
             if (assignedDoctor != null) request.setAttribute("assignedDoctor", assignedDoctor);
 
             boolean clinicalDone = indicator != null && (indicator.getHeight() > 0 || indicator.getSystolicBp() > 0);
-            boolean labDone      = indicator != null && (indicator.getBloodGlucose() > 0 || indicator.getHba1c() > 0);
+            boolean labDone = indicator != null
+                    && (positive(indicator.getBloodGlucose()) || positive(indicator.getHba1c())
+                    || positive(indicator.getCholesterol()) || positive(indicator.getTriglyceride())
+                    || positive(indicator.getHdlC()) || positive(indicator.getLdlC()));
             request.setAttribute("clinicalDone", clinicalDone);
             request.setAttribute("labDone",      labDone);
+            setLabState(request, formData.labOrders());
         } else if (pidParam != null) {
             int patientId = ControllerSupport.positiveIdOrZero(pidParam);
             if (patientId == 0) { response.sendError(400, "Mã bệnh nhân không hợp lệ"); return; }
@@ -69,8 +74,18 @@ public class MedicalRecordFormController extends HttpServlet {
             request.setAttribute("encounterId", encounterParam);
             if (encounterParam != null && !encounterParam.isBlank()) {
                 int encounterId = ControllerSupport.positiveIdOrZero(encounterParam);
-                request.setAttribute("appointmentTime",
-                        new ClinicWorkflowDAO().appointmentTimeForEncounter(encounterId));
+                if (encounterId == 0) {
+                    response.sendError(400, "Mã lượt khám không hợp lệ");
+                    return;
+                }
+                ClinicWorkflowDAO workflow = new ClinicWorkflowDAO();
+                int[] assignment = workflow.assignmentForEncounter(encounterId);
+                if (assignment[0] != patientId) {
+                    response.sendError(400, "Bệnh nhân không thuộc lượt khám này");
+                    return;
+                }
+                request.setAttribute("assignedDoctor", new DoctorDAO().getById(assignment[1]));
+                request.setAttribute("appointmentTime", workflow.appointmentTimeForEncounter(encounterId));
             }
         }
 
@@ -96,6 +111,8 @@ public class MedicalRecordFormController extends HttpServlet {
         switch (ControllerSupport.clean(request.getParameter("action"))) {
             case "saveBasic" -> saveBasic(request, response, user, records);
             case "saveClinical" -> saveClinical(request, response, user, records, recordId);
+            case "saveLabResults" -> saveLabResults(request, response, user, records, recordId);
+            case "reviewLab" -> reviewLabResults(request, response, user, records, session, recordId);
             case "saveDiabetesProfile" ->
                     saveDiabetesProfile(request, response, user, records, session, recordId);
             case "saveConclusion" ->
@@ -189,12 +206,77 @@ public class MedicalRecordFormController extends HttpServlet {
         request.setAttribute("latestIndicator", data.latestIndicator());
         request.setAttribute("diabetesProfile", data.diabetesProfile());
         request.setAttribute("labSummary", data.labSummary());
+        request.setAttribute("labOrders", data.labOrders());
         request.setAttribute("prescriptionItems", data.prescriptionItems());
         request.setAttribute("assignedDoctor", data.doctor());
         request.setAttribute("doctors", new DoctorDAO().getAll());
         request.setAttribute("serverErrors", errors);
         request.setAttribute("activeTab", "2");
         request.getRequestDispatcher("views/MedicalRecordForm.jsp").forward(request, response);
+    }
+
+    private void saveLabResults(HttpServletRequest request, HttpServletResponse response,
+            User user, MedicalRecordDAO records, String recordIdValue) throws IOException {
+        if (!requireRole(request, response, user, "STAFF")) return;
+        int recordId = ControllerSupport.positiveId(recordIdValue, "Mã bệnh án");
+        MedicalRecord record = records.getById(recordId);
+        if (record == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "Không tìm thấy bệnh án");
+            return;
+        }
+
+        try {
+            Double bloodGlucose = labValue(request, "bloodGlucose", "Đường huyết lúc đói", 1, 40);
+            Double hba1c = labValue(request, "hba1c", "HbA1c", 2, 20);
+            Double cholesterol = labValue(request, "cholesterol", "Cholesterol", 0.1, 30);
+            Double triglyceride = labValue(request, "triglyceride", "Triglyceride", 0.1, 30);
+            Double hdlC = labValue(request, "hdlC", "HDL-C", 0.1, 15);
+            Double ldlC = labValue(request, "ldlC", "LDL-C", 0.1, 20);
+            if (java.util.stream.Stream.of(bloodGlucose, hba1c, cholesterol,
+                    triglyceride, hdlC, ldlC).allMatch(java.util.Objects::isNull)) {
+                throw new IllegalArgumentException("Cần nhập ít nhất một kết quả xét nghiệm.");
+            }
+
+            ClinicWorkflowDAO workflow = new ClinicWorkflowDAO();
+            if (!workflow.hasOpenLabOrdersForRecord(recordId)) {
+                throw new IllegalArgumentException(
+                        "Bác sĩ chưa tạo chỉ định xét nghiệm cho lượt khám này.");
+            }
+            new HealthIndicatorDAO().saveLabResults(recordId, user.getUserId(), bloodGlucose,
+                    hba1c, cholesterol, triglyceride, hdlC, ldlC);
+            workflow.resultStructuredLabs(recordId, user.getUserId(), bloodGlucose,
+                    hba1c, cholesterol, triglyceride, hdlC, ldlC);
+            ControllerSupport.flash(request, "recordSuccess",
+                    "Đã lưu kết quả xét nghiệm. Chờ bác sĩ xác nhận.");
+        } catch (IllegalArgumentException error) {
+            ControllerSupport.flash(request, "recordFlash", error.getMessage());
+        }
+        redirectToRecordTab(request, response, recordId, 3);
+    }
+
+    private void reviewLabResults(HttpServletRequest request, HttpServletResponse response,
+            User user, MedicalRecordDAO records, HttpSession session, String recordIdValue)
+            throws IOException {
+        if (!requireRole(request, response, user, "DOCTOR")) return;
+        int recordId = ControllerSupport.positiveId(recordIdValue, "Mã bệnh án");
+        MedicalRecord record = records.getById(recordId);
+        if (record == null || record.getEncounterId() <= 0) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "Không tìm thấy lượt khám");
+            return;
+        }
+        Integer doctorId = doctorIdForSession(session, user);
+        if (doctorId == null || doctorId != record.getDoctorId()) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return;
+        }
+        try {
+            new ClinicWorkflowDAO().reviewLabResults(
+                    record.getEncounterId(), doctorId, user.getUserId());
+            ControllerSupport.flash(request, "recordSuccess", "Đã xác nhận kết quả xét nghiệm.");
+        } catch (IllegalArgumentException error) {
+            ControllerSupport.flash(request, "recordFlash", error.getMessage());
+        }
+        redirectToRecordTab(request, response, recordId, 3);
     }
 
     private void saveDiabetesProfile(HttpServletRequest request, HttpServletResponse response,
@@ -319,6 +401,13 @@ public class MedicalRecordFormController extends HttpServlet {
             record.setDoctorNote(request.getParameter("doctorNote"));
         }
 
+        if (record.getEncounterId() > 0
+                && new ClinicWorkflowDAO().hasUnreviewedLabOrders(record.getEncounterId())) {
+            redirectRecordError(request, response, recordId,
+                    "Kết quả xét nghiệm phải được nhập và bác sĩ xác nhận trước khi hoàn tất bệnh án.");
+            return;
+        }
+
         String followUpValue = ControllerSupport.clean(request.getParameter("followUpDate"));
         if (!followUpValue.isEmpty()) {
             java.time.LocalDate followUp;
@@ -408,6 +497,46 @@ public class MedicalRecordFormController extends HttpServlet {
         catch (NumberFormatException error) {
             throw new IllegalArgumentException("Mục tiêu HbA1c không hợp lệ.");
         }
+    }
+
+    private Double labValue(HttpServletRequest request, String name, String label,
+            double min, double max) {
+        String raw = ControllerSupport.clean(request.getParameter(name));
+        if (raw.isEmpty()) return null;
+        try {
+            double value = Double.parseDouble(raw);
+            if (!Double.isFinite(value) || value < min || value > max) {
+                throw new IllegalArgumentException(label + " phải từ " + min + " đến " + max + ".");
+            }
+            return value;
+        } catch (NumberFormatException error) {
+            throw new IllegalArgumentException(label + " không hợp lệ.");
+        }
+    }
+
+    private boolean positive(Double value) {
+        return value != null && value > 0;
+    }
+
+    private void setLabState(HttpServletRequest request,
+            List<java.util.Map<String, Object>> labOrders) {
+        boolean hasOrders = labOrders != null && !labOrders.isEmpty();
+        boolean allReady = hasOrders;
+        boolean allReviewed = hasOrders;
+        if (hasOrders) {
+            for (java.util.Map<String, Object> order : labOrders) {
+                String status = String.valueOf(order.get("status"));
+                if (!java.util.Set.of("RESULTED", "REVIEWED", "CANCELLED").contains(status)) {
+                    allReady = false;
+                }
+                if (!java.util.Set.of("REVIEWED", "CANCELLED").contains(status)) {
+                    allReviewed = false;
+                }
+            }
+        }
+        request.setAttribute("hasLabOrders", hasOrders);
+        request.setAttribute("labResultsReady", allReady);
+        request.setAttribute("labReviewed", allReviewed);
     }
 
     private boolean tooLong(String value, int max) { return value != null && value.length() > max; }

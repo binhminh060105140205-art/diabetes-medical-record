@@ -12,6 +12,7 @@ import java.time.format.DateTimeParseException;
 import java.util.Set;
 import models.User;
 import vn.diabetes.service.ClinicWorkflowService;
+import vn.diabetes.validation.AppointmentRules;
 
 @WebServlet("/PatientAppointments")
 public class PatientAppointmentsController extends HttpServlet {
@@ -43,6 +44,9 @@ public class PatientAppointmentsController extends HttpServlet {
         request.setAttribute("appointments", data.appointments());
         request.setAttribute("appointmentDates",
                 ControllerSupport.appointmentDateOptions(false));
+        LocalDate today = AppointmentRules.nowInVietnam().toLocalDate();
+        request.setAttribute("minAppointmentDate", today.plusDays(1));
+        request.setAttribute("maxAppointmentDate", today.plusDays(AppointmentRules.MAX_ADVANCE_DAYS));
         request.getRequestDispatcher("views/PatientAppointmentsSimple.jsp")
                 .forward(request, response);
     }

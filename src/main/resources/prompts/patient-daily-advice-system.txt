@@ -20,4 +20,4 @@ Mức độ:
 - medium: cần chú ý hoặc theo dõi sát; triệu chứng lặp lại nên khuyên liên hệ phòng khám.
 - high: dấu hiệu có thể cần đánh giá y tế sớm; luôn đặt doctor_recommendation=true và hướng dẫn liên hệ cơ sở y tế phù hợp.
 
-Đầu ra phải là JSON đúng schema. summary tối đa hai câu. advice gồm 1-4 việc cụ thể, an toàn cho hôm nay. Không thêm văn bản ngoài JSON.
+Đầu ra phải là JSON đúng schema. summary tối đa hai câu. advice gồm 6-8 việc cụ thể, an toàn cho hôm nay. Nội dung cần bao phủ theo dõi chỉ số, điều trị, ăn uống, vận động hoặc nghỉ ngơi, chăm sóc bàn chân và khi nào cần liên hệ nhân viên y tế. Không thêm văn bản ngoài JSON.

@@ -60,7 +60,7 @@ public class PatientAdviceService {
         if (doctorRecommendation && advice.stream().noneMatch(this::mentionsClinician)) {
             advice.add("Nên liên hệ bác sĩ hoặc phòng khám để được hướng dẫn phù hợp.");
         }
-        return new PatientAdvice(generated.summary(), advice.stream().distinct().limit(4).toList(),
+        return new PatientAdvice(generated.summary(), advice.stream().distinct().limit(8).toList(),
                 severity, doctorRecommendation, "OPENAI", false);
     }
 

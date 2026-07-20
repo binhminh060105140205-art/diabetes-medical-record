@@ -59,7 +59,7 @@ public class OpenAiAdviceClient {
             requestBody.put("input", json.writeValueAsString(prepared.context()));
             requestBody.putObject("reasoning").put("effort", "none");
             ObjectNode text = requestBody.putObject("text");
-            text.put("verbosity", "low");
+            text.put("verbosity", "medium");
             text.set("format", responseFormat());
 
             HttpRequest request = HttpRequest.newBuilder(endpoint)
@@ -104,7 +104,7 @@ public class OpenAiAdviceClient {
         List<String> advice = new ArrayList<>();
         for (JsonNode item : node.path("advice")) {
             String value = clean(item.asText(), 300);
-            if (!value.isBlank() && advice.size() < 4) advice.add(value);
+            if (!value.isBlank() && advice.size() < 8) advice.add(value);
         }
         if (summary.isBlank() || advice.isEmpty()) throw new IllegalStateException("Incomplete OpenAI advice");
         return new GeneratedAdvice(summary, advice, severity, node.path("doctor_recommendation").asBoolean(false));
@@ -121,8 +121,8 @@ public class OpenAiAdviceClient {
         ObjectNode properties = schema.putObject("properties");
         properties.putObject("summary").put("type", "string").put("maxLength", 350);
         ObjectNode advice = properties.putObject("advice");
-        advice.put("type", "array").put("minItems", 1).put("maxItems", 4);
-        advice.putObject("items").put("type", "string").put("maxLength", 300);
+        advice.put("type", "array").put("minItems", 6).put("maxItems", 8);
+        advice.putObject("items").put("type", "string").put("maxLength", 500);
         ObjectNode severity = properties.putObject("severity");
         severity.put("type", "string");
         ArrayNode severityValues = severity.putArray("enum");

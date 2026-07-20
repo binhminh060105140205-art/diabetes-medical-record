@@ -32,7 +32,8 @@ public class PatientDAO extends DBContext {
     public List<Patient> listForSelection() {
         List<Patient> list = new ArrayList<>();
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT patient_id,full_name,phone FROM patients ORDER BY full_name");
+                "SELECT p.patient_id,p.full_name,p.phone FROM patients p LEFT JOIN users u ON u.user_id=p.user_id "
+                + "WHERE COALESCE(u.status,'ACTIVE') <> 'DELETED' ORDER BY p.full_name");
              ResultSet rows = statement.executeQuery()) {
             while (rows.next()) {
                 Patient patient = new Patient();
@@ -49,10 +50,13 @@ public class PatientDAO extends DBContext {
     public StaffDashboardData loadStaffDashboard(String keyword, int limit) {
         boolean searching = keyword != null && !keyword.isBlank();
         String where = searching
-                ? " WHERE full_name ILIKE ? OR phone ILIKE ? OR health_insurance_no ILIKE ? OR national_id ILIKE ?"
-                : "";
-        String order = searching ? " ORDER BY full_name" : " ORDER BY created_at DESC";
-        String sql = "WITH total AS (SELECT COUNT(*) value FROM patients), data AS (SELECT * FROM patients"
+                ? " WHERE COALESCE(u.status,'ACTIVE') <> 'DELETED' AND "
+                  + "(p.full_name ILIKE ? OR p.phone ILIKE ? OR p.health_insurance_no ILIKE ? OR p.national_id ILIKE ?)"
+                : " WHERE COALESCE(u.status,'ACTIVE') <> 'DELETED'";
+        String order = searching ? " ORDER BY p.full_name" : " ORDER BY p.created_at DESC";
+        String sql = "WITH total AS (SELECT COUNT(*) value FROM patients p LEFT JOIN users u ON u.user_id=p.user_id"
+                + " WHERE COALESCE(u.status,'ACTIVE') <> 'DELETED'), data AS (SELECT p.* FROM patients p "
+                + "LEFT JOIN users u ON u.user_id=p.user_id"
                 + where + order + " LIMIT ?) SELECT d.*,t.value total FROM total t LEFT JOIN data d ON TRUE";
         List<Patient> patients = new ArrayList<>();
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -79,11 +83,12 @@ public class PatientDAO extends DBContext {
     public PatientListData loadPatientList(String keyword, int page, int pageSize) {
         boolean searching = keyword != null && !keyword.isBlank();
         String where = searching
-                ? " WHERE full_name ILIKE ? OR phone ILIKE ? OR health_insurance_no ILIKE ? OR national_id ILIKE ?"
-                : "";
-        String order = searching ? " ORDER BY full_name" : " ORDER BY created_at DESC";
-        String sql = "WITH filtered AS (SELECT * FROM patients" + where
-                + "), total AS (SELECT COUNT(*) value FROM filtered), data AS (SELECT * FROM filtered"
+                ? " WHERE COALESCE(u.status,'ACTIVE') <> 'DELETED' AND "
+                  + "(p.full_name ILIKE ? OR p.phone ILIKE ? OR p.health_insurance_no ILIKE ? OR p.national_id ILIKE ?)"
+                : " WHERE COALESCE(u.status,'ACTIVE') <> 'DELETED'";
+        String order = searching ? " ORDER BY p.full_name" : " ORDER BY p.created_at DESC";
+        String sql = "WITH filtered AS (SELECT p.* FROM patients p LEFT JOIN users u ON u.user_id=p.user_id"
+                + where + "), total AS (SELECT COUNT(*) value FROM filtered), data AS (SELECT * FROM filtered"
                 + order + " LIMIT ? OFFSET ?) SELECT d.*,t.value total FROM total t LEFT JOIN data d ON TRUE";
         List<Patient> patients = new ArrayList<>();
         try (PreparedStatement ps = connection.prepareStatement(sql)) {

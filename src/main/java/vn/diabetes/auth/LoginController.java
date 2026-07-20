@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import dal.LoginHistoryDAO;
 import models.User;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Controller;
@@ -50,6 +51,7 @@ public class LoginController {
         if (result.successful()) {
             request.changeSessionId();
             session.setAttribute("user", result.user());
+            recordLogin(request, session, result.user());
             return redirectFor(result.user());
         }
         model.addAttribute("err", result.error());
@@ -58,6 +60,22 @@ public class LoginController {
             model.addAttribute("lockUntil", result.lockUntil().toEpochMilli());
         }
         return "forward:/views/Login.jsp";
+    }
+
+    private void recordLogin(HttpServletRequest request, HttpSession session, User user) {
+        try {
+            new LoginHistoryDAO().record(user.getUserId(), user.getUsername(), user.getFullName(),
+                    user.getRole(), "LOGIN", clientIp(request), request.getHeader("User-Agent"),
+                    session.getId());
+        } catch (RuntimeException error) {
+            LOGGER.log(Level.WARNING, "Không thể ghi lịch sử đăng nhập", error);
+        }
+    }
+
+    private String clientIp(HttpServletRequest request) {
+        String forwarded = request.getHeader("X-Forwarded-For");
+        return forwarded == null || forwarded.isBlank()
+                ? request.getRemoteAddr() : forwarded.split(",", 2)[0].trim();
     }
 
     private String redirectFor(User user) {

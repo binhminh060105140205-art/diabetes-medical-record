@@ -13,12 +13,12 @@ public class HealthIndicator {
     private int diastolicBp;
     private int heartRate;
     private double temperature;
-    private double bloodGlucose;
-    private double hba1c;
-    private double cholesterol;
-    private double triglyceride;
-    private double hdlC;
-    private double ldlC;
+    private Double bloodGlucose;
+    private Double hba1c;
+    private Double cholesterol;
+    private Double triglyceride;
+    private Double hdlC;
+    private Double ldlC;
     private LocalDateTime measuredAt;
 
     public HealthIndicator() {}
@@ -53,23 +53,23 @@ public class HealthIndicator {
     public double getTemperature()              { return temperature; }
     public void setTemperature(double v)        { this.temperature = v; }
 
-    public double getBloodGlucose()             { return bloodGlucose; }
-    public void setBloodGlucose(double v)       { this.bloodGlucose = v; }
+    public Double getBloodGlucose()             { return bloodGlucose; }
+    public void setBloodGlucose(Double v)       { this.bloodGlucose = v; }
 
-    public double getHba1c()                    { return hba1c; }
-    public void setHba1c(double v)              { this.hba1c = v; }
+    public Double getHba1c()                    { return hba1c; }
+    public void setHba1c(Double v)              { this.hba1c = v; }
 
-    public double getCholesterol()              { return cholesterol; }
-    public void setCholesterol(double v)        { this.cholesterol = v; }
+    public Double getCholesterol()              { return cholesterol; }
+    public void setCholesterol(Double v)        { this.cholesterol = v; }
 
-    public double getTriglyceride()             { return triglyceride; }
-    public void setTriglyceride(double v)       { this.triglyceride = v; }
+    public Double getTriglyceride()             { return triglyceride; }
+    public void setTriglyceride(Double v)       { this.triglyceride = v; }
 
-    public double getHdlC()                     { return hdlC; }
-    public void setHdlC(double v)               { this.hdlC = v; }
+    public Double getHdlC()                     { return hdlC; }
+    public void setHdlC(Double v)               { this.hdlC = v; }
 
-    public double getLdlC()                     { return ldlC; }
-    public void setLdlC(double v)               { this.ldlC = v; }
+    public Double getLdlC()                     { return ldlC; }
+    public void setLdlC(Double v)               { this.ldlC = v; }
 
     public LocalDateTime getMeasuredAt()             { return measuredAt; }
     public void setMeasuredAt(LocalDateTime v)       { this.measuredAt = v; }

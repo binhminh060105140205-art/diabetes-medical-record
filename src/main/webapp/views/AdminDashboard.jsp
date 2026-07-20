@@ -22,7 +22,10 @@
             <p>Tra cứu người dùng, kiểm soát trạng thái tài khoản và đi nhanh đến các khu vực vận hành phòng khám.</p>
         </div>
         <div class="heading-actions">
-            <a class="btn btn-light" href="${pageContext.request.contextPath}/ClinicWorkflow?view=appointments">Mở điều hành khám</a>
+            <a class="btn btn-light" href="${pageContext.request.contextPath}/ClinicWorkflow?view=appointments">Điều hành khám</a>
+            <a class="btn btn-light" href="${pageContext.request.contextPath}/AdminExport">Xuất Excel</a>
+            <a class="btn btn-light" href="${pageContext.request.contextPath}/AdminLoginHistory">Lịch sử đăng nhập</a>
+            <a class="btn btn-light" href="${pageContext.request.contextPath}/AdminTrash">Thùng rác</a>
             <a class="btn btn-primary" href="${pageContext.request.contextPath}/AdminCreateUser">Tạo tài khoản</a>
         </div>
     </div>
@@ -102,6 +105,10 @@
                                     <form method="post" action="${pageContext.request.contextPath}/AdminToggleStatus" class="inline-form" onsubmit="return confirm('Xác nhận ${u.status=='ACTIVE'?'khóa':'mở khóa'} tài khoản này?')">
                                         <input type="hidden" name="id" value="${u.userId}"><input type="hidden" name="filterRole" value="${filterRole}"><input type="hidden" name="filterStatus" value="${filterStatus}"><input type="hidden" name="sortOrder" value="${sortOrder}"><input type="hidden" name="keyword" value="${fn:escapeXml(keyword)}"><input type="hidden" name="page" value="${currentPage}">
                                         <button class="btn btn-sm ${u.status=='ACTIVE'?'btn-danger':'btn-success'}" type="submit">${u.status=='ACTIVE'?'Khóa':'Mở khóa'}</button>
+                                    </form>
+                                    <form method="post" action="${pageContext.request.contextPath}/AdminTrash" class="inline-form" onsubmit="return confirm('Đưa tài khoản này vào thùng rác?')">
+                                        <input type="hidden" name="action" value="softDelete"><input type="hidden" name="userId" value="${u.userId}">
+                                        <button class="btn btn-sm btn-light" type="submit">Xóa mềm</button>
                                     </form>
                                 </c:if>
                             </div>

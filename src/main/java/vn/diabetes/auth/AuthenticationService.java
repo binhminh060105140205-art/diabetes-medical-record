@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import models.User;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -38,19 +39,19 @@ public class AuthenticationService {
 
         User user = foundUser.get();
         Instant now = Instant.now();
-        UserRepository.LoginSecurityState security = users.getLoginSecurityState(user.getUserId());
+        UserRepository.LoginSecurityState security = securityState(user.getUserId());
         if (security == null) security = new UserRepository.LoginSecurityState(0, null);
 
         if (security.lockUntil() != null && security.lockUntil().isAfter(now)) {
             return LoginResult.locked(security.lockUntil());
         }
         if (security.lockUntil() != null) {
-            users.clearLoginFailures(user.getUserId());
+            clearFailures(user.getUserId());
             security = new UserRepository.LoginSecurityState(0, null);
         }
 
         if (Passwords.matches(password, user.getPassword())) {
-            if (security.failedAttempts() > 0) users.clearLoginFailures(user.getUserId());
+            if (security.failedAttempts() > 0) clearFailures(user.getUserId());
             if (Passwords.needsRehash(user.getPassword())) {
                 users.updatePassword(user.getUserId(), password);
             }
@@ -59,13 +60,41 @@ public class AuthenticationService {
         }
 
         Instant lockUntil = now.plus(LOCK_DURATION);
-        UserRepository.LoginSecurityState updated = users.recordFailedLogin(
-                user.getUserId(), MAX_FAILED_ATTEMPTS, lockUntil);
+        UserRepository.LoginSecurityState updated = recordFailure(
+                user.getUserId(), MAX_FAILED_ATTEMPTS, lockUntil, security);
         if (updated.lockUntil() != null || updated.failedAttempts() >= MAX_FAILED_ATTEMPTS) {
             return LoginResult.locked(updated.lockUntil() == null ? lockUntil : updated.lockUntil());
         }
         int remaining = Math.max(0, MAX_FAILED_ATTEMPTS - updated.failedAttempts());
         return LoginResult.failed(INVALID_CREDENTIALS + " Bạn còn " + remaining + " lần thử.", remaining);
+    }
+
+    /* Login must remain usable when an older database has not applied V16 yet.
+       The credential check is still valid; only the optional lock counter is skipped. */
+    private UserRepository.LoginSecurityState securityState(int userId) {
+        try {
+            return users.getLoginSecurityState(userId);
+        } catch (DataAccessException error) {
+            return UserRepository.LoginSecurityState.clear();
+        }
+    }
+
+    private void clearFailures(int userId) {
+        try {
+            users.clearLoginFailures(userId);
+        } catch (DataAccessException ignored) {
+            // Compatibility with databases created before the login-lock migration.
+        }
+    }
+
+    private UserRepository.LoginSecurityState recordFailure(int userId, int maxAttempts,
+            Instant lockUntil, UserRepository.LoginSecurityState fallback) {
+        try {
+            return users.recordFailedLogin(userId, maxAttempts, lockUntil);
+        } catch (DataAccessException ignored) {
+            return new UserRepository.LoginSecurityState(
+                    fallback.failedAttempts() + 1, null);
+        }
     }
 
     public record LoginResult(User user, String error, Instant lockUntil, Integer remainingAttempts) {

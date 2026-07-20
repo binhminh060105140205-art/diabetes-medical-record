@@ -44,4 +44,43 @@ public class HealthIndicatorDAO extends DBContext {
         }
     }
 
+    /** Saves laboratory values without replacing the triage measurements. Blank values stay NULL. */
+    public void saveLabResults(int recordId, int staffId, Double bloodGlucose, Double hba1c,
+            Double cholesterol, Double triglyceride, Double hdlC, Double ldlC) {
+        String sql = """
+                INSERT INTO healthindicators(
+                    record_id,entered_by_staff,blood_glucose,hba1c,cholesterol,triglyceride,hdl_c,ldl_c)
+                VALUES(?,?,?,?,?,?,?,?)
+                ON CONFLICT (record_id) DO UPDATE SET
+                    entered_by_staff=EXCLUDED.entered_by_staff,
+                    blood_glucose=COALESCE(EXCLUDED.blood_glucose,healthindicators.blood_glucose),
+                    hba1c=COALESCE(EXCLUDED.hba1c,healthindicators.hba1c),
+                    cholesterol=COALESCE(EXCLUDED.cholesterol,healthindicators.cholesterol),
+                    triglyceride=COALESCE(EXCLUDED.triglyceride,healthindicators.triglyceride),
+                    hdl_c=COALESCE(EXCLUDED.hdl_c,healthindicators.hdl_c),
+                    ldl_c=COALESCE(EXCLUDED.ldl_c,healthindicators.ldl_c),
+                    measured_at=CURRENT_TIMESTAMP""";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, recordId);
+            statement.setInt(2, staffId);
+            setNullable(statement, 3, bloodGlucose);
+            setNullable(statement, 4, hba1c);
+            setNullable(statement, 5, cholesterol);
+            setNullable(statement, 6, triglyceride);
+            setNullable(statement, 7, hdlC);
+            setNullable(statement, 8, ldlC);
+            if (statement.executeUpdate() != 1) {
+                throw new SQLException("Laboratory indicators were not saved");
+            }
+        } catch (SQLException error) {
+            throw databaseError("save laboratory indicators", error);
+        }
+    }
+
+    private void setNullable(PreparedStatement statement, int index, Double value)
+            throws SQLException {
+        if (value == null) statement.setNull(index, Types.NUMERIC);
+        else statement.setDouble(index, value);
+    }
+
 }

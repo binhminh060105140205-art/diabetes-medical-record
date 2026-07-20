@@ -61,7 +61,8 @@ public class UserDAO extends DBContext {
         boolean hasRole = role != null && !role.isBlank();
         boolean hasStatus = status != null && !status.isBlank();
         boolean hasKeyword = keyword != null && !keyword.isBlank();
-        StringBuilder where = new StringBuilder(" WHERE 1=1");
+        // Soft-deleted accounts are managed in AdminTrash and stay out of the normal list.
+        StringBuilder where = new StringBuilder(" WHERE COALESCE(status,'ACTIVE') <> 'DELETED'");
         if (hasRole) where.append(" AND role=?");
         if (hasStatus) where.append(" AND status=?");
         if (hasKeyword) where.append(" AND (full_name ILIKE ? OR username ILIKE ? OR phone ILIKE ?)");
@@ -69,11 +70,13 @@ public class UserDAO extends DBContext {
                 ? "created_at ASC, user_id ASC" : "created_at DESC, user_id DESC";
         String sql = """
             WITH metrics AS (
-              SELECT (SELECT COUNT(*) FROM patients) patients,
+              SELECT (SELECT COUNT(*) FROM patients p LEFT JOIN users pu ON pu.user_id=p.user_id
+                              WHERE COALESCE(pu.status,'ACTIVE') <> 'DELETED') patients,
                      COUNT(*) total_users,
                      COUNT(*) FILTER (WHERE role='DOCTOR') doctors,
                      COUNT(*) FILTER (WHERE role='STAFF') staff
               FROM users
+              WHERE COALESCE(status,'ACTIVE') <> 'DELETED'
             ), filtered AS (SELECT * FROM users""" + where + "), total AS (SELECT COUNT(*) total FROM filtered), "
                 + "page_data AS (SELECT * FROM filtered ORDER BY " + ordering + " LIMIT ? OFFSET ?) "
                 + "SELECT p.*,m.total_users,m.patients,m.doctors,m.staff,t.total FROM metrics m CROSS JOIN total t LEFT JOIN page_data p ON TRUE";

@@ -20,6 +20,9 @@
                     <span><c:out value="${sessionScope.user.fullName}"/></span>
                     <small>Cài đặt tài khoản</small>
                 </a>
+                <form action="${pageContext.request.contextPath}/Logout" method="post" class="header-logout-form">
+                    <button type="submit" class="header-logout">Đăng xuất</button>
+                </form>
             </c:when>
             <c:otherwise>
                 <a href="${pageContext.request.contextPath}/Login" class="btn btn-primary">Đăng nhập</a>

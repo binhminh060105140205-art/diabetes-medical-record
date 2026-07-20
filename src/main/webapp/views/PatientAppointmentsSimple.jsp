@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Lịch khám — DiaCare</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui7">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui8">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
@@ -25,33 +25,38 @@
 
     <div class="appointment-layout booking-simple">
         <section class="card booking-card">
-            <div class="card-title">Gửi yêu cầu khám</div>
+            <div class="booking-card-heading">
+                <div><span class="panel-eyebrow">ĐẶT LỊCH NHANH</span><h2>Gửi yêu cầu khám</h2><p>Chọn ngày và buổi phù hợp. Nhân viên sẽ xác nhận bác sĩ và giờ cụ thể.</p></div>
+                <span class="booking-step-count">3 bước</span>
+            </div>
             <form method="post" action="${pageContext.request.contextPath}/PatientAppointments" class="compact-form">
-                <div class="form-group">
-                    <label class="required" for="preferredDate">1. Chọn ngày muốn đến</label>
-                    <select id="preferredDate" class="form-control" name="preferredDate" required>
-                        <option value="">Chọn ngày khám</option>
-                        <c:forEach var="date" items="${appointmentDates}"><option value="${date.value}"><c:out value="${date.label}"/></option></c:forEach>
-                    </select>
-                    <small class="form-hint">Từ thứ Hai đến thứ Bảy, trong 90 ngày tới.</small>
+                <div class="booking-step">
+                    <div class="booking-step-title"><span>01</span><div><strong>Ngày dự kiến</strong><small>Chọn ngày muốn đến khám</small></div></div>
+                    <div class="form-group">
+                        <label class="sr-only" for="preferredDate">Ngày khám</label>
+                        <input id="preferredDate" class="form-control booking-date-input" type="date" name="preferredDate"
+                               min="${minAppointmentDate}" max="${maxAppointmentDate}" required>
+                        <small class="form-hint">Từ ngày mai, không nhận Chủ nhật và không quá 90 ngày.</small>
+                    </div>
                 </div>
 
                 <fieldset class="booking-fieldset">
-                    <legend>2. Chọn buổi thuận tiện</legend>
+                    <legend><span class="booking-index">02</span><span>Buổi thuận tiện</span></legend>
                     <div class="time-slot-grid period-choice-grid">
                         <label class="choice-tile time-slot">
                             <input type="radio" name="preferredPeriod" value="MORNING" required>
-                            <span>Buổi sáng<br><small>07:30–11:30</small></span>
+                            <span><strong>Buổi sáng</strong><small>07:30 – 11:30</small></span>
                         </label>
                         <label class="choice-tile time-slot">
                             <input type="radio" name="preferredPeriod" value="AFTERNOON" required>
-                            <span>Buổi chiều<br><small>13:00–17:00</small></span>
+                            <span><strong>Buổi chiều</strong><small>13:00 – 17:00</small></span>
                         </label>
                     </div>
+                    <p class="booking-helper">Bạn chưa cần chọn giờ cụ thể. Nhân viên sẽ xếp khung 30 phút phù hợp sau khi tiếp nhận.</p>
                 </fieldset>
 
                 <fieldset class="booking-fieldset">
-                    <legend>3. Chọn lý do khám</legend>
+                    <legend><span class="booking-index">03</span><span>Lý do khám</span></legend>
                     <div class="reason-choice-grid">
                         <label class="choice-tile"><input type="radio" name="reason" value="Tái khám tiểu đường định kỳ" required><span>Tái khám định kỳ</span></label>
                         <label class="choice-tile"><input type="radio" name="reason" value="Kiểm tra đường huyết và HbA1c" required><span>Kiểm tra chỉ số</span></label>

@@ -245,12 +245,12 @@ public class MedicalRecordDAO extends DBContext {
                             indicator.setDiastolicBp(rows.getInt("h_diastolic_bp"));
                             indicator.setHeartRate(rows.getInt("h_heart_rate"));
                             indicator.setTemperature(rows.getDouble("h_temperature"));
-                            indicator.setBloodGlucose(rows.getDouble("h_blood_glucose"));
-                            indicator.setHba1c(rows.getDouble("h_hba1c"));
-                            indicator.setCholesterol(rows.getDouble("h_cholesterol"));
-                            indicator.setTriglyceride(rows.getDouble("h_triglyceride"));
-                            indicator.setHdlC(rows.getDouble("h_hdl_c"));
-                            indicator.setLdlC(rows.getDouble("h_ldl_c"));
+                            indicator.setBloodGlucose(nullableDouble(rows, "h_blood_glucose"));
+                            indicator.setHba1c(nullableDouble(rows, "h_hba1c"));
+                            indicator.setCholesterol(nullableDouble(rows, "h_cholesterol"));
+                            indicator.setTriglyceride(nullableDouble(rows, "h_triglyceride"));
+                            indicator.setHdlC(nullableDouble(rows, "h_hdl_c"));
+                            indicator.setLdlC(nullableDouble(rows, "h_ldl_c"));
                             Timestamp measuredAt = rows.getTimestamp("h_measured_at");
                             if (measuredAt != null) indicator.setMeasuredAt(measuredAt.toLocalDateTime());
                         }
@@ -264,12 +264,12 @@ public class MedicalRecordDAO extends DBContext {
                             latestIndicator.setDiastolicBp(rows.getInt("lh_diastolic_bp"));
                             latestIndicator.setHeartRate(rows.getInt("lh_heart_rate"));
                             latestIndicator.setTemperature(rows.getDouble("lh_temperature"));
-                            latestIndicator.setBloodGlucose(rows.getDouble("lh_blood_glucose"));
-                            latestIndicator.setHba1c(rows.getDouble("lh_hba1c"));
-                            latestIndicator.setCholesterol(rows.getDouble("lh_cholesterol"));
-                            latestIndicator.setTriglyceride(rows.getDouble("lh_triglyceride"));
-                            latestIndicator.setHdlC(rows.getDouble("lh_hdl_c"));
-                            latestIndicator.setLdlC(rows.getDouble("lh_ldl_c"));
+                            latestIndicator.setBloodGlucose(nullableDouble(rows, "lh_blood_glucose"));
+                            latestIndicator.setHba1c(nullableDouble(rows, "lh_hba1c"));
+                            latestIndicator.setCholesterol(nullableDouble(rows, "lh_cholesterol"));
+                            latestIndicator.setTriglyceride(nullableDouble(rows, "lh_triglyceride"));
+                            latestIndicator.setHdlC(nullableDouble(rows, "lh_hdl_c"));
+                            latestIndicator.setLdlC(nullableDouble(rows, "lh_ldl_c"));
                             Timestamp latestMeasuredAt = rows.getTimestamp("lh_measured_at");
                             if (latestMeasuredAt != null) latestIndicator.setMeasuredAt(latestMeasuredAt.toLocalDateTime());
                         }
@@ -283,8 +283,10 @@ public class MedicalRecordDAO extends DBContext {
                         prescriptions.add(item);
                     }
                 }
+                List<Map<String, Object>> labOrders = record == null
+                        ? new ArrayList<>() : loadLabOrders(record.getEncounterId());
                 return new MedicalRecordFormData(record, patient, doctor, indicator, latestIndicator,
-                        diabetesProfile, labSummary, prescriptions);
+                        diabetesProfile, labSummary, prescriptions, labOrders);
             }
         } catch (SQLException error) {
             throw databaseError("load medical record form", error);
@@ -293,7 +295,41 @@ public class MedicalRecordDAO extends DBContext {
 
     public record MedicalRecordFormData(MedicalRecord record, Patient patient, Doctor doctor,
             HealthIndicator indicator, HealthIndicator latestIndicator, DiabetesProfile diabetesProfile,
-            String labSummary, List<Map<String, Object>> prescriptionItems) {}
+            String labSummary, List<Map<String, Object>> prescriptionItems,
+            List<Map<String, Object>> labOrders) {}
+
+    private Double nullableDouble(ResultSet rows, String column) throws SQLException {
+        double value = rows.getDouble(column);
+        return rows.wasNull() ? null : value;
+    }
+
+    private List<Map<String, Object>> loadLabOrders(int encounterId) throws SQLException {
+        List<Map<String, Object>> orders = new ArrayList<>();
+        if (encounterId <= 0) return orders;
+        try (PreparedStatement ps = connection.prepareStatement("""
+                SELECT lab_order_id,encounter_id,test_code,test_name,status,priority,
+                       result_value,result_unit,reference_range,result_flag,ordered_at,resulted_at
+                FROM lab_orders WHERE encounter_id=? ORDER BY ordered_at,lab_order_id""")) {
+            ps.setInt(1, encounterId);
+            try (ResultSet rows = ps.executeQuery()) {
+                while (rows.next()) {
+                    Map<String, Object> item = new LinkedHashMap<>();
+                    item.put("lab_order_id", rows.getInt("lab_order_id"));
+                    item.put("encounter_id", rows.getInt("encounter_id"));
+                    item.put("test_code", rows.getString("test_code"));
+                    item.put("test_name", rows.getString("test_name"));
+                    item.put("status", rows.getString("status"));
+                    item.put("priority", rows.getString("priority"));
+                    item.put("result_value", rows.getString("result_value"));
+                    item.put("result_unit", rows.getString("result_unit"));
+                    item.put("reference_range", rows.getString("reference_range"));
+                    item.put("result_flag", rows.getString("result_flag"));
+                    orders.add(item);
+                }
+            }
+        }
+        return orders;
+    }
 
     /** Loads doctor identity, metrics and dashboard records in one database round-trip. */
     public DoctorDashboardData loadDoctorDashboardForUser(int userId) {
