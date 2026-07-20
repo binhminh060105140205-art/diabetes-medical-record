@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Lịch khám — DiaCare</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui3">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui7">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
@@ -15,12 +15,8 @@
         <div>
             <div class="eyebrow">DÀNH CHO BỆNH NHÂN</div>
             <h1 class="page-title">Lịch khám</h1>
-            <p class="text-muted">Kiểm tra lịch hiện có trước, sau đó chọn ngày và buổi mong muốn. Phòng khám sẽ xác nhận giờ chính xác.</p>
         </div>
-        <a class="btn btn-light" href="${pageContext.request.contextPath}/PatientHistory">Xem hồ sơ khám</a>
     </div>
-
-    <div class="workflow-guide patient-booking-guide"><div class="workflow-step active"><span>1</span><strong>Gửi yêu cầu</strong><small>Chọn ngày, buổi và lý do</small></div><div class="workflow-step"><span>2</span><strong>Phòng khám xác nhận</strong><small>Sắp xếp bác sĩ và giờ cụ thể</small></div><div class="workflow-step"><span>3</span><strong>Đến khám đúng giờ</strong><small>Mang theo giấy tờ và đơn thuốc cũ</small></div></div>
 
     <c:if test="${not empty sessionScope.appointmentFlash}">
         <div class="alert alert-info"><c:out value="${sessionScope.appointmentFlash}"/></div>

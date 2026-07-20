@@ -66,10 +66,10 @@ public class AdminCreateUserController extends HttpServlet {
 
         try {
             username=Validators.username(username); password=Validators.password(password,"Mật khẩu");
-            fullName=Validators.fullName(fullName); phone=Validators.phone(phone); email=Validators.email(email,false);
+            fullName=Validators.fullName(fullName); phone=Validators.phone(phone); email=Validators.email(email,true);
             gender=Validators.gender(gender); address=Validators.address(address); role=Validators.role(role); cccd=Validators.cccd(cccd);
             if("PATIENT".equals(role))throw new IllegalArgumentException("Hãy tạo tài khoản bệnh nhân tại màn Tiếp nhận bệnh nhân.");
-            licenseNo=Validators.max(licenseNo,50,"Số chứng chỉ"); degree=Validators.max(degree,100,"Học vị");
+            licenseNo=Validators.max(licenseNo,50,"Số chứng chỉ"); degree=Validators.max(degree,50,"Học vị");
             if("DOCTOR".equals(role)) licenseNo=Validators.required(licenseNo,"Số chứng chỉ hành nghề");
             if (diabetesFocus == null || !java.util.Set.of("TYPE_1","TYPE_2","BOTH").contains(diabetesFocus)) diabetesFocus="BOTH";
         } catch(IllegalArgumentException ex) {

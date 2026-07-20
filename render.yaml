@@ -30,8 +30,6 @@ services:
         value: "*.jar"
       - key: SPRING_LAZY_INITIALIZATION
         value: "true"
-      - key: DEVICE_API_KEY
-        sync: false
       - key: BOOTSTRAP_ADMIN_USERNAME
         value: admin
       - key: BOOTSTRAP_ADMIN_PASSWORD

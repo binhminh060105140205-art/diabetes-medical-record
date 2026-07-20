@@ -1,7 +1,6 @@
 package controllers;
 
 import dal.ClinicWorkflowDAO;
-import dal.HealthAlertDAO;
 import dal.PatientDailyLogDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -45,7 +44,6 @@ public class PatientHealthController extends HttpServlet {
 
         switch (ControllerSupport.clean(request.getParameter("action"))) {
             case "saveLog" -> saveLog(request, response, patientId);
-            case "acknowledgeAlert" -> acknowledgeAlert(request, response, patientId);
             default -> response.sendError(HttpServletResponse.SC_BAD_REQUEST,
                     "Hành động không hợp lệ");
         }
@@ -74,23 +72,6 @@ public class PatientHealthController extends HttpServlet {
             response.getWriter().print("{\"success\":false,\"error\":\""
                     + json(error.getMessage()) + "\"}");
         }
-    }
-
-    private void acknowledgeAlert(HttpServletRequest request, HttpServletResponse response,
-            int patientId) throws IOException {
-        Integer alertId;
-        try {
-            alertId = integer(request, "alertId");
-        } catch (ServletException error) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, error.getMessage());
-            return;
-        }
-        if (alertId == null
-                || !new HealthAlertDAO().acknowledgeForPatient(alertId, patientId)) {
-            response.sendError(HttpServletResponse.SC_NOT_FOUND);
-            return;
-        }
-        response.getWriter().print("{\"success\":true}");
     }
 
     private Integer patientIdForSession(HttpSession session, User user) {

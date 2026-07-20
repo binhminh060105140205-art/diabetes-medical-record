@@ -1,5 +1,6 @@
 package vn.diabetes.auth;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.logging.Level;
@@ -22,17 +23,20 @@ public class LoginController {
     }
 
     @GetMapping("/Login")
-    public String form(HttpSession session) {
+    public String form(HttpSession session, HttpServletResponse response) {
+        response.setHeader("Cache-Control", "no-store");
         User user = (User) session.getAttribute("user");
         return user == null ? "forward:/views/Login.jsp" : redirectFor(user);
     }
 
     @PostMapping("/Login")
-    public String login(@RequestParam String username,
+    public String login(@RequestParam(defaultValue = "") String username,
                         @RequestParam(defaultValue = "") String password,
+                        HttpServletRequest request,
                         HttpSession session,
                         HttpServletResponse response,
                         Model model) {
+        response.setHeader("Cache-Control", "no-store");
         AuthenticationService.LoginResult result;
         try {
             result = authentication.login(username, password);
@@ -44,11 +48,15 @@ public class LoginController {
             return "forward:/views/Login.jsp";
         }
         if (result.successful()) {
+            request.changeSessionId();
             session.setAttribute("user", result.user());
             return redirectFor(result.user());
         }
         model.addAttribute("err", result.error());
         model.addAttribute("username", username);
+        if (result.locked()) {
+            model.addAttribute("lockUntil", result.lockUntil().toEpochMilli());
+        }
         return "forward:/views/Login.jsp";
     }
 

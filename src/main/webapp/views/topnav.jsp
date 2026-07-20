@@ -47,7 +47,6 @@
             <div class="sidebar-label">HỒ SƠ LÂM SÀNG</div>
             <a class="${uri.contains('PatientList')?'active':''}" href="${pageContext.request.contextPath}/PatientList"><span>♙</span><b>Hồ sơ bệnh nhân</b></a>
             <a class="${uri.contains('ClinicWorkflow') && param.view=='clinical'?'active':''}" href="${pageContext.request.contextPath}/ClinicWorkflow?view=clinical"><span>◎</span><b>Dị ứng & tiền sử</b></a>
-            <a class="${uri.contains('DoctorProfile')?'active':''}" href="${pageContext.request.contextPath}/DoctorProfile"><span>♧</span><b>Hồ sơ hành nghề</b></a>
         </c:when>
         <c:when test="${sessionScope.user.role=='PATIENT'}">
             <div class="sidebar-label">HÔM NAY</div>
@@ -55,7 +54,6 @@
             <a class="${uri.contains('PatientAppointments')?'active':''}" href="${pageContext.request.contextPath}/PatientAppointments"><span>▦</span><b>Lịch khám</b></a>
             <div class="sidebar-label">THEO DÕI DÀI HẠN</div>
             <a class="${uri.contains('PatientJournal')?'active':''}" href="${pageContext.request.contextPath}/PatientJournal"><span>▤</span><b>Nhật ký sức khỏe</b></a>
-            <a class="${uri.contains('DeviceData')?'active':''}" href="${pageContext.request.contextPath}/DeviceData"><span>◉</span><b>Thiết bị & cảnh báo</b></a>
             <a class="${uri.contains('PatientHistory')?'active':''}" href="${pageContext.request.contextPath}/PatientHistory"><span>♙</span><b>Hồ sơ khám</b></a>
         </c:when>
     </c:choose></nav>

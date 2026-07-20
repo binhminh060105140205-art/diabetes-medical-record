@@ -6,6 +6,10 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 @WebServlet("/AdminToggleStatus")
 public class AdminToggleStatusController extends HttpServlet {
@@ -35,16 +39,27 @@ public class AdminToggleStatusController extends HttpServlet {
         // Giữ lại page + filterRole + keyword khi redirect về
         String page       = request.getParameter("page");
         String filterRole = request.getParameter("filterRole");
-        String keyword    = request.getParameter("keyword");
-        StringBuilder url = new StringBuilder(request.getContextPath() + "/AdminDashboard?");
-        if (page       != null && !page.isEmpty())       url.append("page=").append(page).append("&");
-        if (filterRole != null && !filterRole.isEmpty()) url.append("filterRole=").append(filterRole).append("&");
-        if (keyword    != null && !keyword.isEmpty())    url.append("keyword=").append(keyword).append("&");
-        response.sendRedirect(url.toString());
+        String filterStatus = request.getParameter("filterStatus");
+        String sortOrder = request.getParameter("sortOrder");
+        String keyword = request.getParameter("keyword");
+        List<String> query = new ArrayList<>();
+        addQueryParameter(query, "page", page);
+        addQueryParameter(query, "filterRole", filterRole);
+        addQueryParameter(query, "filterStatus", filterStatus);
+        addQueryParameter(query, "sortOrder", sortOrder);
+        addQueryParameter(query, "keyword", keyword);
+        String url = request.getContextPath() + "/AdminDashboard"
+                + (query.isEmpty() ? "" : "?" + String.join("&", query));
+        response.sendRedirect(url);
     }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+    }
+
+    private void addQueryParameter(List<String> query, String name, String value) {
+        if (value == null || value.isBlank()) return;
+        query.add(name + "=" + URLEncoder.encode(value, StandardCharsets.UTF_8));
     }
 }

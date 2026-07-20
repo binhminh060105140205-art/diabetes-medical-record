@@ -314,8 +314,9 @@ public class ClinicWorkflowController extends HttpServlet {
         return doctorId;
     }
 
-    private String normalizeView(String requestedView, String role) {
-        String view = SUPPORTED_VIEWS.contains(requestedView) ? requestedView : "encounters";
+    String normalizeView(String requestedView, String role) {
+        String view = requestedView != null && SUPPORTED_VIEWS.contains(requestedView)
+                ? requestedView : "encounters";
         if ("DOCTOR".equals(role) && "appointments".equals(view)) return "encounters";
         if (!"DOCTOR".equals(role) && "clinical".equals(view)) return "encounters";
         return view;

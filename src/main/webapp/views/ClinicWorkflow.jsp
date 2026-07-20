@@ -7,7 +7,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Điều hành khám — DiaCare</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui4">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui7">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
@@ -18,23 +18,10 @@
         <div>
             <div class="eyebrow">VẬN HÀNH NGOẠI TRÚ</div>
             <h1 class="page-title">Điều hành khám</h1>
-            <p class="text-muted">
-                <c:choose>
-                    <c:when test="${sessionScope.user.role=='DOCTOR'}">Xử lý lượt khám được phân công, chỉ định xét nghiệm và hoàn tất kết luận.</c:when>
-                    <c:otherwise>Tiếp nhận theo thứ tự: xác nhận lịch, ghi nhận bệnh nhân đến khám, nhập sinh hiệu và trả kết quả xét nghiệm.</c:otherwise>
-                </c:choose>
-            </p>
         </div>
     </div>
 
     <c:if test="${not empty workflowFlash}"><div class="alert alert-info"><c:out value="${workflowFlash}"/></div></c:if>
-
-    <div class="workflow-guide" aria-label="Quy trình khám ngoại trú">
-        <div class="workflow-step ${view=='appointments'?'active':''}"><span>1</span><strong>Xác nhận lịch</strong><small>Chọn bác sĩ và giờ khám</small></div>
-        <div class="workflow-step ${view=='encounters'?'active':''}"><span>2</span><strong>Tiếp nhận đến khám & sinh hiệu</strong><small>Cấp số và tiếp nhận ban đầu</small></div>
-        <div class="workflow-step ${view=='labs'||view=='clinical'?'active':''}"><span>3</span><strong>Khám & xét nghiệm</strong><small>Bác sĩ xử lý chuyên môn</small></div>
-        <div class="workflow-step"><span>4</span><strong>Kết luận</strong><small>Hoàn tất hồ sơ và đơn thuốc</small></div>
-    </div>
 
     <nav class="module-tabs" aria-label="Các khu vực điều hành">
         <c:if test="${sessionScope.user.role=='STAFF'||sessionScope.user.role=='ADMIN'}">

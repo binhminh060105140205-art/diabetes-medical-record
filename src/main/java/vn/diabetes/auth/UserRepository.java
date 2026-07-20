@@ -1,5 +1,7 @@
 package vn.diabetes.auth;
 
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Optional;
 import models.User;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -44,5 +46,59 @@ public class UserRepository {
     public void updatePassword(int userId, String encodedPassword) {
         jdbc.sql("UPDATE users SET password=:password WHERE user_id=:id")
                 .param("password", encodedPassword).param("id", userId).update();
+    }
+
+    public LoginSecurityState getLoginSecurityState(int userId) {
+        return jdbc.sql("""
+                SELECT COALESCE(failed_login_attempts, 0) AS failed_login_attempts, lock_until
+                FROM users
+                WHERE user_id = :id
+                """)
+                .param("id", userId)
+                .query((rs, rowNum) -> mapLoginSecurityState(
+                        rs.getInt("failed_login_attempts"), rs.getTimestamp("lock_until")))
+                .optional()
+                .orElse(LoginSecurityState.clear());
+    }
+
+    public LoginSecurityState recordFailedLogin(int userId, int maxAttempts, Instant lockUntil) {
+        return jdbc.sql("""
+                UPDATE users
+                SET failed_login_attempts = COALESCE(failed_login_attempts, 0) + 1,
+                    lock_until = CASE
+                        WHEN COALESCE(failed_login_attempts, 0) + 1 >= :maxAttempts
+                        THEN :lockUntil
+                        ELSE NULL
+                    END
+                WHERE user_id = :id
+                RETURNING failed_login_attempts, lock_until
+                """)
+                .param("id", userId)
+                .param("maxAttempts", maxAttempts)
+                .param("lockUntil", Timestamp.from(lockUntil))
+                .query((rs, rowNum) -> mapLoginSecurityState(
+                        rs.getInt("failed_login_attempts"), rs.getTimestamp("lock_until")))
+                .optional()
+                .orElse(LoginSecurityState.clear());
+    }
+
+    public void clearLoginFailures(int userId) {
+        jdbc.sql("""
+                UPDATE users
+                SET failed_login_attempts = 0, lock_until = NULL
+                WHERE user_id = :id
+                """)
+                .param("id", userId)
+                .update();
+    }
+
+    private LoginSecurityState mapLoginSecurityState(int failedAttempts, Timestamp lockUntil) {
+        return new LoginSecurityState(failedAttempts, lockUntil == null ? null : lockUntil.toInstant());
+    }
+
+    public record LoginSecurityState(int failedAttempts, Instant lockUntil) {
+        static LoginSecurityState clear() {
+            return new LoginSecurityState(0, null);
+        }
     }
 }

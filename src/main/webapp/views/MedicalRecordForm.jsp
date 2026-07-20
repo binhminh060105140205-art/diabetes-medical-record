@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <title>Hồ Sơ Bệnh Án</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui3">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui7">
     <style>
         .role-bar{padding:10px 16px;border-radius:8px;margin-bottom:16px;font-size:14px;font-weight:600;}
         .role-staff {background:#cff4fc;color:#055160;border-left:4px solid #0dcaf0;}

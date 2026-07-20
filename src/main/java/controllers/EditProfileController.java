@@ -1,5 +1,6 @@
 package controllers;
 
+import dal.DoctorDAO;
 import dal.PatientDAO;
 import dal.UserDAO;
 import jakarta.servlet.ServletException;
@@ -25,6 +26,7 @@ public class EditProfileController extends HttpServlet {
             throws ServletException, IOException {
         User currentUser = currentUser(request, response);
         if (currentUser == null) return;
+        request.setAttribute("activeSetting", settingFromRequest(request));
         loadProfile(request, currentUser);
         request.getRequestDispatcher("views/editProfile.jsp").forward(request, response);
     }
@@ -61,13 +63,14 @@ public class EditProfileController extends HttpServlet {
             request.setAttribute("errorMessage", error.getMessage());
             request.setAttribute("activeSetting",
                     "password".equals(request.getParameter("action")) ? "security" : "personal");
-            loadProfile(request, currentUser);
         } catch (Exception error) {
             getServletContext().log("Profile update failed for user " + currentUser.getUserId(), error);
             request.setAttribute("errorMessage", "Không thể cập nhật cài đặt. Vui lòng thử lại.");
-            loadProfile(request, currentUser);
+            request.setAttribute("activeSetting",
+                    "password".equals(request.getParameter("action")) ? "security" : "personal");
         }
 
+        loadProfile(request, currentUser);
         request.getRequestDispatcher("views/editProfile.jsp").forward(request, response);
     }
 
@@ -142,16 +145,41 @@ public class EditProfileController extends HttpServlet {
         return user;
     }
 
+    private String settingFromRequest(HttpServletRequest request) {
+        String section = ControllerSupport.clean(request.getParameter("section"));
+        return switch (section) {
+            case "profile", "personal", "professional" -> "personal";
+            case "password", "security" -> "security";
+            case "logout", "session" -> "session";
+            default -> "menu";
+        };
+    }
+
     private void loadProfile(HttpServletRequest request, User fallback) {
         request.setAttribute("maxDOB", LocalDate.now().toString());
-        if (request.getAttribute("profileUser") != null) return;
-        try {
-            User loaded = new UserDAO().getById(fallback.getUserId());
-            request.setAttribute("profileUser", loaded == null ? fallback : loaded);
-        } catch (Exception error) {
-            request.setAttribute("profileUser", fallback);
-            if (request.getAttribute("errorMessage") == null) {
-                request.setAttribute("errorMessage", "Không thể tải cài đặt tài khoản.");
+        User profileUser = (User) request.getAttribute("profileUser");
+        if (profileUser == null) {
+            try {
+                User loaded = new UserDAO().getById(fallback.getUserId());
+                profileUser = loaded == null ? fallback : loaded;
+                request.setAttribute("profileUser", profileUser);
+            } catch (Exception error) {
+                profileUser = fallback;
+                request.setAttribute("profileUser", fallback);
+                if (request.getAttribute("errorMessage") == null) {
+                    request.setAttribute("errorMessage", "Không thể tải cài đặt tài khoản.");
+                }
+            }
+        }
+
+        if ("DOCTOR".equalsIgnoreCase(profileUser.getRole())) {
+            try {
+                request.setAttribute("doctor", new DoctorDAO().getByUserId(profileUser.getUserId()));
+            } catch (Exception error) {
+                getServletContext().log(
+                        "Unable to load professional profile for doctor user " + profileUser.getUserId(), error);
+                request.setAttribute("professionalError",
+                        "Không thể tải hồ sơ hành nghề. Vui lòng thử lại sau.");
             }
         }
     }

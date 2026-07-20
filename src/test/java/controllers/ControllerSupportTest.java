@@ -10,6 +10,28 @@ import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 
 class ControllerSupportTest {
+
+    @Test
+    void clinicWorkflowDefaultsToEncountersWhenViewIsMissing() {
+        ClinicWorkflowController controller = new ClinicWorkflowController();
+
+        assertEquals("encounters", controller.normalizeView(null, "DOCTOR"));
+        assertEquals("encounters", controller.normalizeView("unknown", "DOCTOR"));
+        assertEquals("encounters", controller.normalizeView("appointments", "DOCTOR"));
+        assertEquals("encounters", controller.normalizeView("clinical", "STAFF"));
+        assertEquals("labs", controller.normalizeView("labs", "DOCTOR"));
+    }
+
+    @Test
+    void adminDashboardNormalizesFiltersAndSortOrder() {
+        assertEquals("ACTIVE", AdminDashboardController.normalizeStatus("active"));
+        assertEquals("INACTIVE", AdminDashboardController.normalizeStatus("INACTIVE"));
+        assertEquals("", AdminDashboardController.normalizeStatus("locked"));
+        assertEquals("DOCTOR", AdminDashboardController.normalizeRole("doctor"));
+        assertEquals("", AdminDashboardController.normalizeRole("unknown"));
+        assertEquals("OLDEST", AdminDashboardController.normalizeSort("oldest"));
+        assertEquals("NEWEST", AdminDashboardController.normalizeSort(null));
+    }
     @Test
     void normalizesTextAndPositiveIds() {
         assertEquals("value", ControllerSupport.clean("  value  "));

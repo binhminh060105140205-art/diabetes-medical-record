@@ -200,12 +200,12 @@ function validateIndicators() {
 function validateLogin() {
     clearAllErrors();
     let ok = true;
-    if (val('username').length < 2) {
-        showErr('username', 'Vui lòng nhập tên đăng nhập');
+    if (!/^[A-Za-z0-9._-]{4,50}$/.test(val('username'))) {
+        showErr('username', 'Tên đăng nhập phải có 4–50 ký tự hợp lệ');
         ok = false;
     }
-    if (val('password').length < 4) {
-        showErr('password', 'Mật khẩu phải có ít nhất 4 ký tự');
+    if (val('password').length === 0) {
+        showErr('password', 'Vui lòng nhập mật khẩu');
         ok = false;
     }
     return ok;
@@ -226,20 +226,24 @@ function validateCreateUser() {
     clearAllErrors();
     let ok = true;
 
-    if (val('username').length < 3) {
-        showErr('username', 'Tên đăng nhập tối thiểu 3 ký tự');
+    if (!/^[A-Za-z0-9_]{4,30}$/.test(val('username'))) {
+        showErr('username', 'Tên đăng nhập gồm 4–30 chữ, số hoặc dấu gạch dưới');
         ok = false;
     }
-    if (!/^[a-zA-Z0-9_]+$/.test(val('username'))) {
-        showErr('username', 'Chỉ dùng chữ, số và dấu gạch dưới');
-        ok = false;
-    }
-    if (val('password').length < 6) {
-        showErr('password', 'Mật khẩu tối thiểu 6 ký tự');
+    if (val('password').length < 8 || val('password').length > 72) {
+        showErr('password', 'Mật khẩu phải có từ 8 đến 72 ký tự');
         ok = false;
     }
     if (val('fullName').length < 2) {
         showErr('fullName', 'Họ tên không được để trống');
+        ok = false;
+    }
+    if (!/^(0|\+84)[0-9]{9}$/.test(val('phone'))) {
+        showErr('phone', 'Số điện thoại không đúng định dạng Việt Nam');
+        ok = false;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val('email'))) {
+        showErr('email', 'Email không đúng định dạng');
         ok = false;
     }
     return ok;

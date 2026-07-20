@@ -22,7 +22,6 @@ DB_PASSWORD=YOUR_DATABASE_PASSWORD
 DB_POOL_SIZE=5
 DB_POOL_MIN_IDLE=1
 DB_STATEMENT_TIMEOUT_MS=10000
-DEVICE_API_KEY=replace-with-a-long-random-value
 BOOTSTRAP_ADMIN_USERNAME=admin
 BOOTSTRAP_ADMIN_PASSWORD=Admin@123
 BOOTSTRAP_ADMIN_NAME=Quản trị hệ thống
@@ -59,7 +58,7 @@ Không dùng mật khẩu Gmail thông thường. Thông báo trên giao diện 
 
 ## Deploy Render
 
-Kho mã đã có `Dockerfile` và `render.yaml`. Trên Render cấu hình `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `BOOTSTRAP_ADMIN_PASSWORD`, `DEVICE_API_KEY`, `MAIL_USERNAME` và `MAIL_PASSWORD`.
+Kho mã đã có `Dockerfile` và `render.yaml`. Trên Render cấu hình `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `BOOTSTRAP_ADMIN_PASSWORD`, `MAIL_USERNAME` và `MAIL_PASSWORD`.
 
 Để triển khai nhanh, đặt `Health Check Path` của dịch vụ thành `/health`. Đường dẫn này chỉ xác nhận ứng dụng đã khởi động; `/ready` vẫn được giữ để kiểm tra riêng kết nối PostgreSQL khi cần chẩn đoán. Với dịch vụ Render đã tạo trước đó, kiểm tra lại mục Settings vì thay đổi trong `render.yaml` chỉ có hiệu lực khi Blueprint được đồng bộ.
 

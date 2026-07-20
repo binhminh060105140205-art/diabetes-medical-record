@@ -16,6 +16,13 @@ public class DoctorDAO extends DBContext {
         d.setFaceImagePath(rs.getString("face_image_path"));
         d.setCccdImagePath(rs.getString("cccd_image_path"));
         d.setLicenseImagePath(rs.getString("license_image_path"));
+        Date issueDate = rs.getDate("license_issue_date");
+        Date expireDate = rs.getDate("license_expire_date");
+        d.setLicenseIssueDate(issueDate == null ? null : issueDate.toLocalDate());
+        d.setLicenseExpireDate(expireDate == null ? null : expireDate.toLocalDate());
+        d.setLicenseIssuedBy(rs.getString("license_issued_by"));
+        d.setDegree(rs.getString("degree"));
+        d.setConsultationFee(rs.getBigDecimal("consultation_fee"));
         try { d.setDiabetesFocus(rs.getString("diabetes_focus")); } catch (SQLException ignored) {}
         try { d.setFullName(rs.getString("full_name")); } catch (Exception ignored) {}
         return d;
@@ -60,13 +67,14 @@ public class DoctorDAO extends DBContext {
     }
 
     public Doctor create(Doctor d) {
-        String sql = "INSERT INTO Doctors(user_id,specialty,license_no,diabetes_focus) VALUES(?,?,?,?)";
+        String sql = "INSERT INTO Doctors(user_id,specialty,license_no,degree,diabetes_focus) VALUES(?,?,?,?,?)";
         try (PreparedStatement statement = connection.prepareStatement(
                 sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setInt(1, d.getUserId());
             statement.setString(2, Doctor.DIABETES_SPECIALTY);
             statement.setString(3, d.getLicenseNo());
-            statement.setString(4, normalizeFocus(d.getDiabetesFocus()));
+            statement.setString(4, d.getDegree());
+            statement.setString(5, normalizeFocus(d.getDiabetesFocus()));
             if (statement.executeUpdate() > 0) {
                 try (ResultSet keys = statement.getGeneratedKeys()) {
                     if (keys.next()) d.setDoctorId(keys.getInt(1));

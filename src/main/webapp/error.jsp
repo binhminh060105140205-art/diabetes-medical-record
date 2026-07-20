@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Lỗi — Hệ thống</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui3">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui7">
 </head>
 <body class="error-body">
 <jsp:include page="views/header.jsp"/>

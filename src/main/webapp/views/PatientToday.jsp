@@ -2,9 +2,9 @@
 <%@taglib prefix="c" uri="jakarta.tags.core"%>
 <%@taglib prefix="fn" uri="jakarta.tags.functions"%>
 <!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sức khỏe hôm nay — DiaCare</title><link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui3"></head>
+<title>Sức khỏe hôm nay — DiaCare</title><link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui7"></head>
 <body><jsp:include page="header.jsp"/><jsp:include page="topnav.jsp"/>
-<main class="page-wrapper patient-today-page"><div class="page-heading"><div><div class="eyebrow">THEO DÕI HẰNG NGÀY</div><h1 class="page-title">Sức khỏe hôm nay</h1><p class="text-muted">Việc chính hôm nay là ghi chỉ số. Lời khuyên hỗ trợ được đặt sau phần nhập để bạn không bị phân tán.</p></div><a class="btn btn-light" href="${pageContext.request.contextPath}/PatientJournal">Xem nhật ký 30 ngày</a></div>
+<main class="page-wrapper patient-today-page"><div class="page-heading"><div><div class="eyebrow">THEO DÕI HẰNG NGÀY</div><h1 class="page-title">Sức khỏe hôm nay</h1></div><a class="btn btn-light" href="${pageContext.request.contextPath}/PatientJournal">Nhật ký 30 ngày</a></div>
 <c:if test="${not empty msg}"><div class="alert alert-info"><c:out value="${msg}"/></div></c:if>
 <c:if test="${not empty diabetesProfile}">
 <section class="patient-overview">
@@ -12,39 +12,31 @@
         <span>HỒ SƠ ĐÁI THÁO ĐƯỜNG DO BÁC SĨ XÁC NHẬN</span>
         <div>${diabetesProfile.diabetesTypeLabel}</div>
         <p>Điều trị hiện tại: ${diabetesProfile.treatmentMethodLabel}<c:if test="${not empty diabetesProfile.diagnosisDate}"> · Phát hiện: ${diabetesProfile.diagnosisDate}</c:if><c:if test="${not empty diabetesProfile.hba1cTarget}"> · Mục tiêu HbA1c: ${diabetesProfile.hba1cTarget}%</c:if></p>
-        <c:choose>
-            <c:when test="${diabetesProfile.diabetesType=='TYPE_1'}"><p>Hệ thống ưu tiên nhắc dùng insulin đúng giờ, theo dõi đường huyết thường xuyên và nhận biết sớm dấu hiệu hạ đường huyết.</p></c:when>
-            <c:when test="${diabetesProfile.diabetesType=='TYPE_2'}"><p>Hệ thống ưu tiên theo dõi đường huyết, cân nặng, huyết áp, ăn uống, vận động và việc dùng thuốc theo đơn.</p></c:when>
-            <c:otherwise><p>Bác sĩ sẽ xác nhận loại đái tháo đường trong lần khám phù hợp.</p></c:otherwise>
-        </c:choose>
     </div>
-    <a class="patient-overview-action" href="${pageContext.request.contextPath}/PatientHistory">Xem hồ sơ khám</a>
 </section>
 </c:if>
 <c:if test="${not empty patient}">
 <section class="card ai-advice-card" id="daily-advice">
     <div class="ai-advice-heading">
-        <div><div class="eyebrow">TRỢ LÝ SỨC KHỎE</div><h2>Lời khuyên dành cho hôm nay</h2>
-        <p>Hệ thống phân tích dữ liệu hợp lệ đã được ẩn danh. Kết quả chỉ hỗ trợ theo dõi, không thay thế bác sĩ.</p></div>
+        <div><div class="eyebrow">TRỢ LÝ SỨC KHỎE</div><h2>Lời khuyên hôm nay</h2></div>
         <span class="ai-advice-icon" aria-hidden="true">✦</span>
     </div>
-    <label class="ai-consent"><input type="checkbox" id="aiConsent"> <span>Tôi đồng ý gửi nhóm tuổi, loại đái tháo đường, chỉ số tóm tắt 7 ngày, triệu chứng đã chuẩn hóa và thông tin có hay không có bệnh nền. Không gửi tên, ngày sinh đầy đủ, số điện thoại, địa chỉ, CCCD, BHYT, tài khoản hoặc tên/liều thuốc.</span></label>
-    <div class="ai-advice-actions"><button type="button" class="btn btn-primary" id="aiAdviceButton" onclick="loadPatientAdvice()">Nhận lời khuyên</button><span class="form-hint">Chỉ gọi khi bạn bấm nút; kết quả giống nhau trong ngày được dùng lại để tải nhanh hơn.</span></div>
+    <label class="ai-consent"><input type="checkbox" id="aiConsent"> <span>Tôi đồng ý dùng dữ liệu sức khỏe đã ẩn danh để tạo lời khuyên.</span></label>
+    <div class="ai-advice-actions"><button type="button" class="btn btn-primary" id="aiAdviceButton" onclick="loadPatientAdvice()">Nhận lời khuyên</button></div>
     <div class="ai-advice-result" id="aiAdviceResult" hidden aria-live="polite">
         <div class="ai-advice-result-head"><strong id="aiAdviceSummary"></strong><span id="aiAdviceSeverity" class="ai-severity"></span></div>
         <ol id="aiAdviceItems"></ol><p id="aiAdviceDoctor" class="ai-doctor-note" hidden></p><small id="aiAdviceSource"></small>
     </div>
 </section>
 </c:if>
-<c:if test="${not empty patient}"><div class="two-column daily-entry-grid"><section class="card daily-entry-card"><div class="card-title">Nhập chỉ số hôm nay <c:if test="${not empty todayLog}"><span class="status-pill status-COMPLETED">Đã nhập</span></c:if></div>
+<c:if test="${not empty patient}"><section class="card daily-entry-card daily-entry-full"><div class="card-title">Nhập chỉ số hôm nay <c:if test="${not empty todayLog}"><span class="status-pill status-COMPLETED">Đã nhập</span></c:if></div>
 <div class="form-group"><label>Thời điểm đo đường huyết</label><select id="log_meal" class="form-control"><option value="">Chọn thời điểm</option><option value="FASTING" ${todayLog.mealType=='FASTING'?'selected':''}>Lúc đói</option><option value="AFTER_MEAL" ${todayLog.mealType=='AFTER_MEAL'?'selected':''}>Sau ăn</option><option value="BEDTIME" ${todayLog.mealType=='BEDTIME'?'selected':''}>Trước khi ngủ</option><option value="OTHER" ${todayLog.mealType=='OTHER'?'selected':''}>Khác</option></select></div>
 <div class="form-group"><label>Đường huyết (mg/dL)</label><input type="number" min="20" max="600" step="0.1" id="log_bg" class="form-control" value="${todayLog.bloodGlucose}" placeholder="Ví dụ: 105"></div>
 <div class="two-column"><div class="form-group"><label>Huyết áp tâm thu</label><input type="number" min="60" max="260" id="log_sbp" class="form-control" value="${todayLog.systolicBp}" placeholder="120"></div><div class="form-group"><label>Huyết áp tâm trương</label><input type="number" min="30" max="180" id="log_dbp" class="form-control" value="${todayLog.diastolicBp}" placeholder="80"></div></div>
 <div class="form-group"><label>Cân nặng (kg)</label><input type="number" min="20" max="300" step="0.1" id="log_weight" class="form-control" value="${todayLog.weight}" placeholder="65"></div>
 <div class="form-group"><label>Triệu chứng hôm nay</label><div class="checkbox-grid"><label><input type="checkbox" name="symptom" value="Không có triệu chứng"> Không có</label><label><input type="checkbox" name="symptom" value="Mệt mỏi"> Mệt mỏi</label><label><input type="checkbox" name="symptom" value="Khát nhiều"> Khát nhiều</label><label><input type="checkbox" name="symptom" value="Chóng mặt"> Chóng mặt</label><label><input type="checkbox" name="symptom" value="Run tay/vã mồ hôi"> Run tay/vã mồ hôi</label></div></div>
 <div class="form-group"><label>Ghi chú</label><textarea id="log_note" class="form-control" maxlength="1000" placeholder="Thông tin khác muốn bác sĩ biết"><c:out value="${todayLog.note}"/></textarea></div>
-<button type="button" onclick="saveLog()" class="btn btn-primary" id="saveLogBtn">Lưu chỉ số hôm nay</button><div id="logResult" class="form-hint" aria-live="polite"></div></section>
-<section class="card"><div class="card-title">Truy cập nhanh</div><div class="quick-actions"><a class="btn btn-primary" href="${pageContext.request.contextPath}/PatientAppointments">Đặt lịch khám</a><a class="btn btn-outline-dark" href="${pageContext.request.contextPath}/PatientJournal">Nhật ký sức khỏe</a><a class="btn btn-outline-dark" href="${pageContext.request.contextPath}/DeviceData">Thiết bị và cảnh báo</a><a class="btn btn-outline-dark" href="${pageContext.request.contextPath}/PatientHistory">Hồ sơ khám</a></div><c:if test="${not empty latestRecord}"><hr><h3>Bệnh án gần nhất</h3><p>Ngày khám: ${latestRecord.visitDate}</p><p>Chẩn đoán: <c:out value="${latestRecord.finalDiagnosis}" default="Chưa kết luận"/></p></c:if></section></div></c:if>
+<button type="button" onclick="saveLog()" class="btn btn-primary" id="saveLogBtn">Lưu chỉ số hôm nay</button><div id="logResult" class="form-hint" aria-live="polite"></div></section></c:if>
 </main><span id="savedSymptoms" hidden><c:out value="${todayLog.symptoms}"/></span><jsp:include page="footer.jsp"/>
 <script>
 const CTX='${pageContext.request.contextPath}',savedSymptoms=document.getElementById('savedSymptoms').textContent;

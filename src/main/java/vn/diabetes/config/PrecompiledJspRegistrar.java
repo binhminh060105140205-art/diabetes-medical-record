@@ -34,7 +34,7 @@ public class PrecompiledJspRegistrar implements ServletContextInitializer {
         pages.put("/error.jsp", "org.apache.jsp.error_jsp");
         String[] views = {
             "AdminCreateUser", "AdminDashboard", "AdminDoctorDetail", "ClinicWorkflow",
-            "DeviceDataView", "DoctorDashboard", "DoctorPatientJournal", "doctorProfile",
+            "DoctorDashboard", "DoctorPatientJournal",
             "editProfile", "footer", "header", "Login", "MedicalRecordForm",
             "PatientAppointmentsSimple", "PatientForm",
             "PatientJournal", "PatientList", "PatientTimeline", "PatientToday", "RecordDetail", "Register",

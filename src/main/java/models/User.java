@@ -15,6 +15,7 @@ public class User {
     private String gender;
     private String address;
     private String cccd;
+    private Date createdAt;
 
     public User() {
     }
@@ -136,5 +137,13 @@ public class User {
 
     public void setCccd(String cccd) {
         this.cccd = cccd;
+    }
+
+    public Date getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Date createdAt) {
+        this.createdAt = createdAt;
     }
 }

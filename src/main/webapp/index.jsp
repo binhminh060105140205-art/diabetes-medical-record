@@ -7,15 +7,14 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>DiaCare — Chăm sóc tiểu đường toàn diện</title>
     <meta name="description" content="Nền tảng quản lý khám ngoại trú và theo dõi bệnh tiểu đường dành cho phòng khám, bác sĩ và người bệnh.">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/home.css?v=20260717-perf1">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/home.css?v=20260720-clean1">
     <link rel="prefetch" href="${pageContext.request.contextPath}/Login">
-    <link rel="prefetch" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui3" as="style">
+    <link rel="prefetch" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui7" as="style">
 </head>
 <body class="home-body">
 <div class="hosp-topbar">
     <div class="topbar-container">
         <div class="topbar-left"><span>Thứ 2–Thứ 7 · 07:30–17:30</span><span>Hà Nội</span></div>
-        <div class="topbar-right"><span class="topbar-hotline">Hỗ trợ đặt lịch <strong>1800 1234</strong></span></div>
     </div>
 </div>
 
@@ -50,8 +49,7 @@
                 <h1>Chăm sóc chủ động.<br><span>Sống khỏe mỗi ngày.</span></h1>
                 <p class="hero-desc">Kết nối lịch hẹn, lượt khám, xét nghiệm và hồ sơ sức khỏe trong một hành trình rõ ràng — để người bệnh an tâm và đội ngũ y tế phối hợp tốt hơn.</p>
                 <div class="hero-buttons">
-                    <a class="home-btn home-btn-primary home-btn-large" href="tel:18001234">Gọi hotline đặt lịch: 1800 1234 <span>→</span></a>
-                    <a class="home-btn home-btn-ghost home-btn-large" href="${pageContext.request.contextPath}/Login">Đăng nhập hệ thống</a>
+                    <a class="home-btn home-btn-primary home-btn-large" href="${pageContext.request.contextPath}/Login">Đăng nhập hệ thống <span>→</span></a>
                 </div>
                 <div class="hero-trust">
                     <span><b>✓</b> Lịch hẹn rõ ràng</span><span><b>✓</b> Hồ sơ tập trung</span><span><b>✓</b> Theo dõi liên tục</span>
@@ -77,9 +75,8 @@
     </section>
 
     <section class="home-quick" aria-label="Truy cập nhanh">
-        <a class="quick-pill" href="tel:18001234"><span class="quick-icon">01</span><div><strong>Gọi hotline</strong><small>Đặt lịch qua điện thoại hoặc đến trực tiếp</small></div><b>→</b></a>
-        <a class="quick-pill quick-featured" href="${pageContext.request.contextPath}/Login"><span class="quick-icon">02</span><div><strong>Đăng nhập hệ thống</strong><small>Dành cho bệnh nhân đã có tài khoản</small></div><b>→</b></a>
-        <a class="quick-pill" href="#workflow"><span class="quick-icon">03</span><div><strong>Xem quy trình</strong><small>6 bước khám liên thông</small></div><b>↓</b></a>
+        <a class="quick-pill quick-featured" href="${pageContext.request.contextPath}/Login"><span class="quick-icon">01</span><div><strong>Đăng nhập hệ thống</strong><small>Dành cho người dùng đã có tài khoản</small></div><b>→</b></a>
+        <a class="quick-pill" href="#workflow"><span class="quick-icon">02</span><div><strong>Xem quy trình</strong><small>6 bước khám liên thông</small></div><b>↓</b></a>
     </section>
 
     <section class="hosp-stats">
@@ -120,7 +117,7 @@
     <section class="hosp-section about-section" id="about">
         <div class="about-panel">
             <div class="about-copy"><span class="section-kicker">VỀ DIAcare</span><h2>Dữ liệu rõ ràng.<br><em>Chăm sóc gần gũi.</em></h2><p>DiaCare giúp đội ngũ y tế dành ít thời gian hơn cho việc tìm kiếm thông tin và nhiều thời gian hơn để lắng nghe người bệnh.</p><div class="about-points"><span>Hồ sơ nhất quán</span><span>Quy trình dễ hiểu</span><span>Trải nghiệm thân thiện</span></div></div>
-            <div class="about-contact"><small>CẦN HỖ TRỢ?</small><strong>1800 1234</strong><span>diabetesclinic@gmail.com</span><a class="home-btn home-btn-light" href="${pageContext.request.contextPath}/Login">Đăng nhập hệ thống <b>→</b></a></div>
+            <div class="about-contact"><small>LIÊN HỆ</small><span>diabetesclinic@gmail.com</span><a class="home-btn home-btn-light" href="${pageContext.request.contextPath}/Login">Đăng nhập hệ thống <b>→</b></a></div>
         </div>
     </section>
 </main>
@@ -129,7 +126,7 @@
     <div class="footer-container">
         <div class="footer-brand"><div class="brand-logo">+</div><div><h3>DiaCare</h3><p>Hệ thống quản lý hồ sơ và điều hành khám bệnh tiểu đường dành cho phòng khám ngoại trú.</p></div></div>
         <div><h3>Truy cập nhanh</h3><ul><li><a href="#services">Dịch vụ</a></li><li><a href="#workflow">Quy trình khám</a></li><li><a href="${pageContext.request.contextPath}/Login">Đăng nhập</a></li></ul></div>
-        <div><h3>Liên hệ</h3><ul><li>Hà Nội, Việt Nam</li><li>1800 1234</li><li>diabetesclinic@gmail.com</li></ul></div>
+        <div><h3>Liên hệ</h3><ul><li>Hà Nội, Việt Nam</li><li>diabetesclinic@gmail.com</li></ul></div>
     </div>
     <div class="footer-bottom">© 2026 DiaCare · Chăm sóc tiểu đường toàn diện</div>
 </footer>

@@ -26,6 +26,7 @@ public class UserDAO extends DBContext {
         u.setAddress(rs.getString("address"));
         
         u.setCccd(rs.getString("cccd"));
+        u.setCreatedAt(rs.getTimestamp("created_at"));
         
         return u;
     }
@@ -55,43 +56,51 @@ public class UserDAO extends DBContext {
     }
 
     /** Loads counters, filtered total and the requested user page in one database round-trip. */
-    public AdminDashboardData loadAdminDashboard(String role, String keyword, int page, int pageSize) {
+    public AdminDashboardData loadAdminDashboard(String role, String status, String keyword,
+            String sortOrder, int page, int pageSize) {
         boolean hasRole = role != null && !role.isBlank();
+        boolean hasStatus = status != null && !status.isBlank();
         boolean hasKeyword = keyword != null && !keyword.isBlank();
         StringBuilder where = new StringBuilder(" WHERE 1=1");
         if (hasRole) where.append(" AND role=?");
+        if (hasStatus) where.append(" AND status=?");
         if (hasKeyword) where.append(" AND (full_name ILIKE ? OR username ILIKE ? OR phone ILIKE ?)");
+        String ordering = "OLDEST".equals(sortOrder)
+                ? "created_at ASC, user_id ASC" : "created_at DESC, user_id DESC";
         String sql = """
             WITH metrics AS (
               SELECT (SELECT COUNT(*) FROM patients) patients,
+                     COUNT(*) total_users,
                      COUNT(*) FILTER (WHERE role='DOCTOR') doctors,
                      COUNT(*) FILTER (WHERE role='STAFF') staff
               FROM users
             ), filtered AS (SELECT * FROM users""" + where + "), total AS (SELECT COUNT(*) total FROM filtered), "
-                + "page_data AS (SELECT * FROM filtered ORDER BY created_at DESC LIMIT ? OFFSET ?) "
-                + "SELECT p.*,m.patients,m.doctors,m.staff,t.total FROM metrics m CROSS JOIN total t LEFT JOIN page_data p ON TRUE";
+                + "page_data AS (SELECT * FROM filtered ORDER BY " + ordering + " LIMIT ? OFFSET ?) "
+                + "SELECT p.*,m.total_users,m.patients,m.doctors,m.staff,t.total FROM metrics m CROSS JOIN total t LEFT JOIN page_data p ON TRUE";
         List<User> users = new ArrayList<>();
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             int index = 1;
             if (hasRole) ps.setString(index++, role);
+            if (hasStatus) ps.setString(index++, status);
             if (hasKeyword) {
                 String value = "%" + keyword.trim() + "%";
                 ps.setString(index++, value); ps.setString(index++, value); ps.setString(index++, value);
             }
             ps.setInt(index++, pageSize); ps.setInt(index, (page - 1) * pageSize);
             try (ResultSet rows = ps.executeQuery()) {
-                int total = 0, patients = 0, doctors = 0, staff = 0;
+                int total = 0, totalUsers = 0, patients = 0, doctors = 0, staff = 0;
                 while (rows.next()) {
                     total = rows.getInt("total"); patients = rows.getInt("patients");
+                    totalUsers = rows.getInt("total_users");
                     doctors = rows.getInt("doctors"); staff = rows.getInt("staff");
                     if (rows.getObject("user_id") != null) users.add(mapRow(rows));
                 }
-                return new AdminDashboardData(users, total, patients, doctors, staff);
+                return new AdminDashboardData(users, total, totalUsers, patients, doctors, staff);
             }
         } catch (SQLException error) { throw databaseError("load admin dashboard", error); }
     }
 
-    public record AdminDashboardData(List<User> users, int filteredTotal,
+    public record AdminDashboardData(List<User> users, int filteredTotal, int totalUsers,
             int patients, int doctors, int staff) {}
 
     public User create(User u) {

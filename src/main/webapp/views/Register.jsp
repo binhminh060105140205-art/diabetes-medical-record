@@ -2,7 +2,7 @@
 <%@taglib prefix="c" uri="jakarta.tags.core"%>
 <!DOCTYPE html>
 <html lang="vi">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Đăng ký — DiaCare</title><link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui3"></head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Đăng ký — DiaCare</title><link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui7"></head>
 <body class="register-body">
 <main class="register-shell">
     <section class="register-intro">

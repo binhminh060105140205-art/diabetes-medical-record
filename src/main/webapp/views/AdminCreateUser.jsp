@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <title>Tạo Tài Khoản</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui3">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui7">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
@@ -18,7 +18,7 @@
         <div class="alert alert-success">${toastMessage}</div>
     </c:if>
     <c:if test="${not empty err}">
-        <div class="alert alert-danger">${err}</div>
+        <div class="alert alert-danger"><c:out value="${err}"/></div>
     </c:if>
 
     <div class="card">
@@ -26,11 +26,11 @@
             <div class="form-row">
                 <div class="form-group">
                     <label class="required">Tên đăng nhập</label>
-                    <input type="text" name="username" class="form-control" required>
+                    <input type="text" name="username" class="form-control" minlength="4" maxlength="30" pattern="[A-Za-z0-9_]+" autocomplete="username" required>
                 </div>
                 <div class="form-group">
                     <label class="required">Mật khẩu</label>
-                    <input type="password" name="password" class="form-control" required>
+                    <input type="password" name="password" class="form-control" minlength="8" maxlength="72" autocomplete="new-password" required>
                 </div>
                 <div class="form-group">
                     <label class="required">Vai trò</label>
@@ -44,15 +44,15 @@
             <div class="form-row">
                 <div class="form-group">
                     <label class="required">Họ và tên</label>
-                    <input type="text" name="fullName" class="form-control" required>
+                    <input type="text" name="fullName" class="form-control" minlength="2" maxlength="100" autocomplete="name" required>
                 </div>
                 <div class="form-group">
                     <label class="required">Email/Gmail nhận thông báo</label>
-                    <input type="email" name="email" class="form-control" required>
+                    <input type="email" name="email" class="form-control" maxlength="100" autocomplete="email" required>
                 </div>
                 <div class="form-group">
-                    <label>Số điện thoại</label>
-                    <input type="text" name="phone" class="form-control">
+                    <label class="required">Số điện thoại</label>
+                    <input type="tel" name="phone" class="form-control" pattern="(0|\+84)[0-9]{9}" maxlength="12" autocomplete="tel" required>
                 </div>
             </div>
 
@@ -71,14 +71,14 @@
                 </div>
                 <div class="form-group">
                     <label>Số CCCD</label>
-                    <input type="text" name="cccd" class="form-control">
+                    <input type="text" name="cccd" class="form-control" inputmode="numeric" pattern="[0-9]{12}" maxlength="12">
                 </div>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
                     <label>Địa chỉ</label>
-                    <input type="text" name="address" class="form-control">
+                    <input type="text" name="address" class="form-control" maxlength="255" autocomplete="street-address">
                 </div>
             </div>
 
@@ -93,11 +93,11 @@
                     </div>
                     <div class="form-group">
                         <label class="required">Số chứng chỉ hành nghề</label>
-                        <input type="text" name="licenseNo" class="form-control" data-doctor-required>
+                        <input type="text" name="licenseNo" class="form-control" maxlength="50" data-doctor-required>
                     </div>
                     <div class="form-group">
                         <label>Học vị / Bằng cấp</label>
-                        <input type="text" name="degree" class="form-control" placeholder="Thạc sĩ, Bác sĩ CKI...">
+                        <input type="text" name="degree" class="form-control" maxlength="50" placeholder="Thạc sĩ, Bác sĩ CKI...">
                     </div>
                     <div class="form-group">
                         <label>Nhóm tiểu đường ưu tiên</label>
