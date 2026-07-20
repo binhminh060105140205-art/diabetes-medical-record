@@ -7,7 +7,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Điều hành khám — DiaCare</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui7">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260721-typeflow1">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
@@ -46,17 +46,18 @@
                     <div class="appointment-form-grid">
                         <div class="form-group">
                             <label class="required">Bệnh nhân</label>
-                            <select class="form-control" name="patientId" required>
+                            <select class="form-control" name="patientId" required data-diabetes-patient>
                                 <option value="">Chọn bệnh nhân</option>
-                                <c:forEach var="p" items="${patients}"><option value="${p.patientId}"><c:out value="${p.fullName}"/> — <c:out value="${p.phone}"/></option></c:forEach>
+                                <c:forEach var="p" items="${patients}"><option value="${p.patientId}" data-diabetes-type="${p.diabetesType}"><c:out value="${p.fullName}"/> — ${p.diabetesTypeLabel} — <c:out value="${p.phone}"/></option></c:forEach>
                             </select>
                         </div>
                         <div class="form-group">
                             <label class="required">Bác sĩ điều trị tiểu đường</label>
-                            <select class="form-control" name="doctorId" required>
+                            <select class="form-control" name="doctorId" required data-diabetes-doctor>
                                 <option value="">Chọn bác sĩ</option>
-                                <c:forEach var="d" items="${doctors}"><option value="${d.doctorId}"><c:out value="${d.fullName}"/> — <c:out value="${d.diabetesFocusLabel}"/></option></c:forEach>
+                                <c:forEach var="d" items="${doctors}"><option value="${d.doctorId}" data-diabetes-focus="${d.diabetesFocus}"><c:out value="${d.fullName}"/> — <c:out value="${d.diabetesFocusLabel}"/></option></c:forEach>
                             </select>
+                            <small data-diabetes-routing>Chọn bệnh nhân để hệ thống lọc bác sĩ phù hợp.</small>
                         </div>
                         <div class="form-group">
                             <label class="required">Ngày khám</label>
@@ -111,7 +112,7 @@
                                     <c:otherwise><strong>${a.appointment_at}</strong></c:otherwise>
                                 </c:choose>
                             </td>
-                            <td><strong><c:out value="${a.patient_name}"/></strong><small class="table-sub"><c:out value="${a.patient_phone}"/></small></td>
+                            <td><strong><c:out value="${a.patient_name}"/></strong><small class="table-sub">${a.diabetes_type=='TYPE_1'?'Típ 1':a.diabetes_type=='TYPE_2'?'Típ 2':'Chưa phân loại'} · <c:out value="${a.patient_phone}"/></small></td>
                             <td><c:out value="${a.doctor_name}" default="Chưa phân công"/></td>
                             <td><c:out value="${a.reason}"/></td>
                             <td>
@@ -134,13 +135,13 @@
                                         <details class="row-disclosure">
                                             <summary class="btn btn-primary btn-sm">Phân công lịch</summary>
                                             <div class="row-disclosure-panel">
-                                                <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="request-assignment-form" data-appointment-form>
+                                                <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="request-assignment-form" data-appointment-form data-diabetes-type="${a.diabetes_type}">
                                                     <input type="hidden" name="action" value="assignAppointmentRequest">
                                                     <input type="hidden" name="appointmentId" value="${a.appointment_id}">
                                                     <input type="hidden" name="appointmentDate" value="${a.preferred_date}">
                                                     <select class="form-control" name="doctorId" required>
                                                         <option value="">Chọn bác sĩ</option>
-                                                        <c:forEach var="d" items="${doctors}"><option value="${d.doctorId}"><c:out value="${d.fullName}"/> — <c:out value="${d.diabetesFocusLabel}"/></option></c:forEach>
+                                                        <c:forEach var="d" items="${doctors}"><option value="${d.doctorId}" data-diabetes-focus="${d.diabetesFocus}"><c:out value="${d.fullName}"/> — <c:out value="${d.diabetesFocusLabel}"/></option></c:forEach>
                                                     </select>
                                                     <div class="requested-appointment-date"><small>Ngày bệnh nhân chọn</small><strong>${a.preferred_date} · ${a.preferred_period=='MORNING'?'Buổi sáng':'Buổi chiều'}</strong></div>
                                                     <select class="form-control" name="appointmentTime" required>
@@ -223,7 +224,7 @@
                     <c:forEach var="e" items="${encounters}">
                         <tr data-search-row>
                             <td><span class="queue-number">${e.queue_number}</span></td>
-                            <td><strong><c:out value="${e.patient_name}"/></strong><small class="table-sub"><c:out value="${e.patient_phone}"/></small></td>
+                            <td><strong><c:out value="${e.patient_name}"/></strong><small class="table-sub">${e.diabetes_type=='TYPE_1'?'Típ 1':e.diabetes_type=='TYPE_2'?'Típ 2':'Chưa phân loại'} · <c:out value="${e.patient_phone}"/></small></td>
                             <td><c:out value="${e.doctor_name}"/></td>
                             <td><span class="status-pill status-${e.status}">${e.status=='WAITING_TRIAGE'?'Chờ tiếp nhận':e.status=='WAITING_DOCTOR'?'Chờ khám':e.status=='IN_CONSULTATION'?'Đang khám':e.status=='WAITING_LAB'?'Chờ xét nghiệm':e.status=='LAB_COMPLETED'?'Chờ kết luận':'Chưa xác định'}</span></td>
                             <td><div class="table-actions">
@@ -300,8 +301,8 @@
                 <div class="section-header"><div><h2>Tạo chỉ định xét nghiệm</h2><p>Chỉ định được gắn với đúng lượt khám đang phụ trách.</p></div></div>
                 <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="form-grid">
                     <input type="hidden" name="action" value="labOrder">
-                    <div class="form-group"><label class="required">Lượt khám</label><select class="form-control" name="encounterId" required><option value="">Chọn lượt khám đang phụ trách</option><c:forEach var="e" items="${encounters}"><c:if test="${e.status!='COMPLETED'&&e.status!='CANCELLED'}"><option value="${e.encounter_id}">#${e.queue_number} — <c:out value="${e.patient_name}"/></option></c:if></c:forEach></select></div>
-                    <div class="form-group"><label class="required">Xét nghiệm</label><select class="form-control" name="testCode" required><option value="GLU">Đường huyết</option><option value="HBA1C">Đường huyết trung bình HbA1c</option><option value="LIPID">Bộ xét nghiệm mỡ máu</option><option value="CRE">Creatinin đánh giá chức năng thận</option><option value="UACR">Tỷ lệ albumin và creatinin niệu</option></select></div>
+                    <div class="form-group"><label class="required">Lượt khám</label><select class="form-control" name="encounterId" required><option value="">Chọn lượt khám đang phụ trách</option><c:forEach var="e" items="${encounters}"><c:if test="${e.status!='COMPLETED'&&e.status!='CANCELLED'}"><option value="${e.encounter_id}">#${e.queue_number} — <c:out value="${e.patient_name}"/> — ${e.diabetes_type=='TYPE_1'?'Típ 1':e.diabetes_type=='TYPE_2'?'Típ 2':'Chưa phân loại'}</option></c:if></c:forEach></select></div>
+                    <div class="form-group"><label class="required">Xét nghiệm</label><select class="form-control" name="testCode" required><option value="GLU">Đường huyết</option><option value="HBA1C">Đường huyết trung bình HbA1c</option><option value="KETONE">Ketone máu/nước tiểu (ưu tiên típ 1 khi có nguy cơ)</option><option value="LIPID">Bộ xét nghiệm mỡ máu (ưu tiên típ 2)</option><option value="CRE">Creatinin đánh giá chức năng thận</option><option value="UACR">Tỷ lệ albumin và creatinin niệu</option></select></div>
                     <input type="hidden" name="testName" value="catalog">
                     <div class="form-group"><label>Ưu tiên</label><select class="form-control" name="priority"><option value="ROUTINE">Thông thường</option><option value="URGENT">Khẩn</option></select></div>
                     <div class="form-group"><label>Ghi chú lâm sàng</label><input class="form-control" name="clinicalNote" maxlength="500"></div>
@@ -319,7 +320,7 @@
                     <tbody>
                     <c:forEach var="l" items="${labOrders}">
                         <tr data-search-row>
-                            <td><strong><c:out value="${l.patient_name}"/></strong></td>
+                            <td><strong><c:out value="${l.patient_name}"/></strong><small class="table-sub">${l.diabetes_type=='TYPE_1'?'Típ 1':l.diabetes_type=='TYPE_2'?'Típ 2':'Chưa phân loại'}</small></td>
                             <td><strong><c:out value="${l.test_code}"/></strong><small class="table-sub"><c:out value="${l.test_name}"/></small></td>
                             <td><span class="status-pill ${l.priority=='URGENT'?'status-CRITICAL':''}">${l.priority=='URGENT'?'Khẩn':'Thông thường'}</span></td>
                             <td><c:choose><c:when test="${not empty l.result_value}"><strong><c:out value="${l.result_value}"/> <c:out value="${l.result_unit}"/></strong><small class="table-sub"><c:out value="${l.reference_range}"/> · <c:out value="${l.result_flag}"/></small></c:when><c:otherwise><span class="text-muted">Chưa có kết quả</span></c:otherwise></c:choose></td>
@@ -393,5 +394,6 @@
 </main>
 
 <jsp:include page="footer.jsp"/>
+<script src="${pageContext.request.contextPath}/static/js/diabetes-routing.js?v=20260721-1" defer></script>
 </body>
 </html>

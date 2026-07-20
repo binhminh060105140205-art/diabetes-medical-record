@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <title>Hồ Sơ Bệnh Án</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui8">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260721-typeflow1">
     <style>
         .role-bar{padding:10px 16px;border-radius:8px;margin-bottom:16px;font-size:14px;font-weight:600;}
         .role-staff {background:#cff4fc;color:#055160;border-left:4px solid #0dcaf0;}
@@ -357,6 +357,7 @@
                 <div class="form-actions"><button type="submit" class="btn btn-light">Lưu hồ sơ đái tháo đường</button></div>
             </form>
         </div>
+        <jsp:include page="diabetesCarePath.jsp"/>
         <div class="card">
             <div class="card-title">V. Kết luận của Bác sĩ</div>
             <c:if test="${diabetesProfile.diabetesType=='TYPE_1'}"><div class="alert alert-info"><strong>Gợi ý cho đái tháo đường típ 1:</strong> ghi loại insulin, liều, thời điểm dùng, số lần đo đường huyết và dấu hiệu hạ đường huyết. Bác sĩ vẫn là người quyết định điều trị.</div></c:if>
@@ -433,6 +434,7 @@
         </div>
     </c:when>
     <c:otherwise>
+        <jsp:include page="diabetesCarePath.jsp"/>
         <div class="card">
             <div class="card-title">V. Kết luận của Bác sĩ</div>
             <c:choose>

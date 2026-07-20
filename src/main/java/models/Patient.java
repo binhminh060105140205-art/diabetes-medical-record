@@ -12,6 +12,7 @@ public class Patient {
     private String phone;
     private String address;
     private String healthInsuranceNo;
+    private String diabetesType;
 
     // ── CĂN CƯỚC CÔNG DÂN ────────────────────────────
     private String nationalId;        // Số CCCD / CMND
@@ -67,6 +68,14 @@ public class Patient {
     public void setAddress(String v)       { this.address = v; }
     public String getHealthInsuranceNo()   { return healthInsuranceNo; }
     public void setHealthInsuranceNo(String v) { this.healthInsuranceNo = v; }
+
+    public String getDiabetesType()        { return diabetesType; }
+    public void setDiabetesType(String v)  { this.diabetesType = v; }
+    public String getDiabetesTypeLabel() {
+        if ("TYPE_1".equals(diabetesType)) return "Típ 1";
+        if ("TYPE_2".equals(diabetesType)) return "Típ 2";
+        return "Chưa phân loại";
+    }
 
     public String getNationalId()              { return nationalId; }
     public void setNationalId(String v)        { this.nationalId = v; }

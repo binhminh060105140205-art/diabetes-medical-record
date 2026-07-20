@@ -32,7 +32,9 @@ public class PatientDAO extends DBContext {
     public List<Patient> listForSelection() {
         List<Patient> list = new ArrayList<>();
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT p.patient_id,p.full_name,p.phone FROM patients p LEFT JOIN users u ON u.user_id=p.user_id "
+                "SELECT p.patient_id,p.full_name,p.phone,COALESCE(dp.diabetes_type,'UNKNOWN') diabetes_type "
+                + "FROM patients p LEFT JOIN users u ON u.user_id=p.user_id "
+                + "LEFT JOIN diabetes_profiles dp ON dp.patient_id=p.patient_id "
                 + "WHERE COALESCE(u.status,'ACTIVE') <> 'DELETED' ORDER BY p.full_name");
              ResultSet rows = statement.executeQuery()) {
             while (rows.next()) {
@@ -40,6 +42,7 @@ public class PatientDAO extends DBContext {
                 patient.setPatientId(rows.getInt("patient_id"));
                 patient.setFullName(rows.getString("full_name"));
                 patient.setPhone(rows.getString("phone"));
+                patient.setDiabetesType(rows.getString("diabetes_type"));
                 list.add(patient);
             }
         } catch (SQLException e) { throw databaseError("load patients", e); }

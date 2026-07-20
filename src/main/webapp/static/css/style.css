@@ -1648,3 +1648,84 @@ body.is-navigating:after {
     .btn { width: 100%; }
     .row-actions .btn, .row-actions a, .inline-form .btn { width: auto; }
 }
+.diabetes-care-path {
+    position: relative;
+    overflow: hidden;
+    margin-top: 18px;
+    border: 1px solid #cbd8f5;
+    background: linear-gradient(135deg, #f4f7ff 0%, #ffffff 58%, #eef3ff 100%);
+}
+.diabetes-care-path::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 6px;
+    background: #3c5ccf;
+}
+.diabetes-care-path.care-type-2::before { background: #178f76; }
+.diabetes-care-path.care-unknown::before { background: #9a6a18; }
+.care-path-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 20px;
+}
+.care-path-heading h2 { margin: 4px 0 7px; }
+.care-path-heading p { margin: 0; max-width: 760px; color: var(--text-muted); }
+.diabetes-type-badge {
+    flex: 0 0 auto;
+    padding: 8px 13px;
+    border-radius: 999px;
+    color: #fff;
+    background: #3c5ccf;
+    font-weight: 800;
+}
+.care-type-2 .diabetes-type-badge { background: #178f76; }
+.care-unknown .diabetes-type-badge { background: #9a6a18; }
+.care-path-steps {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.care-path-steps li {
+    min-height: 118px;
+    padding: 15px;
+    border: 1px solid #dbe3f6;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, .9);
+}
+.care-path-steps li > span {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    margin-bottom: 10px;
+    border-radius: 50%;
+    color: #fff;
+    background: #3c5ccf;
+    font-weight: 800;
+}
+.care-type-2 .care-path-steps li > span { background: #178f76; }
+.care-path-steps p { margin: 0; line-height: 1.55; }
+.care-path-difference {
+    margin-top: 14px;
+    padding: 13px 15px;
+    border-radius: 12px;
+    color: #243250;
+    background: #e8edff;
+}
+.care-type-2 .care-path-difference { background: #e2f5ef; }
+.care-unknown .care-path-difference { background: #fff2d8; }
+@media (max-width: 900px) {
+    .care-path-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+    .care-path-heading { display: block; }
+    .diabetes-type-badge { display: inline-block; margin-top: 12px; }
+    .care-path-steps { grid-template-columns: 1fr; }
+    .care-path-steps li { min-height: auto; }
+}

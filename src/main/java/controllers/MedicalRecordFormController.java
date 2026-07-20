@@ -368,6 +368,21 @@ public class MedicalRecordFormController extends HttpServlet {
             return;
         }
 
+        DiabetesProfile diabetesProfile = new DiabetesProfileDAO()
+                .getByPatientId(record.getPatientId());
+        if (diabetesProfile == null || diabetesProfile.isUnknown()) {
+            redirectRecordError(request, response, recordId,
+                    "Bác sĩ cần xác nhận bệnh nhân thuộc típ 1 hay típ 2 trước khi hoàn tất bệnh án.");
+            return;
+        }
+        if ("TYPE_1".equals(diabetesProfile.getDiabetesType())
+                && !java.util.Set.of("INSULIN", "COMBINATION")
+                        .contains(diabetesProfile.getTreatmentMethod())) {
+            redirectRecordError(request, response, recordId,
+                    "Bệnh nhân típ 1 cần có phương pháp điều trị chứa insulin trước khi hoàn tất.");
+            return;
+        }
+
         String finalDiagnosis = ControllerSupport.clean(request.getParameter("finalDiagnosis"));
         if (finalDiagnosis.isEmpty() || finalDiagnosis.length() > 2000) {
             redirectRecordError(request, response, recordId,

@@ -132,19 +132,22 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
         String sql = """
           SELECT 'PATIENT' row_type,p.patient_id,NULL::INTEGER doctor_id,p.full_name display_name,
                  p.phone,NULL::VARCHAR specialty,NULL::VARCHAR diabetes_focus,
+                 COALESCE(dp.diabetes_type,'UNKNOWN') diabetes_type,
                  NULL::INTEGER appointment_id,NULL::TIMESTAMP appointment_at,
                  NULL::DATE preferred_date,NULL::VARCHAR preferred_period,
                  NULL::VARCHAR reason,NULL::VARCHAR note,NULL::VARCHAR status,
                  NULL::VARCHAR patient_name,NULL::VARCHAR patient_phone,NULL::VARCHAR doctor_name,
                  p.created_at sort_date
           FROM patients p JOIN users pu ON pu.user_id=p.user_id AND pu.status='ACTIVE'
+          LEFT JOIN diabetes_profiles dp ON dp.patient_id=p.patient_id
           UNION ALL
           SELECT 'DOCTOR',NULL,d.doctor_id,u.full_name,NULL,d.specialty,d.diabetes_focus,
-                 NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL
+                 NULL::VARCHAR,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL
           FROM doctors d JOIN users u ON u.user_id=d.user_id AND u.status='ACTIVE'
           WHERE d.diabetes_focus IN ('TYPE_1','TYPE_2','BOTH')
           UNION ALL
           SELECT 'APPOINTMENT',a.patient_id,a.doctor_id,NULL,p.phone,NULL,NULL,
+                 COALESCE(dp.diabetes_type,'UNKNOWN'),
                  a.appointment_id,a.appointment_at,a.preferred_date,a.preferred_period,
                  a.reason,a.note,a.status,p.full_name,p.phone,u.full_name,
                  COALESCE(a.appointment_at,a.preferred_date::timestamp)
@@ -152,6 +155,7 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
             SELECT * FROM appointments
             ORDER BY preferred_date DESC,appointment_at DESC NULLS FIRST LIMIT 50
           ) a JOIN patients p ON p.patient_id=a.patient_id
+          LEFT JOIN diabetes_profiles dp ON dp.patient_id=p.patient_id
           LEFT JOIN doctors d ON d.doctor_id=a.doctor_id LEFT JOIN users u ON u.user_id=d.user_id
           ORDER BY row_type,sort_date DESC NULLS LAST,display_name
           """;
@@ -166,6 +170,7 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
                         patient.setPatientId(rows.getInt("patient_id"));
                         patient.setFullName(rows.getString("display_name"));
                         patient.setPhone(rows.getString("phone"));
+                        patient.setDiabetesType(rows.getString("diabetes_type"));
                         patients.add(patient);
                     }
                     case "DOCTOR" -> {
@@ -186,6 +191,7 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
                         appointment.put("doctor_id", rows.getObject("doctor_id"));
                         appointment.put("patient_name", rows.getString("patient_name"));
                         appointment.put("patient_phone", rows.getString("patient_phone"));
+                        appointment.put("diabetes_type", rows.getString("diabetes_type"));
                         appointment.put("doctor_name", rows.getString("doctor_name"));
                         appointment.put("reason", rows.getString("reason"));
                         appointment.put("note", rows.getString("note"));
@@ -351,14 +357,29 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
     private void lockAndValidateCapacity(int patientId, int doctorId, LocalDateTime at,
             Integer excludedId) throws SQLException {
         try (PreparedStatement lock = connection.prepareStatement("""
-                SELECT d.doctor_id FROM doctors d
-                JOIN users u ON u.user_id=d.user_id
-                WHERE d.doctor_id=? AND u.status='ACTIVE'
-                FOR UPDATE OF d""")) {
+                SELECT d.doctor_id,d.diabetes_focus,
+                       COALESCE(dp.diabetes_type,'UNKNOWN') diabetes_type
+                FROM doctors d
+                JOIN users du ON du.user_id=d.user_id AND du.status='ACTIVE'
+                CROSS JOIN patients p
+                LEFT JOIN users pu ON pu.user_id=p.user_id
+                LEFT JOIN diabetes_profiles dp ON dp.patient_id=p.patient_id
+                WHERE d.doctor_id=? AND p.patient_id=?
+                  AND COALESCE(pu.status,'ACTIVE')='ACTIVE'
+                FOR UPDATE OF d,p""")) {
             lock.setInt(1, doctorId);
+            lock.setInt(2, patientId);
             try (ResultSet rs = lock.executeQuery()) {
                 if (!rs.next()) {
-                    throw new IllegalArgumentException("Bác sĩ không tồn tại hoặc đã ngừng hoạt động.");
+                    throw new IllegalArgumentException("Bệnh nhân hoặc bác sĩ không tồn tại hay đã ngừng hoạt động.");
+                }
+                String diabetesType = rs.getString("diabetes_type");
+                String doctorFocus = rs.getString("diabetes_focus");
+                if (!"UNKNOWN".equals(diabetesType) && !"BOTH".equals(doctorFocus)
+                        && !diabetesType.equals(doctorFocus)) {
+                    throw new IllegalArgumentException("Bệnh nhân "
+                            + ("TYPE_1".equals(diabetesType) ? "típ 1" : "típ 2")
+                            + " cần được phân công bác sĩ phù hợp với loại đái tháo đường.");
                 }
             }
         }
@@ -472,8 +493,10 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
     public List<Map<String,Object>> encounters() {
         return query("""
           SELECT e.*,p.full_name patient_name,p.phone patient_phone,u.full_name doctor_name,
+                 COALESCE(dp.diabetes_type,'UNKNOWN') diabetes_type,
                  q.queue_id,q.queue_number,q.priority queue_priority,q.status queue_status,m.record_id
           FROM encounters e JOIN patients p ON p.patient_id=e.patient_id
+          LEFT JOIN diabetes_profiles dp ON dp.patient_id=p.patient_id
           JOIN doctors d ON d.doctor_id=e.doctor_id JOIN users u ON u.user_id=d.user_id
           LEFT JOIN queue_entries q ON q.encounter_id=e.encounter_id
           LEFT JOIN medicalrecords m ON m.encounter_id=e.encounter_id
@@ -483,8 +506,10 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
     public List<Map<String,Object>> encountersForDoctor(int doctorId) {
         return query("""
           SELECT e.*,p.full_name patient_name,p.phone patient_phone,u.full_name doctor_name,
+                 COALESCE(dp.diabetes_type,'UNKNOWN') diabetes_type,
                  q.queue_id,q.queue_number,q.priority queue_priority,q.status queue_status,m.record_id
           FROM encounters e JOIN patients p ON p.patient_id=e.patient_id
+          LEFT JOIN diabetes_profiles dp ON dp.patient_id=p.patient_id
           JOIN doctors d ON d.doctor_id=e.doctor_id JOIN users u ON u.user_id=d.user_id
           LEFT JOIN queue_entries q ON q.encounter_id=e.encounter_id
           LEFT JOIN medicalrecords m ON m.encounter_id=e.encounter_id
@@ -620,8 +645,10 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
     }
     public List<Map<String, Object>> labOrders() {
         return query("""
-                SELECT l.*,m.record_id,p.full_name patient_name,u.full_name doctor_name FROM lab_orders l
+                SELECT l.*,m.record_id,p.full_name patient_name,u.full_name doctor_name,
+                       COALESCE(dp.diabetes_type,'UNKNOWN') diabetes_type FROM lab_orders l
                 JOIN patients p ON p.patient_id=l.patient_id
+                LEFT JOIN diabetes_profiles dp ON dp.patient_id=p.patient_id
                 JOIN doctors d ON d.doctor_id=l.doctor_id
                 JOIN users u ON u.user_id=d.user_id
                 LEFT JOIN medicalrecords m ON m.encounter_id=l.encounter_id
@@ -630,8 +657,10 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
 
     public List<Map<String, Object>> labOrdersForDoctor(int doctorId) {
         return query("""
-                SELECT l.*,m.record_id,p.full_name patient_name,u.full_name doctor_name FROM lab_orders l
+                SELECT l.*,m.record_id,p.full_name patient_name,u.full_name doctor_name,
+                       COALESCE(dp.diabetes_type,'UNKNOWN') diabetes_type FROM lab_orders l
                 JOIN patients p ON p.patient_id=l.patient_id
+                LEFT JOIN diabetes_profiles dp ON dp.patient_id=p.patient_id
                 JOIN doctors d ON d.doctor_id=l.doctor_id
                 JOIN users u ON u.user_id=d.user_id
                 LEFT JOIN medicalrecords m ON m.encounter_id=l.encounter_id

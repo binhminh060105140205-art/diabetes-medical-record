@@ -137,6 +137,7 @@ public class ClinicWorkflowService {
         tests.put("UACR", "Tỷ lệ albumin và creatinin niệu");
         tests.put("GLU_FASTING", "Đường huyết lúc đói");
         tests.put("HBA1C", "HbA1c");
+        tests.put("KETONE", "Ketone máu hoặc nước tiểu");
         tests.put("LIPID", "Bộ xét nghiệm mỡ máu");
         tests.put("CREATININE", "Creatinin - đánh giá chức năng thận");
         tests.put("EGFR", "Mức lọc cầu thận ước tính");
