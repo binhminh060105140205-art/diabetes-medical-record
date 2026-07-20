@@ -47,6 +47,43 @@ document.addEventListener('DOMContentLoaded', function () {
     if (backdrop) backdrop.addEventListener('click', close);
     sidebar.querySelectorAll('a').forEach(function (link) { link.addEventListener('click', close); });
     document.addEventListener('keydown', function (event) { if (event.key === 'Escape') close(); });
+
+    const activeLink = sidebar.querySelector('a.active');
+    if (activeLink) activeLink.scrollIntoView({ block: 'nearest' });
+});
+
+// Lightweight client-side filtering for operational tables. Server-side search
+// remains the source of truth on paginated screens.
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-table-filter]').forEach(function (input) {
+        const table = document.getElementById(input.dataset.tableFilter);
+        if (!table) return;
+        const rows = Array.from(table.querySelectorAll('tbody tr[data-search-row]'));
+        const empty = document.querySelector('[data-filter-empty="' + input.dataset.tableFilter + '"]');
+        const filter = function () {
+            const query = input.value.trim().toLocaleLowerCase('vi');
+            let visible = 0;
+            rows.forEach(function (row) {
+                const match = !query || row.textContent.toLocaleLowerCase('vi').includes(query);
+                row.hidden = !match;
+                if (match) visible += 1;
+            });
+            if (empty) empty.hidden = visible !== 0;
+        };
+        input.addEventListener('input', filter);
+    });
+});
+
+// Make long forms explicit about the action currently being processed without
+// disabling named submit buttons that carry status values to the server.
+document.addEventListener('submit', function (event) {
+    if (!event.target.checkValidity()) return;
+    event.target.classList.add('is-submitting');
+    const submitter = event.submitter;
+    if (submitter) {
+        submitter.dataset.originalLabel = submitter.textContent;
+        submitter.textContent = submitter.dataset.loadingLabel || 'Đang xử lý...';
+    }
 });
 
 // Show feedback only when a request is genuinely slow. Normal 150-300 ms

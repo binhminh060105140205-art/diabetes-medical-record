@@ -9,7 +9,7 @@
     <meta name="description" content="Nền tảng quản lý khám ngoại trú và theo dõi bệnh tiểu đường dành cho phòng khám, bác sĩ và người bệnh.">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/home.css?v=20260717-perf1">
     <link rel="prefetch" href="${pageContext.request.contextPath}/Login">
-    <link rel="prefetch" href="${pageContext.request.contextPath}/static/css/style.css?v=20260719-ai1" as="style">
+    <link rel="prefetch" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ux1" as="style">
 </head>
 <body class="home-body">
 <div class="hosp-topbar">
@@ -94,7 +94,7 @@
     <section class="hosp-section services-section" id="services">
         <div class="section-header"><span class="section-kicker">DỊCH VỤ CHUYÊN MÔN</span><h2 class="section-title">Một hệ thống, trọn hành trình chăm sóc</h2><p class="section-desc">Thông tin được kết nối xuyên suốt từ lúc đặt lịch đến theo dõi sau khám.</p></div>
         <div class="services-grid">
-            <article class="service-card"><div class="srv-icon">⌚</div><span>01</span><h3>Lịch hẹn & hàng đợi</h3><p>Chủ động chọn giờ khám, check-in và theo dõi lượt chờ rõ ràng.</p></article>
+            <article class="service-card"><div class="srv-icon">⌚</div><span>01</span><h3>Lịch hẹn & hàng đợi</h3><p>Chủ động chọn giờ khám, ghi nhận khi đến khám và theo dõi lượt chờ rõ ràng.</p></article>
             <article class="service-card service-accent"><div class="srv-icon">♡</div><span>02</span><h3>Khám nội tiết</h3><p>Sinh hiệu, triệu chứng, tiền sử và dị ứng được ghi nhận đầy đủ.</p></article>
             <article class="service-card"><div class="srv-icon">⌁</div><span>03</span><h3>Xét nghiệm</h3><p>Chỉ định và kết quả được liên kết trực tiếp với lượt khám.</p></article>
             <article class="service-card"><div class="srv-icon">✓</div><span>04</span><h3>Kế hoạch điều trị</h3><p>Chẩn đoán, đơn thuốc cơ bản và lịch tái khám được trình bày dễ hiểu.</p></article>

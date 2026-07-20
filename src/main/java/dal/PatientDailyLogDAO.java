@@ -1,19 +1,13 @@
 package dal;
 
 import models.PatientDailyLog;
+import models.Patient;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * [MODIFIED - Upgrade V3]
- * Thêm xử lý: heart_rate, spo2, meal_type trong save/update/mapRow.
- * Lưu và đọc nhật ký sức khỏe hằng ngày.
- */
+/** Stores and loads each patient's daily self-monitoring data. */
 public class PatientDailyLogDAO extends DBContext {
-    PreparedStatement stm;
-    ResultSet rs;
-
     private PatientDailyLog mapRow(ResultSet rs) throws SQLException {
         PatientDailyLog l = new PatientDailyLog();
         l.setLogId(rs.getInt("log_id"));
@@ -58,18 +52,6 @@ public class PatientDailyLogDAO extends DBContext {
         return log;
     }
 
-    public List<PatientDailyLog> getRecent(int patientId, int days) {
-        List<PatientDailyLog> list = new ArrayList<>();
-        try {
-            stm = connection.prepareStatement(
-                "SELECT * FROM PatientDailyLogs WHERE patient_id=? ORDER BY log_date DESC LIMIT ?");
-            stm.setInt(1, patientId); stm.setInt(2, days);
-            rs = stm.executeQuery();
-            while (rs.next()) list.add(mapRow(rs));
-        } catch (SQLException e) { throw databaseError("load patient daily logs", e); }
-        return list;
-    }
-
     /** Resolves the patient account and loads its journal in one database round-trip. */
     public PatientJournalData loadJournalForUser(int userId, int limit) {
         String sql = """
@@ -98,16 +80,49 @@ public class PatientDailyLogDAO extends DBContext {
 
     public record PatientJournalData(Integer patientId, List<PatientDailyLog> logs) {}
 
-    public PatientDailyLog getTodayLog(int patientId) {
-        try {
-            stm = connection.prepareStatement(
-                "SELECT * FROM PatientDailyLogs WHERE patient_id=? AND log_date=CURRENT_DATE");
-            stm.setInt(1, patientId);
-            rs = stm.executeQuery();
-            if (rs.next()) return mapRow(rs);
-        } catch (SQLException e) { throw databaseError("load today's patient log", e); }
-        return null;
+    /** Checks doctor access and loads the patient journal in one database round-trip. */
+    public DoctorJournalData loadJournalForDoctor(int doctorUserId, int patientId, int limit) {
+        String sql = """
+                WITH subject AS (
+                  SELECT p.patient_id,p.full_name,EXISTS (
+                    SELECT 1 FROM doctors d JOIN encounters e ON e.doctor_id=d.doctor_id
+                    WHERE d.user_id=? AND e.patient_id=p.patient_id
+                  ) authorized
+                  FROM patients p WHERE p.patient_id=?
+                )
+                SELECT s.patient_id subject_patient_id,s.full_name subject_full_name,
+                       s.authorized,l.*
+                FROM subject s LEFT JOIN LATERAL (
+                  SELECT * FROM patientdailylogs WHERE patient_id=s.patient_id
+                  ORDER BY log_date DESC LIMIT ?
+                ) l ON TRUE
+                """;
+        Patient patient = null;
+        boolean authorized = false;
+        List<PatientDailyLog> logs = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, doctorUserId);
+            statement.setInt(2, patientId);
+            statement.setInt(3, limit);
+            try (ResultSet rows = statement.executeQuery()) {
+                while (rows.next()) {
+                    if (patient == null) {
+                        patient = new Patient();
+                        patient.setPatientId(rows.getInt("subject_patient_id"));
+                        patient.setFullName(rows.getString("subject_full_name"));
+                        authorized = rows.getBoolean("authorized");
+                    }
+                    if (rows.getObject("log_id") != null) logs.add(mapRow(rows));
+                }
+            }
+        } catch (SQLException error) {
+            throw databaseError("load doctor patient journal", error);
+        }
+        return new DoctorJournalData(patient, authorized, logs);
     }
+
+    public record DoctorJournalData(Patient patient, boolean authorized,
+            List<PatientDailyLog> logs) {}
 
     private void setND(PreparedStatement s, int i, Double v) throws SQLException {
         if (v != null && v > 0) s.setDouble(i, v); else s.setNull(i, Types.DOUBLE);

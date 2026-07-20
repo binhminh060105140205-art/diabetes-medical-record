@@ -20,11 +20,16 @@ public class RegisterController extends HttpServlet {
 
     @Override protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         req.setCharacterEncoding("UTF-8");
-        String username = clean(req, "username"); String password = req.getParameter("password");
-        String confirm = req.getParameter("confirmPassword"); String fullName = clean(req, "fullName");
-        String phone = clean(req, "phone"); String email = clean(req, "email");
-        String dobText = clean(req, "dateOfBirth"); String gender = clean(req, "gender");
-        String address = clean(req, "address"); String insurance = clean(req, "healthInsuranceNo");
+        String username = ControllerSupport.clean(req.getParameter("username"));
+        String password = req.getParameter("password");
+        String confirm = req.getParameter("confirmPassword");
+        String fullName = ControllerSupport.clean(req.getParameter("fullName"));
+        String phone = ControllerSupport.clean(req.getParameter("phone"));
+        String email = ControllerSupport.clean(req.getParameter("email"));
+        String dobText = ControllerSupport.clean(req.getParameter("dateOfBirth"));
+        String gender = ControllerSupport.clean(req.getParameter("gender"));
+        String address = ControllerSupport.clean(req.getParameter("address"));
+        String insurance = ControllerSupport.clean(req.getParameter("healthInsuranceNo"));
         try {
             PatientRegistrationService service=new PatientRegistrationService(new PatientRegistrationDAO());
             service.register(new PatientRegistrationService.Command(username,password,confirm,fullName,phone,email,dobText,gender,address,insurance,null));
@@ -34,8 +39,5 @@ public class RegisterController extends HttpServlet {
             req.setAttribute("err", ex.getMessage()); req.setAttribute("values", req.getParameterMap());
             req.getRequestDispatcher("views/Register.jsp").forward(req, resp);
         }
-    }
-    private String clean(HttpServletRequest req, String name) {
-        String value = req.getParameter(name); return value == null ? "" : value.trim();
     }
 }

@@ -20,6 +20,8 @@ services:
         value: "5"
       - key: DB_POOL_MIN_IDLE
         value: "3"
+      - key: DB_STATEMENT_TIMEOUT_MS
+        value: "10000"
       - key: FLYWAY_ENABLED
         value: "true"
       - key: BOOTSTRAP_ADMIN_ENABLED
@@ -33,11 +35,19 @@ services:
       - key: BOOTSTRAP_ADMIN_PASSWORD
         sync: false
       - key: BOOTSTRAP_ADMIN_NAME
-        value: System Administrator
+        value: Quản trị hệ thống
       - key: MAIL_USERNAME
         sync: false
       - key: MAIL_PASSWORD
         sync: false
+      - key: MAIL_HOST
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_STARTTLS
+        value: "true"
+      - key: MAIL_FROM_NAME
+        value: DiaCare
       - key: OPENAI_API_KEY
         sync: false
       - key: OPENAI_MODEL

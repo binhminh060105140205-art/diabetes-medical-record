@@ -1,10 +1,12 @@
 package controllers;
 
-import dal.*;
+import dal.UserDAO;
 import models.User;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.*;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 @WebServlet("/AdminDashboard")
@@ -15,21 +17,19 @@ public class AdminDashboardController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        HttpSession session = request.getSession(false);
-        User user = (session != null) ? (User) session.getAttribute("user") : null;
-        if (user == null || !"ADMIN".equals(user.getRole())) {
-            response.sendRedirect(request.getContextPath() + "/Login"); return;
+        User user = ControllerSupport.currentUser(request);
+        if (!ControllerSupport.hasRole(user, "ADMIN")) {
+            ControllerSupport.redirectToLogin(request, response);
+            return;
         }
 
-        UserDAO    userDAO = new UserDAO();
+        UserDAO userDAO = new UserDAO();
 
         String filterRole = request.getParameter("filterRole");
         String pageStr    = request.getParameter("page");
         String keyword    = request.getParameter("keyword");
 
-        int currentPage = 1;
-        try { currentPage = Integer.parseInt(pageStr); } catch (Exception ignored) {}
-        if (currentPage < 1) currentPage = 1;
+        int currentPage = Math.max(1, ControllerSupport.positiveIdOrZero(pageStr));
 
         UserDAO.AdminDashboardData data = userDAO.loadAdminDashboard(filterRole, keyword, currentPage, PAGE_SIZE);
         int totalRecords = data.filteredTotal();

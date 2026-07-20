@@ -54,6 +54,13 @@ public class Patient {
     public void setDateOfBirth(LocalDate v){ this.dateOfBirth = v; }
     public String getGender()              { return gender; }
     public void setGender(String v)        { this.gender = v; }
+    public String getGenderLabel() {
+        if (gender == null || gender.isBlank()) return "Chưa cập nhật";
+        if ("Male".equalsIgnoreCase(gender) || "Nam".equalsIgnoreCase(gender)) return "Nam";
+        if ("Female".equalsIgnoreCase(gender) || "Nữ".equalsIgnoreCase(gender)) return "Nữ";
+        if ("Other".equalsIgnoreCase(gender) || "Khác".equalsIgnoreCase(gender)) return "Khác";
+        return gender;
+    }
     public String getPhone()               { return phone; }
     public void setPhone(String v)         { this.phone = v; }
     public String getAddress()             { return address; }

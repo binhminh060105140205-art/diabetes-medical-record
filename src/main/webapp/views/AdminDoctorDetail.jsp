@@ -1,12 +1,12 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@taglib prefix="c" uri="jakarta.tags.core"%>
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hồ Sơ Bác Sĩ - Admin</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260719-ai1">
+    <title>Hồ sơ bác sĩ — Quản trị viên</title>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ux1">
     <style>
         .form-container {
             max-width: 820px;
@@ -74,9 +74,9 @@
 
     <div class="form-container">
         <div class="info-row">
-            <div><b>Username</b>${targetUser.username}</div>
+            <div><b>Tên đăng nhập</b>${targetUser.username}</div>
             <div><b>Số điện thoại</b>${targetUser.phone}</div>
-            <div><b>Email</b>${targetUser.email}</div>
+            <div><b>Thư điện tử</b>${targetUser.email}</div>
             <div><b>Số CCCD</b>${targetUser.cccd}</div>
         </div>
 
@@ -91,7 +91,7 @@
 
         <c:choose>
         <c:when test="${empty doctor}">
-            <div class="alert alert-danger">Tài khoản này chưa có hồ sơ Doctors tương ứng (thiếu dữ liệu chuyên khoa/chứng chỉ), nên chưa thể lưu ảnh minh chứng.</div>
+            <div class="alert alert-danger">Tài khoản này chưa có hồ sơ bác sĩ tương ứng (thiếu dữ liệu chuyên khoa hoặc chứng chỉ), nên chưa thể lưu ảnh minh chứng.</div>
         </c:when>
         <c:otherwise>
             <form action="${pageContext.request.contextPath}/AdminDoctorDetail" method="POST" enctype="multipart/form-data">
@@ -100,9 +100,9 @@
                     <label>Nhóm tiểu đường ưu tiên</label>
                     <select name="diabetesFocus" class="form-control">
                         <option value="GENERAL" ${doctor.diabetesFocus=='GENERAL'?'selected':''}>Chuyên khoa hỗ trợ</option>
-                        <option value="TYPE_1" ${doctor.diabetesFocus=='TYPE_1'?'selected':''}>Ưu tiên Type 1</option>
-                        <option value="TYPE_2" ${doctor.diabetesFocus=='TYPE_2'?'selected':''}>Ưu tiên Type 2</option>
-                        <option value="BOTH" ${doctor.diabetesFocus=='BOTH'?'selected':''}>Type 1 &amp; Type 2</option>
+                        <option value="TYPE_1" ${doctor.diabetesFocus=='TYPE_1'?'selected':''}>Ưu tiên đái tháo đường típ 1</option>
+                        <option value="TYPE_2" ${doctor.diabetesFocus=='TYPE_2'?'selected':''}>Ưu tiên đái tháo đường típ 2</option>
+                        <option value="BOTH" ${doctor.diabetesFocus=='BOTH'?'selected':''}>Theo dõi cả típ 1 và típ 2</option>
                     </select>
                     <small>Chỉ dùng để sắp xếp gợi ý bác sĩ; bệnh nhân vẫn có thể chọn bác sĩ khác.</small>
                 </div>
@@ -142,8 +142,8 @@
                 </div>
 
                 <button type="submit" class="btn btn-primary">💾 Lưu ảnh</button>
-                <a href="${pageContext.request.contextPath}/AdminDashboard?filterRole=DOCTOR" class="btn btn-outline" style="background:#6c757d;color:white;margin-left:8px;">← Quay lại danh sách</a>
-                <p class="hint">Admin có thể xem và thay thế ảnh hộ bác sĩ nếu cần. Chỉ chấp nhận JPG/PNG/WEBP, tối đa 5MB mỗi ảnh.</p>
+                <a href="${pageContext.request.contextPath}/AdminDashboard?filterRole=DOCTOR" class="btn btn-light">Quay lại danh sách</a>
+                <p class="hint">Quản trị viên có thể xem và thay thế ảnh hộ bác sĩ nếu cần. Chỉ chấp nhận ảnh JPG, PNG hoặc WEBP, tối đa 5MB mỗi ảnh.</p>
             </form>
         </c:otherwise>
         </c:choose>
@@ -151,6 +151,5 @@
 </div>
 
 <jsp:include page="footer.jsp"/>
-<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260719-ai1"></script>
 </body>
 </html>

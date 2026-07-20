@@ -1,11 +1,11 @@
-<%@page contentType="text/html" pageEncoding="UTF-8"%><%@taglib prefix="c" uri="jakarta.tags.core"%><%@taglib prefix="fmt" uri="jakarta.tags.fmt"%>
+<%@page contentType="text/html" pageEncoding="UTF-8"%><%@taglib prefix="c" uri="jakarta.tags.core"%><%@taglib prefix="fmt" uri="jakarta.tags.fmt"%><%@taglib prefix="fn" uri="jakarta.tags.functions"%>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Lịch khám — DiaCare</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260719-appt1">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ux1">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
@@ -15,9 +15,12 @@
         <div>
             <div class="eyebrow">DÀNH CHO BỆNH NHÂN</div>
             <h1 class="page-title">Lịch khám</h1>
-            <p class="text-muted">Chọn ngày, buổi và lý do. Nhân viên sẽ xác nhận giờ khám cụ thể cho bạn.</p>
+            <p class="text-muted">Kiểm tra lịch hiện có trước, sau đó chọn ngày và buổi mong muốn. Phòng khám sẽ xác nhận giờ chính xác.</p>
         </div>
+        <a class="btn btn-light" href="${pageContext.request.contextPath}/PatientHistory">Xem hồ sơ khám</a>
     </div>
+
+    <div class="workflow-guide patient-booking-guide"><div class="workflow-step active"><span>1</span><strong>Gửi yêu cầu</strong><small>Chọn ngày, buổi và lý do</small></div><div class="workflow-step"><span>2</span><strong>Phòng khám xác nhận</strong><small>Sắp xếp bác sĩ và giờ cụ thể</small></div><div class="workflow-step"><span>3</span><strong>Đến khám đúng giờ</strong><small>Mang theo giấy tờ và đơn thuốc cũ</small></div></div>
 
     <c:if test="${not empty sessionScope.appointmentFlash}">
         <div class="alert alert-info"><c:out value="${sessionScope.appointmentFlash}"/></div>
@@ -64,8 +67,8 @@
             </form>
         </section>
 
-        <section class="card">
-            <div class="card-title">Lịch của tôi</div>
+        <section class="card appointment-list-card">
+            <div class="card-title"><span>Lịch của tôi</span><span class="data-count">${fn:length(appointments)} lịch</span></div>
             <div class="appointment-list">
                 <c:forEach var="a" items="${appointments}">
                     <article class="appointment-item">
@@ -88,7 +91,7 @@
                                     <c:when test="${a.status=='COMPLETED'}">Đã hoàn thành</c:when>
                                     <c:when test="${a.status=='NO_SHOW'}">Vắng hẹn</c:when>
                                     <c:when test="${a.status=='CANCELLED'}">Đã hủy</c:when>
-                                    <c:otherwise><c:out value="${a.status}"/></c:otherwise>
+                                    <c:otherwise>Chưa xác định</c:otherwise>
                                 </c:choose>
                             </span>
                         </div>
@@ -101,7 +104,7 @@
                             <form method="post" action="${pageContext.request.contextPath}/PatientAppointments" onsubmit="return confirm('Bạn chắc chắn không thể đến lịch này?')">
                                 <input type="hidden" name="action" value="cancel">
                                 <input type="hidden" name="appointmentId" value="${a.appointment_id}">
-                                <button class="btn btn-outline btn-sm" type="submit">Tôi không thể đến</button>
+                                <button class="btn btn-danger btn-sm" type="submit">Hủy yêu cầu / lịch</button>
                             </form>
                         </c:if>
                     </article>
@@ -112,7 +115,6 @@
     </div>
 </main>
 <jsp:include page="footer.jsp"/>
-<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260719-ai1"></script>
 <script>
 (function () {
     const input = document.getElementById('preferredDate');

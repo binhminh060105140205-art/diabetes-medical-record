@@ -1,7 +1,6 @@
 package dal;
 
 import models.Patient;
-import models.HealthAlert;
 import models.MedicalRecord;
 import models.PatientDailyLog;
 import models.DiabetesProfile;
@@ -10,9 +9,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PatientDAO extends DBContext {
-    PreparedStatement stm;
-    ResultSet rs;
-
     private Patient mapRow(ResultSet rs) throws SQLException {
         Patient p = new Patient();
         p.setPatientId(rs.getInt("patient_id"));
@@ -32,12 +28,19 @@ public class PatientDAO extends DBContext {
         return p;
     }
 
-    public List<Patient> getAll() {
+    /** Lightweight rows for patient selectors; avoids loading private profile columns. */
+    public List<Patient> listForSelection() {
         List<Patient> list = new ArrayList<>();
-        try {
-            stm = connection.prepareStatement("SELECT * FROM Patients ORDER BY created_at DESC");
-            rs = stm.executeQuery();
-            while (rs.next()) list.add(mapRow(rs));
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT patient_id,full_name,phone FROM patients ORDER BY full_name");
+             ResultSet rows = statement.executeQuery()) {
+            while (rows.next()) {
+                Patient patient = new Patient();
+                patient.setPatientId(rows.getInt("patient_id"));
+                patient.setFullName(rows.getString("full_name"));
+                patient.setPhone(rows.getString("phone"));
+                list.add(patient);
+            }
         } catch (SQLException e) { throw databaseError("load patients", e); }
         return list;
     }
@@ -105,23 +108,23 @@ public class PatientDAO extends DBContext {
     public record PatientListData(int total, List<Patient> patients) {}
 
     public Patient getById(int id) {
-        try {
-            stm = connection.prepareStatement("SELECT * FROM Patients WHERE patient_id=?");
-            stm.setInt(1, id);
-            rs = stm.executeQuery();
-            if (rs.next()) return mapRow(rs);
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT * FROM Patients WHERE patient_id=?")) {
+            statement.setInt(1, id);
+            try (ResultSet rows = statement.executeQuery()) {
+                return rows.next() ? mapRow(rows) : null;
+            }
         } catch (SQLException e) { throw databaseError("load patient", e); }
-        return null;
     }
 
     public Patient getByUserId(int userId) {
-        try {
-            stm = connection.prepareStatement("SELECT * FROM Patients WHERE user_id=?");
-            stm.setInt(1, userId);
-            rs = stm.executeQuery();
-            if (rs.next()) return mapRow(rs);
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT * FROM Patients WHERE user_id=?")) {
+            statement.setInt(1, userId);
+            try (ResultSet rows = statement.executeQuery()) {
+                return rows.next() ? mapRow(rows) : null;
+            }
         } catch (SQLException e) { throw databaseError("load patient account", e); }
-        return null;
     }
 
     /** Loads every read-only section of the patient home page in one Aiven round-trip. */
@@ -160,7 +163,6 @@ public class PatientDAO extends DBContext {
                 DiabetesProfile diabetesProfile = null;
                 MedicalRecord latestRecord = null;
                 PatientDailyLog todayLog = null;
-                List<HealthAlert> alerts = new ArrayList<>();
                 while (rows.next()) {
                     if (patient == null) {
                         patient = mapRow(rows);
@@ -203,31 +205,11 @@ public class PatientDAO extends DBContext {
                         }
                     }
                 }
-                return new PatientDashboardData(patient, diabetesProfile, latestRecord, todayLog, alerts);
+                return new PatientDashboardData(patient, diabetesProfile, latestRecord, todayLog);
             }
         } catch (SQLException error) {
             throw databaseError("load patient dashboard", error);
         }
-    }
-
-    private HealthAlert mapDashboardAlert(ResultSet rows, int patientId) throws SQLException {
-        HealthAlert alert = new HealthAlert();
-        alert.setAlertId(rows.getInt("alert_id"));
-        alert.setPatientId(patientId);
-        alert.setIndicatorType(rows.getString("alert_indicator_type"));
-        alert.setValue(rows.getDouble("alert_value"));
-        alert.setThreshold(rows.getDouble("alert_threshold"));
-        alert.setAlertLevel(rows.getString("alert_level"));
-        alert.setAlertMessage(rows.getString("alert_message"));
-        alert.setDataSource(rows.getString("alert_data_source"));
-        Object source = rows.getObject("alert_source_record_id");
-        if (source != null) alert.setSourceRecordId(((Number) source).intValue());
-        alert.setAcknowledged(rows.getBoolean("alert_acknowledged"));
-        Timestamp acknowledged = rows.getTimestamp("alert_acknowledged_at");
-        if (acknowledged != null) alert.setAcknowledgedAt(acknowledged.toLocalDateTime());
-        Timestamp created = rows.getTimestamp("alert_created_at");
-        if (created != null) alert.setCreatedAt(created.toLocalDateTime());
-        return alert;
     }
 
     private void setNullableDouble(ResultSet rows, String column,
@@ -242,30 +224,31 @@ public class PatientDAO extends DBContext {
         if (value != null) setter.accept(((Number) value).intValue());
     }
 
-    public record PatientDashboardData(Patient patient, DiabetesProfile diabetesProfile, MedicalRecord latestRecord,
-            PatientDailyLog todayLog, List<HealthAlert> alerts) {}
+    public record PatientDashboardData(Patient patient, DiabetesProfile diabetesProfile,
+            MedicalRecord latestRecord, PatientDailyLog todayLog) {}
 
     public Patient create(Patient p) {
         String sql = "INSERT INTO Patients(user_id,full_name,date_of_birth,gender,phone,address,"
                    + "health_insurance_no,national_id,national_id_date,national_id_place,created_by)"
                    + " VALUES(?,?,?,?,?,?,?,?,?,?,?)";
-        try {
-            stm = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            if (p.getUserId() > 0) stm.setInt(1, p.getUserId());
-            else stm.setNull(1, Types.INTEGER);
-            stm.setString(2,  p.getFullName());
-            stm.setDate(3,    p.getDateOfBirth() != null ? Date.valueOf(p.getDateOfBirth()) : null);
-            stm.setString(4,  p.getGender());
-            stm.setString(5,  p.getPhone());
-            stm.setString(6,  p.getAddress());
-            stm.setString(7,  p.getHealthInsuranceNo());
-            stm.setString(8,  p.getNationalId());
-            stm.setDate(9,    p.getNationalIdDate() != null ? Date.valueOf(p.getNationalIdDate()) : null);
-            stm.setString(10, p.getNationalIdPlace());
-            stm.setInt(11,    p.getCreatedBy());
-            if (stm.executeUpdate() > 0) {
-                rs = stm.getGeneratedKeys();
-                if (rs.next()) p.setPatientId(rs.getInt(1));
+        try (PreparedStatement statement = connection.prepareStatement(
+                sql, Statement.RETURN_GENERATED_KEYS)) {
+            if (p.getUserId() > 0) statement.setInt(1, p.getUserId());
+            else statement.setNull(1, Types.INTEGER);
+            statement.setString(2, p.getFullName());
+            statement.setDate(3, p.getDateOfBirth() != null ? Date.valueOf(p.getDateOfBirth()) : null);
+            statement.setString(4, p.getGender());
+            statement.setString(5, p.getPhone());
+            statement.setString(6, p.getAddress());
+            statement.setString(7, p.getHealthInsuranceNo());
+            statement.setString(8, p.getNationalId());
+            statement.setDate(9, p.getNationalIdDate() != null ? Date.valueOf(p.getNationalIdDate()) : null);
+            statement.setString(10, p.getNationalIdPlace());
+            statement.setInt(11, p.getCreatedBy());
+            if (statement.executeUpdate() > 0) {
+                try (ResultSet keys = statement.getGeneratedKeys()) {
+                    if (keys.next()) p.setPatientId(keys.getInt(1));
+                }
             }
         } catch (SQLException e) { throw databaseError("create patient", e); }
         return p;
@@ -275,33 +258,31 @@ public class PatientDAO extends DBContext {
         String sql = "UPDATE Patients SET full_name=?,date_of_birth=?,gender=?,phone=?,address=?,"
                    + "health_insurance_no=?,national_id=?,national_id_date=?,national_id_place=?"
                    + " WHERE patient_id=?";
-        try {
-            stm = connection.prepareStatement(sql);
-            stm.setString(1,  p.getFullName());
-            stm.setDate(2,    p.getDateOfBirth() != null ? Date.valueOf(p.getDateOfBirth()) : null);
-            stm.setString(3,  p.getGender());
-            stm.setString(4,  p.getPhone());
-            stm.setString(5,  p.getAddress());
-            stm.setString(6,  p.getHealthInsuranceNo());
-            stm.setString(7,  p.getNationalId());
-            stm.setDate(8,    p.getNationalIdDate() != null ? Date.valueOf(p.getNationalIdDate()) : null);
-            stm.setString(9,  p.getNationalIdPlace());
-            stm.setInt(10,    p.getPatientId());
-            stm.executeUpdate();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, p.getFullName());
+            statement.setDate(2, p.getDateOfBirth() != null ? Date.valueOf(p.getDateOfBirth()) : null);
+            statement.setString(3, p.getGender());
+            statement.setString(4, p.getPhone());
+            statement.setString(5, p.getAddress());
+            statement.setString(6, p.getHealthInsuranceNo());
+            statement.setString(7, p.getNationalId());
+            statement.setDate(8, p.getNationalIdDate() != null ? Date.valueOf(p.getNationalIdDate()) : null);
+            statement.setString(9, p.getNationalIdPlace());
+            statement.setInt(10, p.getPatientId());
+            statement.executeUpdate();
         } catch (SQLException e) { throw databaseError("update patient", e); }
     }
 
     public void updateBasicProfile(Patient p) throws SQLException {
         String sql = "UPDATE Patients SET full_name=?,date_of_birth=?,gender=?,phone=?,national_id=? WHERE patient_id=?";
-        try {
-            stm = connection.prepareStatement(sql);
-            stm.setString(1,  p.getFullName());
-            stm.setDate(2,    p.getDateOfBirth() != null ? Date.valueOf(p.getDateOfBirth()) : null);
-            stm.setString(3,  p.getGender());
-            stm.setString(4,  p.getPhone());
-            stm.setString(5,  p.getNationalId());
-            stm.setInt(6,    p.getPatientId());
-            stm.executeUpdate();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, p.getFullName());
+            statement.setDate(2, p.getDateOfBirth() != null ? Date.valueOf(p.getDateOfBirth()) : null);
+            statement.setString(3, p.getGender());
+            statement.setString(4, p.getPhone());
+            statement.setString(5, p.getNationalId());
+            statement.setInt(6, p.getPatientId());
+            statement.executeUpdate();
         } catch (SQLException e) { throw e; }
     }
 

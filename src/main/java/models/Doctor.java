@@ -76,9 +76,9 @@ public class Doctor {
     public String getDiabetesFocusLabel() {
         if (diabetesFocus == null) return "Chuyên khoa hỗ trợ";
         return switch (diabetesFocus) {
-            case "TYPE_1" -> "Ưu tiên Type 1";
-            case "TYPE_2" -> "Ưu tiên Type 2";
-            case "BOTH" -> "Type 1 & Type 2";
+            case "TYPE_1" -> "Ưu tiên đái tháo đường típ 1";
+            case "TYPE_2" -> "Ưu tiên đái tháo đường típ 2";
+            case "BOTH" -> "Đái tháo đường típ 1 và típ 2";
             default -> "Chuyên khoa hỗ trợ";
         };
     }

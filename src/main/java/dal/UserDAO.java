@@ -7,9 +7,6 @@ import java.util.List;
 import vn.diabetes.auth.Passwords;
 
 public class UserDAO extends DBContext {
-    PreparedStatement stm;
-    ResultSet rs;
-
     private User mapRow(ResultSet rs) throws SQLException {
         User u = new User();
         u.setUserId(rs.getInt("user_id"));
@@ -35,24 +32,23 @@ public class UserDAO extends DBContext {
 
     public User getById(int id) {
         String sql = "SELECT * FROM Users WHERE user_id=?";
-        try {
-            stm = connection.prepareStatement(sql);
-            stm.setInt(1, id);
-            rs = stm.executeQuery();
-            if (rs.next()) return mapRow(rs);
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, id);
+            try (ResultSet rows = statement.executeQuery()) {
+                return rows.next() ? mapRow(rows) : null;
+            }
         } catch (SQLException e) {
             throw databaseError("load user", e);
         }
-        return null;
     }
 
     public boolean usernameExists(String username) {
         String sql = "SELECT 1 FROM Users WHERE username=?";
-        try {
-            stm = connection.prepareStatement(sql);
-            stm.setString(1, username);
-            rs = stm.executeQuery();
-            return rs.next();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, username);
+            try (ResultSet rows = statement.executeQuery()) {
+                return rows.next();
+            }
         } catch (SQLException e) {
             throw databaseError("check username", e);
         }
@@ -100,31 +96,29 @@ public class UserDAO extends DBContext {
 
     public User create(User u) {
         String sql = "INSERT INTO Users(username, password, full_name, phone, role, status, email, dob, gender, address, cccd) VALUES(?,?,?,?,?,?,?,?,?,?,?)";
-        try {
-            stm = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            stm.setString(1, u.getUsername());
-            stm.setString(2, Passwords.encode(u.getPassword()));
-            stm.setString(3, u.getFullName());
-            stm.setString(4, u.getPhone());
-            stm.setString(5, u.getRole());
-            stm.setString(6, "ACTIVE");
-            stm.setString(7, u.getEmail());
+        try (PreparedStatement statement = connection.prepareStatement(
+                sql, Statement.RETURN_GENERATED_KEYS)) {
+            statement.setString(1, u.getUsername());
+            statement.setString(2, Passwords.encode(u.getPassword()));
+            statement.setString(3, u.getFullName());
+            statement.setString(4, u.getPhone());
+            statement.setString(5, u.getRole());
+            statement.setString(6, "ACTIVE");
+            statement.setString(7, u.getEmail());
             
             if (u.getDob() != null) {
-                stm.setDate(8, new java.sql.Date(u.getDob().getTime()));
+                statement.setDate(8, new java.sql.Date(u.getDob().getTime()));
             } else {
-                stm.setNull(8, java.sql.Types.DATE);
+                statement.setNull(8, java.sql.Types.DATE);
             }
             
-            stm.setString(9, u.getGender());
-            stm.setString(10, u.getAddress());
-            stm.setString(11, u.getCccd());
+            statement.setString(9, u.getGender());
+            statement.setString(10, u.getAddress());
+            statement.setString(11, u.getCccd());
             
-            int rows = stm.executeUpdate();
-            if (rows > 0) {
-                rs = stm.getGeneratedKeys();
-                if (rs.next()) {
-                    u.setUserId(rs.getInt(1));
+            if (statement.executeUpdate() > 0) {
+                try (ResultSet keys = statement.getGeneratedKeys()) {
+                    if (keys.next()) u.setUserId(keys.getInt(1));
                 }
             }
         } catch (SQLException e) {
@@ -135,14 +129,13 @@ public class UserDAO extends DBContext {
 
     public void update(User u) {
         String sql = "UPDATE Users SET full_name=?,phone=?,role=?,status=? WHERE user_id=?";
-        try {
-            stm = connection.prepareStatement(sql);
-            stm.setString(1, u.getFullName());
-            stm.setString(2, u.getPhone());
-            stm.setString(3, u.getRole());
-            stm.setString(4, u.getStatus());
-            stm.setInt(5, u.getUserId());
-            stm.executeUpdate();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, u.getFullName());
+            statement.setString(2, u.getPhone());
+            statement.setString(3, u.getRole());
+            statement.setString(4, u.getStatus());
+            statement.setInt(5, u.getUserId());
+            statement.executeUpdate();
         } catch (SQLException e) {
             throw databaseError("update user", e);
         }
@@ -150,38 +143,25 @@ public class UserDAO extends DBContext {
 
     public void updateProfile(User u) throws SQLException {
         String sql = "UPDATE Users SET username=?, password=?, full_name=?, phone=?, email=?, dob=?, gender=?, cccd=? WHERE user_id=?";
-        try {
-            stm = connection.prepareStatement(sql);
-            stm.setString(1, u.getUsername());
-            stm.setString(2, Passwords.isEncoded(u.getPassword()) ? u.getPassword() : Passwords.encode(u.getPassword()));
-            stm.setString(3, u.getFullName());
-            stm.setString(4, u.getPhone());
-            stm.setString(5, u.getEmail());
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, u.getUsername());
+            statement.setString(2, Passwords.isEncoded(u.getPassword())
+                    ? u.getPassword() : Passwords.encode(u.getPassword()));
+            statement.setString(3, u.getFullName());
+            statement.setString(4, u.getPhone());
+            statement.setString(5, u.getEmail());
             if (u.getDob() != null) {
-                stm.setDate(6, new java.sql.Date(u.getDob().getTime()));
+                statement.setDate(6, new java.sql.Date(u.getDob().getTime()));
             } else {
-                stm.setNull(6, java.sql.Types.DATE);
+                statement.setNull(6, java.sql.Types.DATE);
             }
-            stm.setString(7, u.getGender());
-            stm.setString(8, u.getCccd());
-            stm.setInt(9, u.getUserId());
-            stm.executeUpdate();
+            statement.setString(7, u.getGender());
+            statement.setString(8, u.getCccd());
+            statement.setInt(9, u.getUserId());
+            statement.executeUpdate();
         } catch (SQLException e) {
             throw e;
         }
-    }
-
-    public List<User> getAll() {
-        List<User> list = new ArrayList<>();
-        String sql = "SELECT * FROM Users ORDER BY created_at DESC";
-        try {
-            stm = connection.prepareStatement(sql);
-            rs = stm.executeQuery();
-            while (rs.next()) list.add(mapRow(rs));
-        } catch (SQLException e) {
-            throw databaseError("load users", e);
-        }
-        return list;
     }
 
 }

@@ -5,13 +5,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * [NEW - Upgrade V3] DAO cho DeviceReadings.
- */
 public class DeviceReadingDAO extends DBContext {
-    PreparedStatement stm;
-    ResultSet rs;
-
     private DeviceReading mapRow(ResultSet rs) throws SQLException {
         DeviceReading d = new DeviceReading();
         d.setId(rs.getInt("id"));
@@ -35,39 +29,61 @@ public class DeviceReadingDAO extends DBContext {
         String sql = "INSERT INTO DeviceReadings(patient_id,device_type,raw_json_data," +
             "parsed_glucose,parsed_heart_rate,parsed_systolic_bp,parsed_diastolic_bp," +
             "parsed_weight,parsed_spo2,measured_at,is_abnormal,abnormal_note) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)";
-        try {
-            stm = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            stm.setInt(1, dr.getPatientId());
-            stm.setString(2, dr.getDeviceType());
-            stm.setString(3, dr.getRawJsonData());
-            setND(stm, 4, dr.getParsedGlucose());
-            setNI(stm, 5, dr.getParsedHeartRate());
-            setNI(stm, 6, dr.getParsedSystolicBp());
-            setNI(stm, 7, dr.getParsedDiastolicBp());
-            setND(stm, 8, dr.getParsedWeight());
-            setND(stm, 9, dr.getParsedSpo2());
-            if (dr.getMeasuredAt() != null) stm.setTimestamp(10, Timestamp.valueOf(dr.getMeasuredAt()));
-            else stm.setTimestamp(10, new Timestamp(System.currentTimeMillis()));
-            stm.setBoolean(11, dr.isAbnormal());
-            stm.setString(12, dr.getAbnormalNote());
-            stm.executeUpdate();
-            rs = stm.getGeneratedKeys();
-            if (rs.next()) dr.setId(rs.getInt(1));
+        try (PreparedStatement statement = connection.prepareStatement(
+                sql, Statement.RETURN_GENERATED_KEYS)) {
+            statement.setInt(1, dr.getPatientId());
+            statement.setString(2, dr.getDeviceType());
+            statement.setString(3, dr.getRawJsonData());
+            setND(statement, 4, dr.getParsedGlucose());
+            setNI(statement, 5, dr.getParsedHeartRate());
+            setNI(statement, 6, dr.getParsedSystolicBp());
+            setNI(statement, 7, dr.getParsedDiastolicBp());
+            setND(statement, 8, dr.getParsedWeight());
+            setND(statement, 9, dr.getParsedSpo2());
+            if (dr.getMeasuredAt() != null) {
+                statement.setTimestamp(10, Timestamp.valueOf(dr.getMeasuredAt()));
+            } else {
+                statement.setTimestamp(10, new Timestamp(System.currentTimeMillis()));
+            }
+            statement.setBoolean(11, dr.isAbnormal());
+            statement.setString(12, dr.getAbnormalNote());
+            statement.executeUpdate();
+            try (ResultSet keys = statement.getGeneratedKeys()) {
+                if (keys.next()) dr.setId(keys.getInt(1));
+            }
         } catch (SQLException e) { throw databaseError("save device reading", e); }
         return dr;
     }
 
-    public List<DeviceReading> getRecent(int patientId, int limit) {
-        List<DeviceReading> list = new ArrayList<>();
-        try {
-            stm = connection.prepareStatement(
-                "SELECT * FROM DeviceReadings WHERE patient_id=? ORDER BY measured_at DESC LIMIT ?");
-            stm.setInt(1, patientId); stm.setInt(2, limit);
-            rs = stm.executeQuery();
-            while (rs.next()) list.add(mapRow(rs));
+    /** Resolves the patient account and recent readings in one database round-trip. */
+    public DevicePageData loadPageForUser(int userId, int limit) {
+        List<DeviceReading> readings = new ArrayList<>();
+        String sql = """
+                WITH subject AS (SELECT patient_id FROM patients WHERE user_id=?)
+                SELECT s.patient_id subject_patient_id,d.*
+                FROM subject s
+                LEFT JOIN LATERAL (
+                  SELECT * FROM devicereadings
+                  WHERE patient_id=s.patient_id
+                  ORDER BY measured_at DESC LIMIT ?
+                ) d ON TRUE
+                ORDER BY d.measured_at DESC
+                """;
+        Integer patientId = null;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, userId);
+            statement.setInt(2, limit);
+            try (ResultSet rows = statement.executeQuery()) {
+                while (rows.next()) {
+                    patientId = rows.getInt("subject_patient_id");
+                    if (rows.getObject("id") != null) readings.add(mapRow(rows));
+                }
+            }
         } catch (SQLException e) { throw databaseError("load device readings", e); }
-        return list;
+        return new DevicePageData(patientId, readings);
     }
+
+    public record DevicePageData(Integer patientId, List<DeviceReading> readings) {}
 
     private void setND(PreparedStatement s, int i, Double v) throws SQLException {
         if (v != null) s.setDouble(i, v); else s.setNull(i, Types.DOUBLE);

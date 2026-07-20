@@ -2,17 +2,18 @@
 <%@taglib prefix="c" uri="jakarta.tags.core"%>
 <%@taglib prefix="fn" uri="jakarta.tags.functions"%>
 <!DOCTYPE html>
-<html>
+<html lang="vi">
     <head>
         <meta charset="UTF-8">
         <title>Danh Sách Bệnh Nhân</title>
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260719-ai1">
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ux1">
     </head>
     <body>
         <jsp:include page="header.jsp"/>
         <jsp:include page="topnav.jsp"/>
         <div class="page-wrapper">
-            <div class="workspace-heading"><div><span class="workspace-kicker">HỒ SƠ ĐIỀU TRỊ</span><h1>Danh sách bệnh nhân</h1><p>Tra cứu nhanh hồ sơ, bảo hiểm và lịch sử khám.</p></div></div>
+            <div class="workspace-heading"><div><span class="workspace-kicker">HỒ SƠ ĐIỀU TRỊ</span><h1>Danh sách bệnh nhân</h1><p>Tra cứu theo thông tin nhận diện trước khi mở lịch sử khám hoặc nhật ký sức khỏe.</p></div><div class="heading-actions"><c:if test="${sessionScope.user.role=='STAFF'}"><a class="btn btn-primary" href="${pageContext.request.contextPath}/PatientForm">Tiếp nhận bệnh nhân mới</a></c:if><c:if test="${sessionScope.user.role=='DOCTOR'}"><a class="btn btn-light" href="${pageContext.request.contextPath}/ClinicWorkflow?view=clinical">Dị ứng & tiền sử</a></c:if></div></div>
 
             <div class="card patient-search-card">
                 <form action="${pageContext.request.contextPath}/PatientList" method="get" class="compact-search">
@@ -24,8 +25,9 @@
                 </form>
             </div>
 
-            <div class="card table-scroll">
-                <table class="modern-table">
+            <section class="card patient-table-card">
+                <div class="section-header"><div><h2>Kết quả tra cứu</h2><p>Đối chiếu ngày sinh và số điện thoại trước khi mở hồ sơ.</p></div><span class="data-count">${not empty patients ? fn:length(patients) : 0} bệnh nhân trên trang</span></div>
+                <div class="table-scroll"><table class="modern-table">
                     <thead>
                         <tr>
                             <th>#</th>
@@ -45,15 +47,10 @@
                                         <td>${s.count + (currentPage - 1) * 10}</td>
                                         <td><strong>${p.fullName}</strong></td>
                                         <td>${p.dateOfBirth}</td>
-                                        <td>${p.gender}</td>
+                                        <td>${p.genderLabel}</td>
                                         <td>${p.phone}</td>
                                         <td><code>${p.healthInsuranceNo}</code></td>
-                                        <td>
-                                            <a href="${pageContext.request.contextPath}/PatientHistory?patientId=${p.patientId}" class="btn btn-sm history-button">
-                                                Xem hồ sơ
-                                            </a>
-                                            <c:if test="${sessionScope.user.role=='DOCTOR'}"><a href="${pageContext.request.contextPath}/DoctorPatientJournal?patientId=${p.patientId}" class="btn btn-sm btn-outline-dark">Nhật ký sức khỏe</a></c:if>
-                                        </td>
+                                        <td><div class="row-actions"><a href="${pageContext.request.contextPath}/PatientHistory?patientId=${p.patientId}" class="primary">Xem hồ sơ</a><c:if test="${sessionScope.user.role=='DOCTOR'}"><a href="${pageContext.request.contextPath}/DoctorPatientJournal?patientId=${p.patientId}">Nhật ký 30 ngày</a></c:if><c:if test="${sessionScope.user.role=='STAFF'}"><a href="${pageContext.request.contextPath}/PatientForm?id=${p.patientId}">Cập nhật</a></c:if></div></td>
                                     </tr>
                                 </c:forEach>
                             </c:when>
@@ -64,8 +61,8 @@
                             </c:otherwise>
                         </c:choose>
                     </tbody>
-                </table>
-            </div>
+                </table></div>
+            </section>
 
             <c:if test="${totalPages > 1 && empty keyword}">
                 <div class="pagination">
@@ -90,6 +87,5 @@
             </c:if>
         </div>
         <jsp:include page="footer.jsp"/>
-        <script src="${pageContext.request.contextPath}/static/js/main.js?v=20260719-ai1"></script>
     </body>
 </html>

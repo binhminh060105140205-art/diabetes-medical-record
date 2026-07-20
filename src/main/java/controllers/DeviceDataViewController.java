@@ -1,43 +1,42 @@
 package controllers;
 
-import dal.*;
-import models.*;
+import dal.DeviceReadingDAO;
+import dal.HealthAlertDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.*;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.List;
+import models.User;
 
-/**
- * [NEW - Upgrade V3]
- * GET /DeviceData — Trang bệnh nhân xem và upload dữ liệu thiết bị.
- */
 @WebServlet("/DeviceData")
 public class DeviceDataViewController extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        HttpSession session = request.getSession(false);
-        User user = session != null ? (User) session.getAttribute("user") : null;
-        if (user == null || !"PATIENT".equals(user.getRole())) {
-            response.sendRedirect(request.getContextPath() + "/Login"); return;
+        User user = ControllerSupport.currentUser(request);
+        if (!ControllerSupport.hasRole(user, "PATIENT")) {
+            ControllerSupport.redirectToLogin(request, response);
+            return;
         }
 
-        Patient patient = new PatientDAO().getByUserId(user.getUserId());
-        if (patient == null) { response.sendRedirect(request.getContextPath() + "/PatientDashboard"); return; }
+        DeviceReadingDAO.DevicePageData deviceData = new DeviceReadingDAO()
+                .loadPageForUser(user.getUserId(), 50);
+        if (deviceData.patientId() == null) {
+            response.sendRedirect(request.getContextPath() + "/PatientDashboard");
+            return;
+        }
+        request.getSession().setAttribute(
+                ControllerSupport.PATIENT_ID_SESSION_KEY, deviceData.patientId());
+        HealthAlertDAO.AlertOverview alerts = new HealthAlertDAO()
+                .loadOverview(deviceData.patientId(), 10);
 
-        DeviceReadingDAO deviceDAO = new DeviceReadingDAO();
-        HealthAlertDAO   alertDAO  = new HealthAlertDAO();
-
-        List<DeviceReading> recentDeviceReadings = deviceDAO.getRecent(patient.getPatientId(), 50);
-        List<HealthAlert>   recentAlerts         = alertDAO.getRecent(patient.getPatientId(), 10);
-        int unreadAlerts = alertDAO.countUnacknowledged(patient.getPatientId());
-
-        request.setAttribute("patient",              patient);
-        request.setAttribute("recentDeviceReadings", recentDeviceReadings);
-        request.setAttribute("recentAlerts",         recentAlerts);
-        request.setAttribute("unreadAlerts",         unreadAlerts);
+        request.setAttribute("patientId", deviceData.patientId());
+        request.setAttribute("recentDeviceReadings", deviceData.readings());
+        request.setAttribute("recentAlerts", alerts.alerts());
+        request.setAttribute("unreadAlerts", alerts.unread());
 
         request.getRequestDispatcher("views/DeviceDataView.jsp").forward(request, response);
     }

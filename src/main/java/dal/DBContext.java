@@ -5,36 +5,29 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.ArrayList;
-import java.util.List;
 import javax.sql.DataSource;
 
 /** Temporary compatibility base for legacy DAOs during repository migration. */
 public class DBContext {
     private static final Logger LOGGER = Logger.getLogger(DBContext.class.getName());
     protected Connection connection;
-    private static final ThreadLocal<List<Connection>> REQUEST_CONNECTIONS =
-            ThreadLocal.withInitial(ArrayList::new);
+    private static final ThreadLocal<Connection> REQUEST_CONNECTION = new ThreadLocal<>();
     private static final ThreadLocal<Boolean> REQUEST_ACTIVE = ThreadLocal.withInitial(() -> false);
     private static volatile DataSource dataSource;
 
     public DBContext() {
         try {
-            String url = value("DB_URL", "spring.datasource.url",
-                    "jdbc:postgresql://localhost:5432/diabetes_medical_record");
-            String user = value("DB_USERNAME", "spring.datasource.username", "postgres");
-            String pass = value("DB_PASSWORD", "spring.datasource.password", "");
-            List<Connection> requestConnections = REQUEST_CONNECTIONS.get();
-            if (REQUEST_ACTIVE.get() && !requestConnections.isEmpty()
-                    && !requestConnections.get(0).isClosed()) {
-                connection = requestConnections.get(0);
+            Connection requestConnection = REQUEST_CONNECTION.get();
+            if (REQUEST_ACTIVE.get() && requestConnection != null
+                    && !requestConnection.isClosed()) {
+                connection = requestConnection;
                 return;
             }
-            Class.forName("org.postgresql.Driver");
-            connection = dataSource != null ? dataSource.getConnection() : DriverManager.getConnection(url, user, pass);
-            if (REQUEST_ACTIVE.get()) requestConnections.add(connection);
-        } catch (ClassNotFoundException | SQLException ex) {
-            Logger.getLogger(DBContext.class.getName()).log(Level.SEVERE,
+
+            connection = openConnection();
+            if (REQUEST_ACTIVE.get()) REQUEST_CONNECTION.set(connection);
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE,
                     "Cannot connect to PostgreSQL. Check DB_URL, DB_USERNAME and DB_PASSWORD.", ex);
             throw new IllegalStateException("Cannot connect to PostgreSQL. Check database configuration.", ex);
         }
@@ -43,20 +36,19 @@ public class DBContext {
     /** Called by the servlet filter so legacy DAOs cannot leak connections across requests. */
     public static void beginRequest() {
         closeRequestConnections();
-        REQUEST_CONNECTIONS.set(new ArrayList<>());
         REQUEST_ACTIVE.set(true);
     }
 
     public static void closeRequestConnections() {
-        List<Connection> connections = REQUEST_CONNECTIONS.get();
-        for (Connection c : connections) {
-            if (c == null) continue;
-            try { if (!c.isClosed()) c.close(); }
-            catch (SQLException ex) {
-                Logger.getLogger(DBContext.class.getName()).log(Level.WARNING, "Cannot close database connection", ex);
+        Connection connection = REQUEST_CONNECTION.get();
+        if (connection != null) {
+            try {
+                if (!connection.isClosed()) connection.close();
+            } catch (SQLException ex) {
+                LOGGER.log(Level.WARNING, "Cannot close database connection", ex);
             }
         }
-        REQUEST_CONNECTIONS.remove();
+        REQUEST_CONNECTION.remove();
         REQUEST_ACTIVE.remove();
     }
 
@@ -68,6 +60,17 @@ public class DBContext {
     protected IllegalStateException databaseError(String operation, SQLException cause) {
         LOGGER.log(Level.SEVERE, "Database operation failed: " + operation, cause);
         return new IllegalStateException("Không thể xử lý dữ liệu. Vui lòng thử lại sau.", cause);
+    }
+
+    private Connection openConnection() throws SQLException {
+        DataSource configured = dataSource;
+        if (configured != null) return configured.getConnection();
+
+        return DriverManager.getConnection(
+                value("DB_URL", "spring.datasource.url",
+                        "jdbc:postgresql://localhost:5432/diabetes_medical_record"),
+                value("DB_USERNAME", "spring.datasource.username", "postgres"),
+                value("DB_PASSWORD", "spring.datasource.password", ""));
     }
 
     private static String value(String environmentName, String propertyName, String defaultValue) {

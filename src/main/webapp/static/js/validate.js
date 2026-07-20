@@ -181,7 +181,7 @@ function validateIndicators() {
     if (sbp > 180) warnings.push('⚠ Huyết áp tâm thu rất cao (' + sbp + ' mmHg)');
     if (h > 0 && w > 0) {
         const bmi = w / ((h/100)*(h/100));
-        if (bmi > 45) warnings.push('⚠ BMI rất cao (' + bmi.toFixed(1) + ') — kiểm tra lại cân nặng/chiều cao');
+        if (bmi > 45) warnings.push('⚠ Chỉ số khối cơ thể rất cao (' + bmi.toFixed(1) + ') — kiểm tra lại cân nặng và chiều cao');
     }
 
     if (warnings.length > 0 && ok) {
@@ -217,7 +217,7 @@ function validateRegister() {
     if (!/^[A-Za-z0-9_]{4,30}$/.test(val('username'))) { showErr('username', 'Tên đăng nhập gồm 4–30 chữ, số hoặc dấu gạch dưới'); ok = false; }
     if (val('password').length < 8) { showErr('password', 'Mật khẩu phải có ít nhất 8 ký tự'); ok = false; }
     if (val('password') !== val('confirmPassword')) { showErr('confirmPassword', 'Mật khẩu nhập lại không khớp'); ok = false; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val('email'))) { showErr('email', 'Email không hợp lệ'); ok = false; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val('email'))) { showErr('email', 'Thư điện tử không hợp lệ'); ok = false; }
     return ok;
 }
 

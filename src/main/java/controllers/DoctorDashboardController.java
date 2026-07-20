@@ -1,12 +1,15 @@
 package controllers;
 
-import dal.*;
-import models.*;
+import dal.MedicalRecordDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.*;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
-import java.util.List;
+import models.Doctor;
+import models.User;
 
 @WebServlet("/DoctorDashboard")
 public class DoctorDashboardController extends HttpServlet {
@@ -14,20 +17,20 @@ public class DoctorDashboardController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        HttpSession session = request.getSession(false);
-        User user = (session != null) ? (User) session.getAttribute("user") : null;
-        if (user == null || !"DOCTOR".equals(user.getRole())) {
-            response.sendRedirect(request.getContextPath() + "/Login"); return;
+        User user = ControllerSupport.currentUser(request);
+        if (!ControllerSupport.hasRole(user, "DOCTOR")) {
+            ControllerSupport.redirectToLogin(request, response);
+            return;
         }
 
-        MedicalRecordDAO recDAO = new MedicalRecordDAO();
         MedicalRecordDAO.DoctorDashboardData data =
-                recDAO.loadDoctorDashboardForUser(user.getUserId());
+                new MedicalRecordDAO().loadDoctorDashboardForUser(user.getUserId());
         Doctor doctor = data.doctor();
-        request.setAttribute("doctor",        doctor);
+        request.setAttribute("doctor", doctor);
 
         if (doctor != null) {
-            session.setAttribute("clinicDoctorId", doctor.getDoctorId());
+            HttpSession session = request.getSession();
+            session.setAttribute(ControllerSupport.DOCTOR_ID_SESSION_KEY, doctor.getDoctorId());
             request.setAttribute("totalPatients", data.totalPatients());
             request.setAttribute("totalMyRecords", data.totalRecords());
             request.setAttribute("myRecords", data.recent());

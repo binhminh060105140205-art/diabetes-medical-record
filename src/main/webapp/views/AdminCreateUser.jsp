@@ -1,17 +1,18 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@taglib prefix="c" uri="jakarta.tags.core"%>
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <title>Tạo Tài Khoản</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260719-ai1">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ux1">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
 <jsp:include page="topnav.jsp"/>
 <div class="page-wrapper">
-    <h1 class="page-title">➕ Tạo Tài Khoản Staff / Doctor</h1>
+    <div class="page-heading"><div><div class="eyebrow">QUẢN LÝ NHÂN SỰ</div><h1 class="page-title">Tạo tài khoản nhân viên hoặc bác sĩ</h1><p class="text-muted">Thông tin hành nghề chỉ xuất hiện khi chọn vai trò Bác sĩ.</p></div><a class="btn btn-light" href="${pageContext.request.contextPath}/AdminDashboard">Quay lại tài khoản</a></div>
 
     <c:if test="${not empty toastMessage}">
         <div class="alert alert-success">${toastMessage}</div>
@@ -32,10 +33,10 @@
                     <input type="password" name="password" class="form-control" required>
                 </div>
                 <div class="form-group">
-                    <label class="required">Role</label>
+                    <label class="required">Vai trò</label>
                     <select name="role" class="form-control" id="roleSelect" onchange="toggleDoctorFields()">
-                        <option value="STAFF">STAFF</option>
-                        <option value="DOCTOR">DOCTOR</option>
+                        <option value="STAFF" ${param.role!='DOCTOR'?'selected':''}>Nhân viên tiếp nhận</option>
+                        <option value="DOCTOR" ${param.role=='DOCTOR'?'selected':''}>Bác sĩ</option>
                     </select>
                 </div>
             </div>
@@ -46,7 +47,7 @@
                     <input type="text" name="fullName" class="form-control" required>
                 </div>
                 <div class="form-group">
-                    <label class="required">Email (Nhận thông báo)</label>
+                    <label class="required">Thư điện tử nhận thông báo</label>
                     <input type="email" name="email" class="form-control" required>
                 </div>
                 <div class="form-group">
@@ -63,9 +64,9 @@
                 <div class="form-group">
                     <label>Giới tính</label>
                     <select name="gender" class="form-control">
-                        <option value="Male">Nam</option>
-                        <option value="Female">Nữ</option>
-                        <option value="Other">Khác</option>
+                        <option value="Nam">Nam</option>
+                        <option value="Nữ">Nữ</option>
+                        <option value="Khác">Khác</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -81,9 +82,9 @@
                 </div>
             </div>
 
-            <div id="doctorFields" style="display:none;">
+            <div id="doctorFields" class="doctor-fields">
                 <hr class="section-divider">
-                <div class="card-title" style="font-size:14px;">Thông tin Bác sĩ</div>
+                <div class="card-title section-title-small">Thông tin bác sĩ</div>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Chuyên khoa</label>
@@ -100,10 +101,10 @@
                     <div class="form-group">
                         <label>Nhóm tiểu đường ưu tiên</label>
                         <select name="diabetesFocus" class="form-control">
-                            <option value="GENERAL">Chuyên khoa hỗ trợ</option>
-                            <option value="TYPE_1">Ưu tiên Type 1</option>
-                            <option value="TYPE_2">Ưu tiên Type 2</option>
-                            <option value="BOTH">Type 1 &amp; Type 2</option>
+                            <option value="GENERAL">Chuyên khoa chung</option>
+                            <option value="TYPE_1">Ưu tiên đái tháo đường típ 1</option>
+                            <option value="TYPE_2">Ưu tiên đái tháo đường típ 2</option>
+                            <option value="BOTH">Theo dõi cả típ 1 và típ 2</option>
                         </select>
                         <small>Chỉ dùng để gợi ý khi đặt lịch, không khóa lựa chọn.</small>
                     </div>
@@ -122,11 +123,10 @@
                         <input type="file" name="licenseImage" class="form-control" accept="image/png,image/jpeg,image/webp">
                     </div>
                 </div>
-                <p style="font-size:12px;color:#6c757d;margin-top:-8px;">Có thể bỏ trống và bổ sung ảnh sau tại trang "Hồ sơ" của bác sĩ. Chỉ nhận JPG/PNG/WEBP, tối đa 5MB mỗi ảnh.</p>
+                <p class="form-hint file-hint">Có thể bỏ trống và bổ sung ảnh sau tại trang Hồ sơ của bác sĩ. Chỉ nhận JPG/PNG/WEBP, tối đa 5MB mỗi ảnh.</p>
             </div>
 
-            <button type="submit" class="btn btn-primary">✅ Tạo tài khoản</button>
-            <a href="${pageContext.request.contextPath}/AdminDashboard" class="btn btn-outline" style="background:#6c757d;color:white;margin-left:8px;">Hủy</a>
+            <div class="form-actions"><button type="submit" class="btn btn-primary">Tạo tài khoản</button><a href="${pageContext.request.contextPath}/AdminDashboard" class="btn btn-light">Hủy</a></div>
         </form>
     </div>
 </div>
@@ -135,9 +135,9 @@
         const role = document.getElementById('roleSelect').value;
         document.getElementById('doctorFields').style.display = (role === 'DOCTOR') ? 'block' : 'none';
     }
+    toggleDoctorFields();
 </script>
 <jsp:include page="footer.jsp"/>
-<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260719-ai1"></script>
 <script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260719-ai1"></script>
 </body>
 </html>

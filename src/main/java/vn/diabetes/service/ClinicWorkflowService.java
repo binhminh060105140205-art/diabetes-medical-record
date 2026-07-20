@@ -129,15 +129,15 @@ public class ClinicWorkflowService {
 
     private static Map<String,String> createLabTests() {
         Map<String,String> tests = new LinkedHashMap<>();
-        // Aliases kept for the short codes already used by the workflow UI.
-        tests.put("GLU", "Duong huyet");
-        tests.put("CRE", "Creatinine - chuc nang than");
-        tests.put("UACR", "Albumin/Creatinine nieu");
+        // Giữ các mã ngắn đang được giao diện quy trình sử dụng.
+        tests.put("GLU", "Đường huyết");
+        tests.put("CRE", "Creatinin - đánh giá chức năng thận");
+        tests.put("UACR", "Tỷ lệ albumin và creatinin niệu");
         tests.put("GLU_FASTING", "Đường huyết lúc đói");
         tests.put("HBA1C", "HbA1c");
-        tests.put("LIPID", "Mỡ máu (Lipid máu)");
-        tests.put("CREATININE", "Creatinine - chức năng thận");
-        tests.put("EGFR", "eGFR - mức lọc cầu thận");
+        tests.put("LIPID", "Bộ xét nghiệm mỡ máu");
+        tests.put("CREATININE", "Creatinin - đánh giá chức năng thận");
+        tests.put("EGFR", "Mức lọc cầu thận ước tính");
         tests.put("URINE_ALBUMIN", "Albumin niệu");
         return Collections.unmodifiableMap(tests);
     }

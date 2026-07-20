@@ -16,8 +16,11 @@ import vn.diabetes.validation.Validators;
 @WebServlet("/PatientForm")
 public class PatientFormController extends HttpServlet {
     @Override protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        User staff = currentStaff(request);
-        if (staff == null) { response.sendRedirect(request.getContextPath() + "/Login"); return; }
+        User staff = ControllerSupport.currentUser(request);
+        if (!ControllerSupport.hasRole(staff, "STAFF")) {
+            ControllerSupport.redirectToLogin(request, response);
+            return;
+        }
         String id = request.getParameter("id");
         if (id != null && id.matches("[1-9][0-9]*")) {
             Patient patient = new PatientDAO().getById(Integer.parseInt(id));
@@ -29,23 +32,30 @@ public class PatientFormController extends HttpServlet {
 
     @Override protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
-        User staff = currentStaff(request);
-        if (staff == null) { response.sendRedirect(request.getContextPath() + "/Login"); return; }
-        String id = clean(request, "patientId"); String fullName = clean(request, "fullName");
-        String dobText = clean(request, "dateOfBirth"); String gender = clean(request, "gender");
-        String phone = clean(request, "phone"); String address = clean(request, "address");
-        String insurance = clean(request, "healthInsuranceNo");
+        User staff = ControllerSupport.currentUser(request);
+        if (!ControllerSupport.hasRole(staff, "STAFF")) {
+            ControllerSupport.redirectToLogin(request, response);
+            return;
+        }
+        String id = ControllerSupport.clean(request.getParameter("patientId"));
+        String fullName = ControllerSupport.clean(request.getParameter("fullName"));
+        String dobText = ControllerSupport.clean(request.getParameter("dateOfBirth"));
+        String gender = ControllerSupport.clean(request.getParameter("gender"));
+        String phone = ControllerSupport.clean(request.getParameter("phone"));
+        String address = ControllerSupport.clean(request.getParameter("address"));
+        String insurance = ControllerSupport.clean(request.getParameter("healthInsuranceNo"));
         try {
             fullName=Validators.fullName(fullName); phone=Validators.phone(phone); gender=Validators.gender(gender); address=Validators.address(address); insurance=Validators.insurance(insurance);
             LocalDate dob = Validators.dateOfBirth(dobText,false);
             if (id.isBlank()) {
-                String username = clean(request, "username"); String password = request.getParameter("password");
-                String email = clean(request, "email");
+                String username = ControllerSupport.clean(request.getParameter("username"));
+                String password = request.getParameter("password");
+                String email = ControllerSupport.clean(request.getParameter("email"));
                 PatientRegistrationService service=new PatientRegistrationService(new PatientRegistrationDAO());
                 PatientRegistrationService.Result result=service.register(new PatientRegistrationService.Command(username,password,null,fullName,phone,email,dobText,gender,address,insurance,staff.getUserId()));
                 boolean mailed = AccountNotificationMailer.sendAsync(result.email(), result.fullName(), result.username(), result.temporaryPassword(), "PATIENT");
                 String message = "Đã tạo hồ sơ và tài khoản " + result.username() + ". ";
-                message += mailed ? "Thông tin đăng nhập đang được gửi tới " + email + "."
+                message += mailed ? "Thông tin đăng nhập đã được đưa vào hàng đợi gửi tới " + email + "."
                         : "Hãy cấp trực tiếp mật khẩu tạm thời cho bệnh nhân.";
                 request.getSession().setAttribute("flashSuccess", message);
             } else {
@@ -64,7 +74,4 @@ public class PatientFormController extends HttpServlet {
             request.getRequestDispatcher("views/PatientForm.jsp").forward(request, response);
         }
     }
-
-    private User currentStaff(HttpServletRequest request) { HttpSession s=request.getSession(false); User u=s==null?null:(User)s.getAttribute("user"); return u!=null&&"STAFF".equals(u.getRole())?u:null; }
-    private String clean(HttpServletRequest request, String name) { String v=request.getParameter(name); return v==null?"":v.trim(); }
 }

@@ -6,8 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DoctorDAO extends DBContext {
-    PreparedStatement stm;
-    ResultSet rs;
 
     private Doctor mapRow(ResultSet rs) throws SQLException {
         Doctor d = new Doctor();
@@ -25,37 +23,34 @@ public class DoctorDAO extends DBContext {
 
     public Doctor getByUserId(int userId) {
         String sql = "SELECT d.*, u.full_name FROM Doctors d JOIN Users u ON d.user_id=u.user_id WHERE d.user_id=?";
-        try {
-            stm = connection.prepareStatement(sql);
-            stm.setInt(1, userId);
-            rs = stm.executeQuery();
-            if (rs.next()) return mapRow(rs);
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, userId);
+            try (ResultSet rows = statement.executeQuery()) {
+                return rows.next() ? mapRow(rows) : null;
+            }
         } catch (SQLException e) {
             throw databaseError("load doctor account", e);
         }
-        return null;
     }
 
     public Doctor getById(int doctorId) {
         String sql = "SELECT d.*, u.full_name FROM Doctors d JOIN Users u ON d.user_id=u.user_id WHERE d.doctor_id=?";
-        try {
-            stm = connection.prepareStatement(sql);
-            stm.setInt(1, doctorId);
-            rs = stm.executeQuery();
-            if (rs.next()) return mapRow(rs);
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, doctorId);
+            try (ResultSet rows = statement.executeQuery()) {
+                return rows.next() ? mapRow(rows) : null;
+            }
         } catch (SQLException e) {
             throw databaseError("load doctor", e);
         }
-        return null;
     }
 
     public List<Doctor> getAll() {
         List<Doctor> list = new ArrayList<>();
-        String sql = "SELECT d.*, u.full_name FROM Doctors d JOIN Users u ON d.user_id=u.user_id ORDER BY u.full_name";
-        try {
-            stm = connection.prepareStatement(sql);
-            rs = stm.executeQuery();
-            while (rs.next()) list.add(mapRow(rs));
+        String sql = "SELECT d.*, u.full_name FROM Doctors d JOIN Users u ON d.user_id=u.user_id WHERE u.status='ACTIVE' ORDER BY u.full_name";
+        try (PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet rows = statement.executeQuery()) {
+            while (rows.next()) list.add(mapRow(rows));
         } catch (SQLException e) {
             throw databaseError("load doctors", e);
         }
@@ -64,16 +59,16 @@ public class DoctorDAO extends DBContext {
 
     public Doctor create(Doctor d) {
         String sql = "INSERT INTO Doctors(user_id,specialty,license_no,diabetes_focus) VALUES(?,?,?,?)";
-        try {
-            stm = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            stm.setInt(1, d.getUserId());
-            stm.setString(2, d.getSpecialty());
-            stm.setString(3, d.getLicenseNo());
-            stm.setString(4, normalizeFocus(d.getDiabetesFocus()));
-            int rows = stm.executeUpdate();
-            if (rows > 0) {
-                rs = stm.getGeneratedKeys();
-                if (rs.next()) d.setDoctorId(rs.getInt(1));
+        try (PreparedStatement statement = connection.prepareStatement(
+                sql, Statement.RETURN_GENERATED_KEYS)) {
+            statement.setInt(1, d.getUserId());
+            statement.setString(2, d.getSpecialty());
+            statement.setString(3, d.getLicenseNo());
+            statement.setString(4, normalizeFocus(d.getDiabetesFocus()));
+            if (statement.executeUpdate() > 0) {
+                try (ResultSet keys = statement.getGeneratedKeys()) {
+                    if (keys.next()) d.setDoctorId(keys.getInt(1));
+                }
             }
         } catch (SQLException e) {
             throw databaseError("create doctor", e);
@@ -105,13 +100,12 @@ public class DoctorDAO extends DBContext {
                 + "cccd_image_path = COALESCE(?, cccd_image_path), "
                 + "license_image_path = COALESCE(?, license_image_path) "
                 + "WHERE doctor_id = ?";
-        try {
-            stm = connection.prepareStatement(sql);
-            stm.setString(1, faceImagePath);
-            stm.setString(2, cccdImagePath);
-            stm.setString(3, licenseImagePath);
-            stm.setInt(4, doctorId);
-            return stm.executeUpdate() > 0;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, faceImagePath);
+            statement.setString(2, cccdImagePath);
+            statement.setString(3, licenseImagePath);
+            statement.setInt(4, doctorId);
+            return statement.executeUpdate() > 0;
         } catch (SQLException e) {
             throw databaseError("update doctor documents", e);
         }

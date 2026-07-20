@@ -85,7 +85,7 @@ public class AdminDoctorDetailController extends HttpServlet {
 
         Doctor doctor = new DoctorDAO().getByUserId(targetUser.getUserId());
         if (doctor == null) {
-            session.setAttribute("toastMessage", "Bác sĩ này chưa có hồ sơ Doctors tương ứng, không thể lưu ảnh.");
+            session.setAttribute("toastMessage", "Bác sĩ này chưa có hồ sơ chuyên môn tương ứng, không thể lưu ảnh.");
             session.setAttribute("toastType", "danger");
             response.sendRedirect(request.getContextPath() + "/AdminDoctorDetail?userId=" + targetUser.getUserId());
             return;

@@ -14,15 +14,14 @@ public class RecordDetailController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        HttpSession session = request.getSession(false);
-        User user = (session != null) ? (User) session.getAttribute("user") : null;
-        if (user == null) { response.sendRedirect("Login"); return; }
+        User user = ControllerSupport.currentUser(request);
+        if (user == null) {
+            ControllerSupport.redirectToLogin(request, response);
+            return;
+        }
 
-        int recordId;
-        try {
-            recordId = Integer.parseInt(request.getParameter("id"));
-            if (recordId <= 0) throw new NumberFormatException();
-        } catch (NumberFormatException | NullPointerException invalidId) {
+        int recordId = ControllerSupport.positiveIdOrZero(request.getParameter("id"));
+        if (recordId == 0) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Mã bệnh án không hợp lệ");
             return;
         }
@@ -30,12 +29,16 @@ public class RecordDetailController extends HttpServlet {
         MedicalRecordDAO recDAO = new MedicalRecordDAO();
         MedicalRecordDAO.MedicalRecordFormData data = recDAO.loadFormData(recordId);
         MedicalRecord rec = data.record();
-        if (rec == null) { response.sendRedirect("PatientList"); return; }
+        if (rec == null) {
+            response.sendRedirect(request.getContextPath() + "/PatientList");
+            return;
+        }
 
         // Access control: patient can only see their own record
         if ("PATIENT".equals(user.getRole())) {
             if (data.patient() == null || data.patient().getUserId() != user.getUserId()) {
-                response.sendRedirect("PatientDashboard"); return;
+                response.sendRedirect(request.getContextPath() + "/PatientDashboard");
+                return;
             }
         }
         if ("DOCTOR".equals(user.getRole())) {
@@ -43,7 +46,7 @@ public class RecordDetailController extends HttpServlet {
                 response.sendError(403); return;
             }
         }
-        if (!java.util.Set.of("ADMIN","STAFF","DOCTOR","PATIENT").contains(user.getRole())) {
+        if (!ControllerSupport.hasRole(user, "ADMIN", "STAFF", "DOCTOR", "PATIENT")) {
             response.sendError(403); return;
         }
 

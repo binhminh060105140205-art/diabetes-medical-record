@@ -114,6 +114,14 @@ public class User {
         this.gender = gender;
     }
 
+    public String getGenderLabel() {
+        if (gender == null || gender.isBlank()) return "Chưa cập nhật";
+        if ("Male".equalsIgnoreCase(gender) || "Nam".equalsIgnoreCase(gender)) return "Nam";
+        if ("Female".equalsIgnoreCase(gender) || "Nữ".equalsIgnoreCase(gender)) return "Nữ";
+        if ("Other".equalsIgnoreCase(gender) || "Khác".equalsIgnoreCase(gender)) return "Khác";
+        return gender;
+    }
+
     public String getAddress() {
         return address;
     }

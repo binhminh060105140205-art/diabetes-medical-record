@@ -39,8 +39,8 @@ public class DiabetesProfile {
     public boolean isUnknown() { return diabetesType == null || "UNKNOWN".equals(diabetesType); }
 
     public String getDiabetesTypeLabel() {
-        if ("TYPE_1".equals(diabetesType)) return "Tiểu đường Type 1";
-        if ("TYPE_2".equals(diabetesType)) return "Tiểu đường Type 2";
+        if ("TYPE_1".equals(diabetesType)) return "Đái tháo đường típ 1";
+        if ("TYPE_2".equals(diabetesType)) return "Đái tháo đường típ 2";
         return "Chưa xác định loại";
     }
 
@@ -48,9 +48,9 @@ public class DiabetesProfile {
         if (treatmentMethod == null) return "Chưa xác định";
         return switch (treatmentMethod) {
             case "INSULIN" -> "Insulin";
-            case "ORAL_MEDICATION" -> "Thuốc uống";
-            case "LIFESTYLE" -> "Điều chỉnh lối sống";
-            case "COMBINATION" -> "Kết hợp";
+            case "ORAL_MEDICATION" -> "Thuốc hạ đường huyết đường uống";
+            case "LIFESTYLE" -> "Điều chỉnh ăn uống và vận động";
+            case "COMBINATION" -> "Điều trị phối hợp";
             default -> "Chưa xác định";
         };
     }

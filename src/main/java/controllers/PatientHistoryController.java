@@ -13,10 +13,12 @@ public class PatientHistoryController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        HttpSession session = request.getSession(false);
-        User user = (session != null) ? (User) session.getAttribute("user") : null;
-        if (user == null) { response.sendRedirect(request.getContextPath() + "/Login"); return; }
-        if (!java.util.Set.of("ADMIN","STAFF","DOCTOR","PATIENT").contains(user.getRole())) {
+        User user = ControllerSupport.currentUser(request);
+        if (user == null) {
+            ControllerSupport.redirectToLogin(request, response);
+            return;
+        }
+        if (!ControllerSupport.hasRole(user, "ADMIN", "STAFF", "DOCTOR", "PATIENT")) {
             response.sendError(403); return;
         }
 
@@ -29,15 +31,13 @@ public class PatientHistoryController extends HttpServlet {
         if ("PATIENT".equals(user.getRole())) {
             patientUserId = user.getUserId();
         } else if (pidParam != null && !pidParam.trim().isEmpty()) {
-            try { patientId = Integer.parseInt(pidParam.trim()); }
-            catch (NumberFormatException e) {
+            patientId = ControllerSupport.positiveIdOrZero(pidParam.trim());
+            if (patientId == 0) {
                 response.sendRedirect(request.getContextPath() + "/PatientList"); return;
             }
         } else if (uidParam != null && !uidParam.trim().isEmpty()) {
-            try { 
-                int userId = Integer.parseInt(uidParam.trim()); 
-                patientUserId = userId;
-            } catch (NumberFormatException e) {
+            patientUserId = ControllerSupport.positiveIdOrZero(uidParam.trim());
+            if (patientUserId == 0) {
                 response.sendRedirect(request.getContextPath() + "/AdminDashboard"); return;
             }
         } else {

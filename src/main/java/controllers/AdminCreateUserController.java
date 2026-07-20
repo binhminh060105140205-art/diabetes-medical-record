@@ -128,9 +128,10 @@ public class AdminCreateUserController extends HttpServlet {
 
         HttpSession currentSession = request.getSession();
         boolean queued = AccountNotificationMailer.sendAsync(email, fullName, username, password, role);
+        String roleLabel = "DOCTOR".equals(role) ? "bác sĩ" : "nhân viên tiếp nhận";
         currentSession.setAttribute("toastMessage", queued
-                ? "Khởi tạo tài khoản " + role + " thành công. Thông tin đăng nhập đang được gửi tới " + email + "."
-                : "Khởi tạo tài khoản " + role + " thành công. Chưa gửi email vì máy chủ chưa cấu hình Gmail.");
+                ? "Đã tạo tài khoản " + roleLabel + ". Thông tin đăng nhập đã được đưa vào hàng đợi gửi tới " + email + "."
+                : "Đã tạo tài khoản " + roleLabel + ". Chưa thể gửi thư vì máy chủ chưa cấu hình dịch vụ thư điện tử.");
         currentSession.setAttribute("toastType", "success");
 
         if ("DOCTOR".equals(role) && newUser.getUserId() > 0) {

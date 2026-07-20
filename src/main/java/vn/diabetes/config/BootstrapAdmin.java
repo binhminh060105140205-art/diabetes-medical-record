@@ -23,7 +23,7 @@ public class BootstrapAdmin implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         String username = environment.getProperty("BOOTSTRAP_ADMIN_USERNAME", "admin");
         String password = environment.getProperty("BOOTSTRAP_ADMIN_PASSWORD");
-        String name = environment.getProperty("BOOTSTRAP_ADMIN_NAME", "System Administrator");
+        String name = environment.getProperty("BOOTSTRAP_ADMIN_NAME", "Quản trị hệ thống");
         if (password == null || password.isBlank()) {
             return;
         }

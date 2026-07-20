@@ -40,9 +40,9 @@ public final class AccountNotificationMailer {
                              String mailUser, String mailPassword) {
         Properties properties = new Properties();
         properties.put("mail.smtp.auth", "true");
-        properties.put("mail.smtp.starttls.enable", "true");
-        properties.put("mail.smtp.host", "smtp.gmail.com");
-        properties.put("mail.smtp.port", "587");
+        properties.put("mail.smtp.starttls.enable", envOrDefault("MAIL_STARTTLS", "true"));
+        properties.put("mail.smtp.host", envOrDefault("MAIL_HOST", "smtp.gmail.com"));
+        properties.put("mail.smtp.port", envOrDefault("MAIL_PORT", "587"));
         properties.put("mail.smtp.connectiontimeout", "10000");
         properties.put("mail.smtp.timeout", "10000");
         properties.put("mail.smtp.writetimeout", "10000");
@@ -53,16 +53,17 @@ public final class AccountNotificationMailer {
         });
         try {
             MimeMessage message = new MimeMessage(session);
-            message.setFrom(new InternetAddress(mailUser, "DiaCare", StandardCharsets.UTF_8.name()));
+            message.setFrom(new InternetAddress(mailUser,
+                    envOrDefault("MAIL_FROM_NAME", "DiaCare"), StandardCharsets.UTF_8.name()));
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipient, false));
             message.setSubject("Thông tin tài khoản DiaCare", StandardCharsets.UTF_8.name());
             String safeName = blank(fullName) ? "bạn" : fullName.trim();
             message.setText("Xin chào " + safeName + ",\n\n"
                     + "Tài khoản DiaCare của bạn đã được tạo.\n"
-                    + "Vai trò: " + role + "\n"
+                    + "Vai trò: " + roleLabel(role) + "\n"
                     + "Tên đăng nhập: " + username + "\n"
                     + "Mật khẩu tạm thời: " + temporaryPassword + "\n\n"
-                    + "Vui lòng đăng nhập và bảo mật thông tin tài khoản.\n\nDiaCare",
+                    + "Vui lòng đăng nhập, đổi mật khẩu tạm thời và bảo mật thông tin tài khoản.\n\nDiaCare",
                     StandardCharsets.UTF_8.name());
             Transport.send(message);
         } catch (Exception ex) {
@@ -73,6 +74,21 @@ public final class AccountNotificationMailer {
     private static String env(String name) {
         String value = System.getenv(name);
         return value == null ? "" : value.trim();
+    }
+
+    private static String envOrDefault(String name, String fallback) {
+        String value = env(name);
+        return value.isBlank() ? fallback : value;
+    }
+
+    private static String roleLabel(String role) {
+        return switch (role == null ? "" : role) {
+            case "ADMIN" -> "Quản trị viên";
+            case "STAFF" -> "Nhân viên tiếp nhận";
+            case "DOCTOR" -> "Bác sĩ";
+            case "PATIENT" -> "Bệnh nhân";
+            default -> "Người dùng";
+        };
     }
 
     private static boolean blank(String value) {

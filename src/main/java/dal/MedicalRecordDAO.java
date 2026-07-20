@@ -12,9 +12,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class MedicalRecordDAO extends DBContext {
-    PreparedStatement stm;
-    ResultSet rs;
-
     private MedicalRecord mapRow(ResultSet rs) throws SQLException {
         MedicalRecord r = new MedicalRecord();
         r.setRecordId(rs.getInt("record_id"));
@@ -45,25 +42,12 @@ public class MedicalRecordDAO extends DBContext {
 
     public MedicalRecord getById(int id) {
         String sql = "SELECT * FROM MedicalRecords WHERE record_id=?";
-        try {
-            stm = connection.prepareStatement(sql);
-            stm.setInt(1, id);
-            rs = stm.executeQuery();
-            if (rs.next()) return mapRow(rs);
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, id);
+            try (ResultSet rows = statement.executeQuery()) {
+                return rows.next() ? mapRow(rows) : null;
+            }
         } catch (SQLException e) { throw databaseError("load medical record", e); }
-        return null;
-    }
-
-    public List<MedicalRecord> getByPatient(int patientId) {
-        List<MedicalRecord> list = new ArrayList<>();
-        String sql = "SELECT * FROM MedicalRecords WHERE patient_id=? ORDER BY visit_date DESC";
-        try {
-            stm = connection.prepareStatement(sql);
-            stm.setInt(1, patientId);
-            rs = stm.executeQuery();
-            while (rs.next()) list.add(mapRow(rs));
-        } catch (SQLException e) { throw databaseError("load patient medical records", e); }
-        return list;
     }
 
     /** Loads the patient, access decision and complete visit history in one Aiven round-trip. */
@@ -311,14 +295,6 @@ public class MedicalRecordDAO extends DBContext {
             HealthIndicator indicator, HealthIndicator latestIndicator, DiabetesProfile diabetesProfile,
             String labSummary, List<Map<String, Object>> prescriptionItems) {}
 
-    public MedicalRecord getLatestByPatient(int patientId) {
-        String sql = "SELECT * FROM MedicalRecords WHERE patient_id=? ORDER BY visit_date DESC LIMIT 1";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, patientId);
-            try (ResultSet rows = ps.executeQuery()) { return rows.next() ? mapRow(rows) : null; }
-        } catch (SQLException error) { throw databaseError("load latest patient record", error); }
-    }
-
     /** Loads doctor identity, metrics and dashboard records in one database round-trip. */
     public DoctorDashboardData loadDoctorDashboardForUser(int userId) {
         String sql = """
@@ -393,20 +369,21 @@ public class MedicalRecordDAO extends DBContext {
         String sql = "INSERT INTO MedicalRecords(patient_id,doctor_id,created_by_staff,encounter_id,"
                    + "reason_for_visit,symptoms,medical_history,lifestyle_habits,clinical_exam,status) "
                    + "VALUES(?,?,?,?,?,?,?,?,?,'DRAFT')";
-        try {
-            stm = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            stm.setInt(1, rec.getPatientId());
-            if (rec.getDoctorId() > 0) stm.setInt(2, rec.getDoctorId()); else stm.setNull(2, Types.INTEGER);
-            if (rec.getCreatedByStaff() > 0) stm.setInt(3, rec.getCreatedByStaff()); else stm.setNull(3, Types.INTEGER);
-            if (rec.getEncounterId() > 0) stm.setInt(4, rec.getEncounterId()); else stm.setNull(4, Types.INTEGER);
-            stm.setString(5, rec.getReasonForVisit());
-            stm.setString(6, rec.getSymptoms());
-            stm.setString(7, rec.getMedicalHistory());
-            stm.setString(8, rec.getLifestyleHabits());
-            stm.setString(9, rec.getClinicalExam());
-            stm.executeUpdate();
-            rs = stm.getGeneratedKeys();
-            if (rs.next()) rec.setRecordId(rs.getInt(1));
+        try (PreparedStatement statement = connection.prepareStatement(
+                sql, Statement.RETURN_GENERATED_KEYS)) {
+            statement.setInt(1, rec.getPatientId());
+            setPositiveOrNull(statement, 2, rec.getDoctorId());
+            setPositiveOrNull(statement, 3, rec.getCreatedByStaff());
+            setPositiveOrNull(statement, 4, rec.getEncounterId());
+            statement.setString(5, rec.getReasonForVisit());
+            statement.setString(6, rec.getSymptoms());
+            statement.setString(7, rec.getMedicalHistory());
+            statement.setString(8, rec.getLifestyleHabits());
+            statement.setString(9, rec.getClinicalExam());
+            statement.executeUpdate();
+            try (ResultSet keys = statement.getGeneratedKeys()) {
+                if (keys.next()) rec.setRecordId(keys.getInt(1));
+            }
         } catch (SQLException e) { throw databaseError("create medical record", e); }
         return rec;
     }
@@ -415,38 +392,18 @@ public class MedicalRecordDAO extends DBContext {
         String sql = "UPDATE MedicalRecords SET complication_note=?,final_diagnosis=?,"
                    + "treatment_plan=?,prescription_note=?,advice=?,follow_up_date=?,"
                    + "doctor_note=?,status='COMPLETED' WHERE record_id=?";
-        try {
-            stm = connection.prepareStatement(sql);
-            stm.setString(1, rec.getComplicationNote());
-            stm.setString(2, rec.getFinalDiagnosis());
-            stm.setString(3, rec.getTreatmentPlan());
-            stm.setString(4, rec.getPrescriptionNote());
-            stm.setString(5, rec.getAdvice());
-            stm.setDate(6, rec.getFollowUpDate() != null ? Date.valueOf(rec.getFollowUpDate()) : null);
-            stm.setString(7, rec.getDoctorNote());
-            stm.setInt(8, rec.getRecordId());
-            stm.executeUpdate();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, rec.getComplicationNote());
+            statement.setString(2, rec.getFinalDiagnosis());
+            statement.setString(3, rec.getTreatmentPlan());
+            statement.setString(4, rec.getPrescriptionNote());
+            statement.setString(5, rec.getAdvice());
+            statement.setDate(6, rec.getFollowUpDate() != null
+                    ? Date.valueOf(rec.getFollowUpDate()) : null);
+            statement.setString(7, rec.getDoctorNote());
+            statement.setInt(8, rec.getRecordId());
+            statement.executeUpdate();
         } catch (SQLException e) { throw databaseError("complete medical record", e); }
-    }
-
-    public List<Map<String, Object>> getPrescriptionItems(int recordId) {
-        List<Map<String, Object>> items = new ArrayList<>();
-        String sql = "SELECT medicine_name,dosage,frequency,duration_days FROM PrescriptionItems "
-                + "WHERE record_id=? ORDER BY prescription_item_id";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, recordId);
-            try (ResultSet rows = ps.executeQuery()) {
-                while (rows.next()) {
-                    Map<String, Object> item = new LinkedHashMap<>();
-                    item.put("medicineName", rows.getString("medicine_name"));
-                    item.put("dosage", rows.getString("dosage"));
-                    item.put("frequency", rows.getString("frequency"));
-                    item.put("durationDays", rows.getObject("duration_days"));
-                    items.add(item);
-                }
-            }
-        } catch (SQLException e) { throw databaseError("load prescription", e); }
-        return items;
     }
 
     public void replacePrescriptionItems(int recordId, String[] names, String[] dosages,
@@ -500,5 +457,11 @@ public class MedicalRecordDAO extends DBContext {
 
     private String valueAt(String[] values, int index) {
         return values != null && index < values.length && values[index] != null ? values[index].trim() : "";
+    }
+
+    private void setPositiveOrNull(PreparedStatement statement, int index, int value)
+            throws SQLException {
+        if (value > 0) statement.setInt(index, value);
+        else statement.setNull(index, Types.INTEGER);
     }
 }

@@ -1,11 +1,12 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@taglib prefix="c" uri="jakarta.tags.core"%>
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <title>Hồ Sơ Bệnh Án</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260719-ai1">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ux1">
     <style>
         .role-bar{padding:10px 16px;border-radius:8px;margin-bottom:16px;font-size:14px;font-weight:600;}
         .role-staff {background:#cff4fc;color:#055160;border-left:4px solid #0dcaf0;}
@@ -23,18 +24,16 @@
 <jsp:include page="topnav.jsp"/>
 <div class="page-wrapper">
     <c:if test="${not empty sessionScope.recordFlash}"><div class="alert alert-danger"><c:out value="${sessionScope.recordFlash}"/></div><c:remove var="recordFlash" scope="session"/></c:if>
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px;">
-        <h1 class="page-title" style="margin:0;">📋 Hồ Sơ Bệnh Án</h1>
-        <div>
-            <strong>${patient.fullName}</strong>
-            <span class="text-muted"> | BHYT: ${patient.healthInsuranceNo} | SĐT: ${patient.phone}</span>
-            <c:if test="${not empty assignedDoctor}">
-                <span class="text-muted"> | BS: <strong>${assignedDoctor.fullName}</strong></span>
-            </c:if>
-        </div>
+    <div class="page-heading">
+        <div><div class="eyebrow">HỒ SƠ LƯỢT KHÁM</div><h1 class="page-title">Bệnh án ${not empty record?'#'.concat(record.recordId):'mới'}</h1><p class="text-muted">Chỉ nhập phần thuộc vai trò của bạn; dữ liệu đã lưu được giữ nguyên giữa các bước.</p></div>
+        <a class="btn btn-light" href="${pageContext.request.contextPath}/ClinicWorkflow?view=encounters">Quay lại lượt khám</a>
+    </div>
+    <div class="patient-summary-bar">
+        <strong><c:out value="${patient.fullName}"/></strong>
+        <div class="patient-summary-meta"><span>SĐT: <c:out value="${patient.phone}" default="—"/></span><span>BHYT: <c:out value="${patient.healthInsuranceNo}" default="—"/></span><c:if test="${not empty assignedDoctor}"><span>Bác sĩ: <strong><c:out value="${assignedDoctor.fullName}"/></strong></span></c:if></div>
     </div>
 
-    <%-- Hướng dẫn theo role --%>
+    <%-- Hướng dẫn theo vai trò --%>
     <c:choose>
         <c:when test="${sessionScope.user.role == 'STAFF'}">
         <div class="role-bar role-staff">
@@ -50,9 +49,15 @@
         </c:when>
     </c:choose>
 
-    <%-- TÓM TẮT HỒ SƠ TIỂU ĐƯỜNG — chỉ đọc, hiển thị cho cả Staff và Bác sĩ --%>
+    <div class="record-progress" aria-label="Tiến độ bệnh án">
+        <div class="record-step ${not empty record?'done':sessionScope.user.role=='STAFF'?'active':''}">1. Thông tin khám</div>
+        <div class="record-step ${clinicalDone?'done':not empty record&&sessionScope.user.role=='STAFF'?'active':''}">2. Sinh hiệu</div>
+        <div class="record-step ${record.status=='COMPLETED'?'done':sessionScope.user.role=='DOCTOR'?'active':''}">3. Kết luận bác sĩ</div>
+    </div>
+
+    <%-- TÓM TẮT HỒ SƠ TIỂU ĐƯỜNG — chỉ đọc, hiển thị cho nhân viên và bác sĩ --%>
     <c:if test="${not empty diabetesProfile}">
-    <div class="card" style="border-left:4px solid #0d6efd;">
+    <div class="card accent-card">
         <div class="card-title">🩸 Tóm tắt hồ sơ tiểu đường <c:if test="${sessionScope.user.role=='DOCTOR'}"><a class="btn btn-outline-dark btn-sm" href="${pageContext.request.contextPath}/DoctorPatientJournal?patientId=${patient.patientId}">Xem nhật ký 30 ngày</a></c:if></div>
         <div class="indicator-grid">
             <div class="indicator-item"><div class="ind-label">Loại tiểu đường</div>
@@ -69,30 +74,30 @@
                 <div class="ind-value">${latestIndicator.bloodGlucose}</div><div class="ind-unit">mg/dL</div></div>
             <div class="indicator-item"><div class="ind-label">Huyết áp gần nhất</div>
                 <div class="ind-value">${latestIndicator.systolicBp}/${latestIndicator.diastolicBp}</div><div class="ind-unit">mmHg</div></div>
-            <div class="indicator-item"><div class="ind-label">BMI gần nhất</div>
+            <div class="indicator-item"><div class="ind-label">Chỉ số khối cơ thể gần nhất</div>
                 <div class="ind-value">${latestIndicator.bmi}</div></div>
         </div>
     </div>
     </c:if>
 
-    <%-- Server-side validation errors --%>
+    <%-- Lỗi kiểm tra dữ liệu từ máy chủ --%>
     <c:if test="${not empty serverErrors}">
     <div class="alert alert-danger">
         <strong>⚠ Dữ liệu không hợp lệ:</strong>
-        <ul style="margin:6px 0 0 18px;">
+        <ul class="error-list">
             <c:forEach var="e" items="${serverErrors}"><li>${e}</li></c:forEach>
         </ul>
     </div>
     </c:if>
 
-    <%-- TAB BAR --%>
+    <%-- Thanh chuyển bước --%>
     <div class="tab-bar">
         <button class="tab-btn ${sessionScope.user.role!='STAFF'?'locked':''} ${not empty record?'done':''}"
-                onclick="showTab(1)" id="btn1">1️⃣ Thông tin khám</button>
+                onclick="showTab(1)" id="btn1">1. Thông tin khám</button>
         <button class="tab-btn ${sessionScope.user.role!='STAFF'?'locked':''} ${clinicalDone?'done':''}"
-                onclick="showTab(2)" id="btn2">2️⃣ Lâm sàng <small>(Staff)</small></button>
+                onclick="showTab(2)" id="btn2">2. Sinh hiệu <small>(Nhân viên)</small></button>
         <button class="tab-btn ${sessionScope.user.role!='DOCTOR'?'locked':''}"
-                onclick="showTab(4)" id="btn4">3️⃣ Kết luận <small>(Bác sĩ)</small></button>
+                onclick="showTab(4)" id="btn4">3. Kết luận <small>(Bác sĩ)</small></button>
     </div>
 
     <%-- ══ TAB 1: THÔNG TIN KHÁM (STAFF) ══════════════════════════════ --%>
@@ -105,7 +110,7 @@
                 <input type="hidden" name="action" value="saveBasic">
                 <input type="hidden" name="patientId" value="${patient.patientId}">
                 <input type="hidden" name="encounterId" value="${encounterId}">
-                <div class="form-group"><label>Ngày giờ khám</label><input class="form-control" value="${not empty appointmentTime?appointmentTime:record.visitDate}" readonly><small>Ngày khám lấy từ lịch hẹn/check-in và không chỉnh sửa tại bệnh án.</small></div>
+                <div class="form-group"><label>Ngày giờ khám</label><input class="form-control" value="${not empty appointmentTime?appointmentTime:record.visitDate}" readonly><small>Ngày khám lấy từ lịch hẹn hoặc thời điểm ghi nhận đến khám và không chỉnh sửa tại bệnh án.</small></div>
 
                 <div class="form-group">
                     <label class="required">Bác sĩ phụ trách</label>
@@ -144,17 +149,17 @@
                     <textarea name="clinicalExam" class="form-control"
                         placeholder="Quan sát tổng quát, thần sắc...">${record.clinicalExam}</textarea>
                 </div>
-                <button type="submit" class="btn btn-primary">💾 Lưu → Sang Tab 2</button>
+                <div class="form-actions"><button type="submit" class="btn btn-primary">Lưu và chuyển sang nhập sinh hiệu</button></div>
             </form>
         </div>
     </c:when>
     <c:otherwise>
         <div class="card">
-            <div class="card-title">I. Thông tin khám ban đầu <span class="text-muted">(Staff đã nhập)</span></div>
+            <div class="card-title">I. Thông tin khám ban đầu <span class="text-muted">(Nhân viên đã nhập)</span></div>
             <c:choose>
             <c:when test="${not empty record}">
-                <table style="box-shadow:none;">
-                    <tr><th style="width:200px">Lý do khám</th><td>${record.reasonForVisit}</td></tr>
+                <table class="detail-table">
+                    <tr><th class="label-cell">Lý do khám</th><td>${record.reasonForVisit}</td></tr>
                     <tr><th>Triệu chứng</th><td>${record.symptoms}</td></tr>
                     <tr><th>Tiền sử</th><td>${record.medicalHistory}</td></tr>
                     <tr><th>Thói quen</th><td>${record.lifestyleHabits}</td></tr>
@@ -162,7 +167,7 @@
                 </table>
             </c:when>
             <c:otherwise>
-                <div class="alert alert-info">⏳ Staff chưa nhập thông tin khám.</div>
+                <div class="alert alert-info">Nhân viên chưa nhập thông tin khám.</div>
             </c:otherwise>
             </c:choose>
         </div>
@@ -175,9 +180,9 @@
     <c:choose>
     <c:when test="${sessionScope.user.role == 'STAFF'}">
         <div class="card">
-            <div class="card-title">II. Chỉ số lâm sàng <span style="font-size:13px;color:#0dcaf0;">(Nhân viên nhập)</span></div>
-            <div class="alert alert-info" style="margin-bottom:14px;font-size:13px;">
-                ✏️ Tab này Staff nhập các chỉ số đo trực tiếp tại phòng khám.
+            <div class="card-title">II. Chỉ số lâm sàng <span class="role-inline-note">Nhân viên nhập</span></div>
+            <div class="alert alert-info compact-alert">
+                Nhân viên nhập các chỉ số đo trực tiếp tại phòng khám ở bước này.
                 Kết quả xét nghiệm được nhập tại mục Xét nghiệm của luồng khám để tránh trùng dữ liệu.
             </div>
             <form action="${pageContext.request.contextPath}/MedicalRecordForm" method="post">
@@ -198,7 +203,7 @@
                                oninput="calcBMI()" placeholder="65" min="10" max="300">
                     </div>
                     <div class="form-group">
-                        <label>BMI (tự tính)</label>
+                        <label>Chỉ số khối cơ thể (tự tính)</label>
                         <input type="text" id="bmiDisplay" class="form-control ind-readonly"
                                readonly value="${indicator.bmi}">
                     </div>
@@ -225,26 +230,26 @@
                                value="${indicator.temperature}" placeholder="36.5" min="34" max="42">
                     </div>
                 </div>
-                <button type="submit" class="btn btn-primary">💾 Lưu lâm sàng → Chuyển cho Bác sĩ</button>
+                <div class="form-actions"><button type="submit" class="btn btn-primary">Lưu sinh hiệu và chuyển chờ bác sĩ</button></div>
             </form>
         </div>
     </c:when>
     <c:otherwise>
         <div class="card">
-            <div class="card-title">II. Chỉ số lâm sàng <span class="text-muted">(Staff đã nhập)</span></div>
+            <div class="card-title">II. Chỉ số lâm sàng <span class="text-muted">(Nhân viên đã nhập)</span></div>
             <c:choose>
             <c:when test="${clinicalDone}">
                 <div class="indicator-grid">
                     <div class="indicator-item"><div class="ind-label">Chiều cao</div><div class="ind-value">${indicator.height}</div><div class="ind-unit">cm</div></div>
                     <div class="indicator-item"><div class="ind-label">Cân nặng</div><div class="ind-value">${indicator.weight}</div><div class="ind-unit">kg</div></div>
-                    <div class="indicator-item"><div class="ind-label">BMI</div><div class="ind-value">${indicator.bmi}</div><div class="ind-unit">kg/m²</div></div>
+                    <div class="indicator-item"><div class="ind-label">Chỉ số khối cơ thể</div><div class="ind-value">${indicator.bmi}</div><div class="ind-unit">kg/m²</div></div>
                     <div class="indicator-item"><div class="ind-label">Huyết áp</div><div class="ind-value">${indicator.systolicBp}/${indicator.diastolicBp}</div><div class="ind-unit">mmHg</div></div>
                     <div class="indicator-item"><div class="ind-label">Nhịp tim</div><div class="ind-value">${indicator.heartRate}</div><div class="ind-unit">lần/phút</div></div>
                     <div class="indicator-item"><div class="ind-label">Nhiệt độ</div><div class="ind-value">${indicator.temperature}</div><div class="ind-unit">°C</div></div>
                 </div>
             </c:when>
             <c:otherwise>
-                <div class="alert alert-info">⏳ Staff chưa nhập chỉ số lâm sàng.</div>
+                <div class="alert alert-info">Nhân viên chưa nhập chỉ số lâm sàng.</div>
             </c:otherwise>
             </c:choose>
         </div>
@@ -266,8 +271,8 @@
                         <label>Loại tiểu đường (bác sĩ xác nhận)</label>
                         <select id="diabetesType" name="diabetesType" class="form-control" onchange="syncDiabetesTreatmentOptions()">
                             <option value="UNKNOWN" ${diabetesProfile.diabetesType=='UNKNOWN'?'selected':''}>Chưa xác định</option>
-                            <option value="TYPE_1" ${diabetesProfile.diabetesType=='TYPE_1'?'selected':''}>Type 1</option>
-                            <option value="TYPE_2" ${diabetesProfile.diabetesType=='TYPE_2'?'selected':''}>Type 2</option>
+                            <option value="TYPE_1" ${diabetesProfile.diabetesType=='TYPE_1'?'selected':''}>Đái tháo đường típ 1</option>
+                            <option value="TYPE_2" ${diabetesProfile.diabetesType=='TYPE_2'?'selected':''}>Đái tháo đường típ 2</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -278,10 +283,10 @@
                         <label>Phương pháp điều trị</label>
                         <select id="treatmentMethod" name="treatmentMethod" class="form-control">
                             <option value="">-- Chưa xác định --</option>
-                            <option value="LIFESTYLE" ${diabetesProfile.treatmentMethod=='LIFESTYLE'?'selected':''}>Ăn uống/vận động</option>
-                            <option value="ORAL_MEDICATION" ${diabetesProfile.treatmentMethod=='ORAL_MEDICATION'?'selected':''}>Thuốc uống</option>
+                            <option value="LIFESTYLE" ${diabetesProfile.treatmentMethod=='LIFESTYLE'?'selected':''}>Điều chỉnh ăn uống và vận động</option>
+                            <option value="ORAL_MEDICATION" ${diabetesProfile.treatmentMethod=='ORAL_MEDICATION'?'selected':''}>Thuốc hạ đường huyết đường uống</option>
                             <option value="INSULIN" ${diabetesProfile.treatmentMethod=='INSULIN'?'selected':''}>Insulin</option>
-                            <option value="COMBINATION" ${diabetesProfile.treatmentMethod=='COMBINATION'?'selected':''}>Kết hợp</option>
+                            <option value="COMBINATION" ${diabetesProfile.treatmentMethod=='COMBINATION'?'selected':''}>Điều trị phối hợp</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -289,13 +294,18 @@
                         <input type="number" min="4" max="15" step="0.1" name="hba1cTarget" class="form-control" value="${diabetesProfile.hba1cTarget}" placeholder="Do bác sĩ đặt">
                     </div>
                 </div>
-                <button type="submit" class="btn btn-outline">💾 Lưu hồ sơ tiểu đường</button>
+                <div class="diabetes-type-comparison" aria-label="Ảnh hưởng của loại đái tháo đường trong hệ thống">
+                    <article data-diabetes-type="TYPE_1" class="diabetes-type-card ${diabetesProfile.diabetesType=='TYPE_1'?'active':''}"><strong>Đái tháo đường típ 1</strong><p>Hệ thống chỉ chấp nhận insulin hoặc điều trị phối hợp có insulin; nhắc theo dõi hạ đường huyết, liều và thời điểm tiêm.</p></article>
+                    <article data-diabetes-type="TYPE_2" class="diabetes-type-card ${diabetesProfile.diabetesType=='TYPE_2'?'active':''}"><strong>Đái tháo đường típ 2</strong><p>Cho phép điều chỉnh lối sống, thuốc uống, insulin hoặc phối hợp; ưu tiên theo dõi cân nặng, huyết áp và mỡ máu.</p></article>
+                </div>
+                <p class="form-hint">Mục “ưu tiên típ 1/típ 2” trong hồ sơ bác sĩ chỉ hỗ trợ tra cứu, hiện chưa tự động phân bác sĩ khi xếp lịch.</p>
+                <div class="form-actions"><button type="submit" class="btn btn-light">Lưu hồ sơ đái tháo đường</button></div>
             </form>
         </div>
         <div class="card">
             <div class="card-title">V. Kết luận của Bác sĩ</div>
-            <c:if test="${diabetesProfile.diabetesType=='TYPE_1'}"><div class="alert alert-info"><strong>Gợi ý ghi nhận Type 1:</strong> loại insulin, liều và thời điểm dùng; số lần đo đường huyết; triệu chứng hạ đường huyết. Đây chỉ là nhắc nhập liệu, bác sĩ quyết định điều trị.</div></c:if>
-            <c:if test="${diabetesProfile.diabetesType=='TYPE_2'}"><div class="alert alert-info"><strong>Gợi ý ghi nhận Type 2:</strong> thuốc đang dùng, cân nặng/BMI, huyết áp, mỡ máu và chế độ ăn/vận động. Đây chỉ là nhắc nhập liệu, bác sĩ quyết định điều trị.</div></c:if>
+            <c:if test="${diabetesProfile.diabetesType=='TYPE_1'}"><div class="alert alert-info"><strong>Gợi ý cho đái tháo đường típ 1:</strong> ghi loại insulin, liều, thời điểm dùng, số lần đo đường huyết và dấu hiệu hạ đường huyết. Bác sĩ vẫn là người quyết định điều trị.</div></c:if>
+            <c:if test="${diabetesProfile.diabetesType=='TYPE_2'}"><div class="alert alert-info"><strong>Gợi ý cho đái tháo đường típ 2:</strong> ghi thuốc đang dùng, cân nặng, chỉ số khối cơ thể, huyết áp, mỡ máu và chế độ ăn vận động. Bác sĩ vẫn là người quyết định điều trị.</div></c:if>
             <c:if test="${not empty labSummary}"><div class="alert alert-info"><strong>Kết quả xét nghiệm:</strong> <c:out value="${labSummary}"/></div></c:if>
             <c:if test="${empty labSummary}"><div class="alert alert-info">Chưa có chỉ định hoặc kết quả xét nghiệm cho lượt khám này. Bác sĩ có thể kết luận nếu không cần xét nghiệm.</div></c:if>
             <form action="${pageContext.request.contextPath}/MedicalRecordForm" method="post">
@@ -309,7 +319,7 @@
                 <div class="form-group">
                     <label class="required">Chẩn đoán cuối cùng</label>
                     <textarea name="finalDiagnosis" class="form-control" required
-                        placeholder="VD: Tiểu đường type 2 kiểm soát kém, kèm rối loạn mỡ máu...">${record.finalDiagnosis}</textarea>
+                        placeholder="Ví dụ: Đái tháo đường típ 2 kiểm soát chưa đạt, kèm rối loạn mỡ máu...">${record.finalDiagnosis}</textarea>
                 </div>
                 <div class="form-group">
                     <label>Hướng điều trị</label>
@@ -332,7 +342,7 @@
                         </c:forEach>
                         </tbody>
                     </table>
-                    <label style="margin-top:10px">Ghi chú chung</label>
+                    <label class="top-gap">Ghi chú chung</label>
                     <textarea name="prescriptionNote" class="form-control" maxlength="500"
                         placeholder="Ví dụ: uống sau ăn">${record.prescriptionNote}</textarea>
                 </div>
@@ -354,9 +364,7 @@
                                value="${record.doctorNote}">
                     </div>
                 </div>
-                <button type="submit" class="btn btn-success" style="font-size:15px;padding:12px 28px;">
-                    ✅ Hoàn tất hồ sơ bệnh án
-                </button>
+                <div class="form-actions conclusion-actions"><span class="form-hint">Sau khi hoàn tất, lượt khám và hàng đợi sẽ được đóng.</span><button type="submit" class="btn btn-success btn-lg">Hoàn tất hồ sơ bệnh án</button></div>
             </form>
         </div>
     </c:when>
@@ -365,8 +373,8 @@
             <div class="card-title">V. Kết luận của Bác sĩ</div>
             <c:choose>
             <c:when test="${record.status == 'COMPLETED'}">
-                <table style="box-shadow:none;">
-                    <tr><th style="width:200px">Chẩn đoán</th><td><strong>${record.finalDiagnosis}</strong></td></tr>
+                <table class="detail-table">
+                    <tr><th class="label-cell">Chẩn đoán</th><td><strong>${record.finalDiagnosis}</strong></td></tr>
                     <tr><th>Hướng điều trị</th><td>${record.treatmentPlan}</td></tr>
                     <tr><th>Đơn thuốc</th><td>${record.prescriptionNote}</td></tr>
                     <tr><th>Lời dặn</th><td>${record.advice}</td></tr>
@@ -386,7 +394,6 @@
 
 </div><%-- end page-wrapper --%>
 
-<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260719-ai1"></script>
 <script>
 function showTab(n) {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -420,6 +427,9 @@ function syncDiabetesTreatmentOptions() {
         if (option) option.hidden = type1;
     });
     if (type1 && (method.value === 'LIFESTYLE' || method.value === 'ORAL_MEDICATION')) method.value = '';
+    document.querySelectorAll('[data-diabetes-type]').forEach(function(panel) {
+        panel.classList.toggle('active', panel.dataset.diabetesType === type.value);
+    });
 }
 
 var urlTab = new URLSearchParams(window.location.search).get('tab');

@@ -1,24 +1,26 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@taglib prefix="c" uri="jakarta.tags.core"%>
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <title>Chi Tiết Hồ Sơ Bệnh Án</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260719-ai1">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ux1">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
 <jsp:include page="topnav.jsp"/>
 <div class="page-wrapper">
-    <h1 class="page-title">📄 Hồ Sơ Bệnh Án #${detail.record.recordId}</h1>
+    <div class="page-heading"><div><div class="eyebrow">CHI TIẾT LẦN KHÁM</div><h1 class="page-title">Bệnh án #${detail.record.recordId}</h1><p class="text-muted">Ngày khám ${detail.record.visitDate} · <span class="status-pill status-${detail.record.status}">${detail.record.status=='COMPLETED'?'Đã hoàn tất':'Đang xử lý'}</span></p></div><div class="heading-actions"><a href="${pageContext.request.contextPath}/PatientHistory?patientId=${detail.patient.patientId}" class="btn btn-light">Lịch sử khám</a><c:if test="${sessionScope.user.role=='DOCTOR'&&detail.record.status=='DRAFT'}"><a href="${pageContext.request.contextPath}/MedicalRecordForm?recordId=${detail.record.recordId}&tab=4" class="btn btn-primary">Tiếp tục kết luận</a></c:if></div></div>
+    <div class="patient-summary-bar"><strong><c:out value="${detail.patient.fullName}"/></strong><div class="patient-summary-meta"><span>SĐT: <c:out value="${detail.patient.phone}" default="—"/></span><span>BHYT: <c:out value="${detail.patient.healthInsuranceNo}" default="—"/></span><span>Bác sĩ: <c:out value="${detail.doctor.fullName}"/></span></div></div>
 
     <c:if test="${not empty diabetesProfile}">
-    <div class="card" style="border-left:4px solid #0d6efd;">
-        <div class="card-title">🩸 Hồ sơ tiểu đường hiện tại</div>
-        <table style="box-shadow:none;">
-            <tr><th style="width:220px">Loại tiểu đường</th><td><strong>${diabetesProfile.diabetesTypeLabel}</strong></td>
-                <th style="width:180px">Ngày phát hiện</th><td>${not empty diabetesProfile.diagnosisDate?diabetesProfile.diagnosisDate:'—'}</td></tr>
+    <div class="card accent-card">
+        <div class="card-title">Hồ sơ tiểu đường hiện tại</div>
+        <table class="detail-table">
+            <tr><th class="label-cell">Loại tiểu đường</th><td><strong>${diabetesProfile.diabetesTypeLabel}</strong></td>
+                <th class="label-cell label-cell-small">Ngày phát hiện</th><td>${not empty diabetesProfile.diagnosisDate?diabetesProfile.diagnosisDate:'—'}</td></tr>
             <tr><th>Phương pháp điều trị</th><td>${diabetesProfile.treatmentMethodLabel}</td>
                 <th>Mục tiêu HbA1c</th><td>${not empty diabetesProfile.hba1cTarget?diabetesProfile.hba1cTarget:'—'}<c:if test="${not empty diabetesProfile.hba1cTarget}">%</c:if></td></tr>
         </table>
@@ -28,10 +30,10 @@
     <!-- I. PATIENT INFO -->
     <div class="card">
         <div class="card-title">I. Thông tin bệnh nhân</div>
-        <table style="box-shadow:none;">
-            <tr><th style="width:220px">Họ và tên</th><td><strong>${detail.patient.fullName}</strong></td>
-                <th style="width:180px">Ngày sinh</th><td>${detail.patient.dateOfBirth}</td></tr>
-            <tr><th>Giới tính</th><td>${detail.patient.gender}</td>
+        <table class="detail-table">
+            <tr><th class="label-cell">Họ và tên</th><td><strong>${detail.patient.fullName}</strong></td>
+                <th class="label-cell label-cell-small">Ngày sinh</th><td>${detail.patient.dateOfBirth}</td></tr>
+            <tr><th>Giới tính</th><td>${detail.patient.genderLabel}</td>
                 <th>Số điện thoại</th><td>${detail.patient.phone}</td></tr>
             <tr><th>Địa chỉ</th><td colspan="3">${detail.patient.address}</td></tr>
             <tr><th>Số BHYT</th><td>${detail.patient.healthInsuranceNo}</td>
@@ -43,8 +45,8 @@
     <!-- II. CLINICAL INFO -->
     <div class="card">
         <div class="card-title">II. Thông tin khám</div>
-        <table style="box-shadow:none;">
-            <tr><th style="width:220px">Lý do khám</th><td>${detail.record.reasonForVisit}</td></tr>
+        <table class="detail-table">
+            <tr><th class="label-cell">Lý do khám</th><td>${detail.record.reasonForVisit}</td></tr>
             <tr><th>Triệu chứng</th><td>${detail.record.symptoms}</td></tr>
             <tr><th>Tiền sử bệnh</th><td>${detail.record.medicalHistory}</td></tr>
             <tr><th>Thói quen sinh hoạt</th><td>${detail.record.lifestyleHabits}</td></tr>
@@ -68,7 +70,7 @@
                 <div class="ind-unit">kg</div>
             </div>
             <div class="indicator-item">
-                <div class="ind-label">BMI</div>
+                <div class="ind-label">Chỉ số khối cơ thể</div>
                 <div class="ind-value">${detail.indicator.bmi}</div>
                 <div class="ind-unit">kg/m²</div>
             </div>
@@ -121,8 +123,8 @@
         <div class="card-title">IV. Kết luận của Bác sĩ</div>
         <c:choose>
             <c:when test="${detail.record.status == 'COMPLETED'}">
-                <table style="box-shadow:none;">
-                    <tr><th style="width:220px">Biến chứng</th><td>${detail.record.complicationNote}</td></tr>
+                <table class="detail-table">
+                    <tr><th class="label-cell">Biến chứng</th><td>${detail.record.complicationNote}</td></tr>
                     <tr><th>Chẩn đoán</th><td><strong>${detail.record.finalDiagnosis}</strong></td></tr>
                     <tr><th>Hướng điều trị</th><td>${detail.record.treatmentPlan}</td></tr>
                     <tr><th>Đơn thuốc</th><td>
@@ -144,24 +146,23 @@
                     ⏳ Bác sĩ chưa hoàn tất kết luận.
                     <c:if test="${sessionScope.user.role == 'DOCTOR'}">
                         <a href="${pageContext.request.contextPath}/MedicalRecordForm?recordId=${detail.record.recordId}&tab=4"
-                           class="btn btn-primary btn-sm" style="margin-left:10px;">Nhập kết luận</a>
+                           class="btn btn-primary btn-sm">Nhập kết luận</a>
                     </c:if>
                 </div>
             </c:otherwise>
         </c:choose>
     </div>
 
-    <div style="margin-top:16px;">
-        <a href="javascript:history.back()" class="btn btn-outline" style="background:#6c757d;color:white;">← Quay lại</a>
+    <div class="form-actions">
+        <a href="javascript:history.back()" class="btn btn-light">Quay lại</a>
         <c:if test="${sessionScope.user.role == 'DOCTOR' && detail.record.status == 'DRAFT'}">
             <a href="${pageContext.request.contextPath}/MedicalRecordForm?recordId=${detail.record.recordId}&tab=1"
-               class="btn btn-warning" style="margin-left:8px;">✏️ Tiếp tục chỉnh sửa</a>
+               class="btn btn-warning">Tiếp tục chỉnh sửa</a>
         </c:if>
         <a href="${pageContext.request.contextPath}/PatientHistory?patientId=${detail.patient.patientId}"
-           class="btn btn-success" style="margin-left:8px;">📁 Lịch sử khám</a>
+           class="btn btn-primary">Lịch sử khám</a>
     </div>
 </div>
 <jsp:include page="footer.jsp"/>
-<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260719-ai1"></script>
 </body>
 </html>

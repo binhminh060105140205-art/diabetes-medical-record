@@ -20,7 +20,7 @@ public class StaticCacheFilter implements Filter {
         HttpServletResponse httpResponse = (HttpServletResponse) response;
         String query = httpRequest.getQueryString();
         if (query != null && query.contains("v=")) {
-            httpResponse.setHeader("Cache-Control", "public, max-age=604800, immutable");
+            httpResponse.setHeader("Cache-Control", "public, max-age=31536000, immutable");
         } else {
             // Revalidate unversioned assets so deployments never keep an outdated interface.
             httpResponse.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
