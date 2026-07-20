@@ -274,14 +274,15 @@ public class PatientDAO extends DBContext {
     }
 
     public void updateBasicProfile(Patient p) throws SQLException {
-        String sql = "UPDATE Patients SET full_name=?,date_of_birth=?,gender=?,phone=?,national_id=? WHERE patient_id=?";
+        String sql = "UPDATE Patients SET full_name=?,date_of_birth=?,gender=?,phone=?,address=?,national_id=? WHERE patient_id=?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, p.getFullName());
             statement.setDate(2, p.getDateOfBirth() != null ? Date.valueOf(p.getDateOfBirth()) : null);
             statement.setString(3, p.getGender());
             statement.setString(4, p.getPhone());
-            statement.setString(5, p.getNationalId());
-            statement.setInt(6, p.getPatientId());
+            statement.setString(5, p.getAddress());
+            statement.setString(6, p.getNationalId());
+            statement.setInt(7, p.getPatientId());
             statement.executeUpdate();
         } catch (SQLException e) { throw e; }
     }

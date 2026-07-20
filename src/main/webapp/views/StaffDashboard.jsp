@@ -1,8 +1,223 @@
-<%@page contentType="text/html" pageEncoding="UTF-8"%><%@taglib prefix="c" uri="jakarta.tags.core"%>
-<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tiếp nhận — DiaCare</title><link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ux1"></head><body><jsp:include page="header.jsp"/><jsp:include page="topnav.jsp"/><main class="page-wrapper app-workspace">
-<div class="workspace-heading"><div><span class="workspace-kicker">NHÂN VIÊN TIẾP NHẬN</span><h1>Trung tâm điều phối hôm nay</h1><p>Tiếp nhận người bệnh, quản lý lịch hẹn và theo dõi hàng đợi khám.</p></div><div class="heading-actions"><a class="btn btn-light" href="${pageContext.request.contextPath}/PatientList">Tìm bệnh nhân</a><a class="btn btn-primary" href="${pageContext.request.contextPath}/PatientForm">＋ Tiếp nhận mới</a></div></div>
-<c:if test="${not empty sessionScope.flashSuccess}"><div class="alert alert-success"><c:out value="${sessionScope.flashSuccess}"/></div><%session.removeAttribute("flashSuccess");%></c:if>
-<div class="workflow-guide"><div class="workflow-step"><span>1</span><strong>Tiếp nhận bệnh nhân</strong><small>Tìm hồ sơ trước khi tạo mới</small></div><div class="workflow-step"><span>2</span><strong>Xác nhận lịch</strong><small>Chọn bác sĩ và giờ khám</small></div><div class="workflow-step"><span>3</span><strong>Ghi nhận đến khám & sinh hiệu</strong><small>Cấp số và chuyển chờ khám</small></div><div class="workflow-step"><span>4</span><strong>Trả xét nghiệm</strong><small>Hoàn tất các chỉ định đang chờ</small></div></div>
-<section class="metric-grid"><article class="metric-card"><span class="metric-icon blue">♙</span><div><small>HỒ SƠ BỆNH NHÂN</small><strong>${totalPatients}</strong><p>Đang quản lý trên hệ thống</p></div></article><a class="metric-card action" href="${pageContext.request.contextPath}/ClinicWorkflow?view=appointments"><span class="metric-icon green">▣</span><div><small>LỊCH HẸN</small><strong>Điều phối</strong><p>Tạo lịch và ghi nhận người bệnh đến khám →</p></div></a><a class="metric-card action" href="${pageContext.request.contextPath}/ClinicWorkflow?view=encounters"><span class="metric-icon amber">≡</span><div><small>HÀNG ĐỢI</small><strong>Theo dõi</strong><p>Xem lượt khám đang chờ →</p></div></a></section>
-<div class="dashboard-layout"><section class="card dashboard-main"><div class="panel-heading"><div><span class="panel-eyebrow">MỚI CẬP NHẬT</span><h2>Bệnh nhân gần đây</h2></div><a href="${pageContext.request.contextPath}/PatientList">Xem tất cả →</a></div><div class="table-scroll"><table class="modern-table"><thead><tr><th>Bệnh nhân</th><th>Thông tin liên hệ</th><th>Bảo hiểm</th><th>Thao tác nhanh</th></tr></thead><tbody><c:forEach var="p" items="${recentPatients}"><tr><td><div class="person-cell"><span>${p.fullName.substring(0,1)}</span><div><strong><c:out value="${p.fullName}"/></strong><small>${p.genderLabel} · ${p.dateOfBirth}</small></div></div></td><td><c:out value="${p.phone}"/><small class="table-sub"><c:out value="${p.address}"/></small></td><td><c:out value="${p.healthInsuranceNo}"/></td><td><div class="row-actions"><a href="${pageContext.request.contextPath}/PatientHistory?patientId=${p.patientId}">Hồ sơ</a><a class="primary" href="${pageContext.request.contextPath}/ClinicWorkflow?view=appointments">Đặt lịch</a><a href="${pageContext.request.contextPath}/PatientForm?id=${p.patientId}">Sửa</a></div></td></tr></c:forEach><c:if test="${empty recentPatients}"><tr><td colspan="4" class="empty-state">Chưa có bệnh nhân nào.</td></tr></c:if></tbody></table></div></section>
-<aside class="dashboard-side"><section class="card"><div class="panel-heading"><div><span class="panel-eyebrow">QUY TRÌNH</span><h2>Thao tác nhanh</h2></div></div><div class="quick-list"><a href="${pageContext.request.contextPath}/PatientForm"><span>01</span><div><strong>Tiếp nhận bệnh nhân</strong><small>Tạo tài khoản và hồ sơ cá nhân</small></div><b>›</b></a><a href="${pageContext.request.contextPath}/ClinicWorkflow?view=appointments"><span>02</span><div><strong>Đặt lịch khám</strong><small>Chọn bác sĩ và khung giờ</small></div><b>›</b></a><a href="${pageContext.request.contextPath}/ClinicWorkflow?view=encounters"><span>03</span><div><strong>Tiếp nhận đến khám & sàng lọc</strong><small>Cấp số và nhập sinh hiệu</small></div><b>›</b></a><a href="${pageContext.request.contextPath}/ClinicWorkflow?view=labs"><span>04</span><div><strong>Trả kết quả xét nghiệm</strong><small>Cập nhật chỉ định đang chờ</small></div><b>›</b></a></div></section><section class="support-card"><span>?</span><div><strong>Cần hỗ trợ nghiệp vụ?</strong><p>Thực hiện lần lượt tiếp nhận → lịch hẹn → ghi nhận đến khám → sàng lọc.</p></div></section></aside></div></main><jsp:include page="footer.jsp"/></body></html>
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib prefix="c" uri="jakarta.tags.core"%>
+<%@taglib prefix="fn" uri="jakarta.tags.functions"%>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Tiếp nhận bệnh nhân — DiaCare</title>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui4">
+</head>
+<body>
+<jsp:include page="header.jsp"/>
+<jsp:include page="topnav.jsp"/>
+
+<main class="page-wrapper app-workspace staff-patient-workspace">
+    <div class="workspace-heading">
+        <div>
+            <span class="workspace-kicker">NHÂN VIÊN TIẾP NHẬN</span>
+            <h1>Tiếp nhận và quản lý bệnh nhân</h1>
+            <p>Tìm hồ sơ trước khi tạo mới; mọi thao tác bệnh nhân được gom tại một màn hình.</p>
+        </div>
+        <div class="heading-actions">
+            <a class="btn btn-primary" href="#new-patient" data-open-intake>+ Tiếp nhận bệnh nhân mới</a>
+        </div>
+    </div>
+
+    <c:if test="${not empty sessionScope.flashSuccess}">
+        <div class="alert alert-success"><c:out value="${sessionScope.flashSuccess}"/></div>
+        <% session.removeAttribute("flashSuccess"); %>
+    </c:if>
+
+    <details class="card intake-disclosure" id="new-patient">
+        <summary>
+            <span>
+                <strong>Tiếp nhận bệnh nhân mới</strong>
+                <small>Tạo hồ sơ và tài khoản đăng nhập ngay tại trang này.</small>
+            </span>
+            <span class="btn btn-light btn-sm">Mở / thu gọn form</span>
+        </summary>
+        <div class="intake-disclosure-content">
+            <c:if test="${not empty intakeError}">
+                <div class="alert alert-danger"><c:out value="${intakeError}"/></div>
+            </c:if>
+            <div class="intake-guide">
+                <strong>Kiểm tra trước khi tạo</strong>
+                <span>Tìm bằng số điện thoại, BHYT hoặc CCCD ở danh sách bên dưới để tránh hồ sơ trùng.</span>
+            </div>
+            <form action="${pageContext.request.contextPath}/PatientForm" method="post"
+                  data-validate="patient" class="patient-intake-form">
+                <div class="patient-intake-grid">
+                    <div class="form-group">
+                        <label class="required" for="intakeFullName">Họ và tên</label>
+                        <input id="intakeFullName" class="form-control" name="fullName"
+                               value="${fn:escapeXml(param.fullName)}" maxlength="100"
+                               autocomplete="name" placeholder="Nguyễn Văn A" required>
+                        <span class="err-msg" id="err_fullName"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="intakeDob">Ngày sinh</label>
+                        <input id="intakeDob" class="form-control" type="date" name="dateOfBirth"
+                               value="${fn:escapeXml(param.dateOfBirth)}" max="${maxDOB}">
+                        <span class="err-msg" id="err_dob"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="intakeGender">Giới tính</label>
+                        <select id="intakeGender" class="form-control" name="gender">
+                            <option value="Nam" ${empty param.gender || param.gender=='Nam'?'selected':''}>Nam</option>
+                            <option value="Nữ" ${param.gender=='Nữ'?'selected':''}>Nữ</option>
+                            <option value="Khác" ${param.gender=='Khác'?'selected':''}>Khác</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="required" for="intakePhone">Số điện thoại</label>
+                        <input id="intakePhone" class="form-control" name="phone"
+                               value="${fn:escapeXml(param.phone)}" inputmode="tel" maxlength="15"
+                               autocomplete="tel" placeholder="0912345678" required>
+                        <span class="err-msg" id="err_phone"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="intakeInsurance">Số BHYT</label>
+                        <input id="intakeInsurance" class="form-control" name="healthInsuranceNo"
+                               value="${fn:escapeXml(param.healthInsuranceNo)}" maxlength="20"
+                               placeholder="HC4012345678">
+                        <span class="err-msg" id="err_bhyt"></span>
+                    </div>
+                    <div class="form-group patient-intake-wide">
+                        <label for="intakeAddress">Địa chỉ</label>
+                        <textarea id="intakeAddress" class="form-control" name="address" maxlength="255"
+                                  autocomplete="street-address"
+                                  placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố"><c:out value="${param.address}"/></textarea>
+                    </div>
+                </div>
+
+                <section class="account-section intake-account-section">
+                    <div class="card-title">Tài khoản đăng nhập của bệnh nhân</div>
+                    <p class="text-muted">Có Email/Gmail: hệ thống gửi thông tin đăng nhập tự động. Không có email: nhân viên cấp trực tiếp mật khẩu tạm thời.</p>
+                    <div class="patient-intake-grid account-grid">
+                        <div class="form-group">
+                            <label class="required" for="intakeUsername">Tên đăng nhập</label>
+                            <input id="intakeUsername" class="form-control" name="username"
+                                   minlength="4" maxlength="30" pattern="[A-Za-z0-9_]+"
+                                   value="${fn:escapeXml(param.username)}" autocomplete="off"
+                                   placeholder="Ví dụ: nguyenvana" required>
+                            <small>Chỉ dùng chữ không dấu, số và dấu gạch dưới.</small>
+                        </div>
+                        <div class="form-group">
+                            <label class="required" for="intakePassword">Mật khẩu tạm thời</label>
+                            <input id="intakePassword" class="form-control" type="password" name="password"
+                                   minlength="8" maxlength="72" autocomplete="new-password" required>
+                            <small>Tối thiểu 8 ký tự; bệnh nhân nên đổi sau lần đăng nhập đầu.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="intakeEmail">Email/Gmail nhận tài khoản</label>
+                            <input id="intakeEmail" class="form-control" type="email" name="email"
+                                   maxlength="100" value="${fn:escapeXml(param.email)}"
+                                   autocomplete="email" placeholder="benhnhan@gmail.com">
+                            <small>Chấp nhận Gmail hoặc địa chỉ email hợp lệ khác.</small>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="appointment-form-footer intake-form-footer">
+                    <p>Sau khi tạo thành công, bệnh nhân xuất hiện ngay trong danh sách bên dưới.</p>
+                    <button type="submit" class="btn btn-primary">Tạo hồ sơ và tài khoản</button>
+                </div>
+            </form>
+        </div>
+    </details>
+
+    <section class="card patient-management-card" id="patients">
+        <div class="section-header">
+            <div>
+                <span class="panel-eyebrow">HỒ SƠ BỆNH NHÂN</span>
+                <h2>${not empty keyword ? 'Kết quả tìm kiếm' : 'Danh sách bệnh nhân'}</h2>
+                <p>Tìm theo tên, số điện thoại, BHYT hoặc CCCD rồi mở đúng hồ sơ cần xử lý.</p>
+            </div>
+            <span class="data-count">${totalPatients} ${not empty keyword ? 'kết quả' : 'bệnh nhân'}</span>
+        </div>
+
+        <form action="${pageContext.request.contextPath}/StaffDashboard#patients" method="get"
+              class="patient-search-bar" role="search">
+            <label class="sr-only" for="staffPatientSearch">Tìm bệnh nhân</label>
+            <input id="staffPatientSearch" type="search" name="keyword"
+                   value="${fn:escapeXml(keyword)}" maxlength="80" autocomplete="off"
+                   placeholder="Nhập tên, số điện thoại, BHYT hoặc CCCD">
+            <button type="submit" class="btn btn-primary">Tìm bệnh nhân</button>
+            <c:if test="${not empty keyword}">
+                <a class="btn btn-light" href="${pageContext.request.contextPath}/StaffDashboard#patients">Xóa bộ lọc</a>
+            </c:if>
+        </form>
+
+        <div class="table-scroll">
+            <table class="modern-table patient-management-table">
+                <thead>
+                <tr>
+                    <th>Bệnh nhân</th>
+                    <th>Ngày sinh</th>
+                    <th>Liên hệ</th>
+                    <th>BHYT</th>
+                    <th>Thao tác</th>
+                </tr>
+                </thead>
+                <tbody>
+                <c:forEach var="p" items="${patients}">
+                    <tr>
+                        <td>
+                            <div class="person-cell">
+                                <span><c:out value="${fn:substring(p.fullName,0,1)}"/></span>
+                                <div><strong><c:out value="${p.fullName}"/></strong><small><c:out value="${p.genderLabel}"/></small></div>
+                            </div>
+                        </td>
+                        <td><c:out value="${p.dateOfBirth}" default="—"/></td>
+                        <td><c:out value="${p.phone}"/><small class="table-sub"><c:out value="${p.address}"/></small></td>
+                        <td><c:out value="${p.healthInsuranceNo}" default="—"/></td>
+                        <td>
+                            <div class="row-actions">
+                                <a class="primary" href="${pageContext.request.contextPath}/PatientHistory?patientId=${p.patientId}">Xem hồ sơ</a>
+                                <a href="${pageContext.request.contextPath}/PatientForm?id=${p.patientId}">Cập nhật</a>
+                            </div>
+                        </td>
+                    </tr>
+                </c:forEach>
+                <c:if test="${empty patients}">
+                    <tr><td colspan="5" class="empty-state">Không tìm thấy bệnh nhân phù hợp.</td></tr>
+                </c:if>
+                </tbody>
+            </table>
+        </div>
+
+        <c:if test="${totalPages > 1 && empty keyword}">
+            <nav class="pagination" aria-label="Phân trang bệnh nhân">
+                <c:if test="${currentPage > 1}"><a href="${pageContext.request.contextPath}/StaffDashboard?page=${currentPage-1}#patients">&laquo; Trước</a></c:if>
+                <c:forEach begin="1" end="${totalPages}" var="pageNumber">
+                    <a class="${currentPage==pageNumber?'active':''}"
+                       href="${pageContext.request.contextPath}/StaffDashboard?page=${pageNumber}#patients">${pageNumber}</a>
+                </c:forEach>
+                <c:if test="${currentPage < totalPages}"><a href="${pageContext.request.contextPath}/StaffDashboard?page=${currentPage+1}#patients">Sau &raquo;</a></c:if>
+            </nav>
+        </c:if>
+    </section>
+</main>
+
+<script>
+document.querySelectorAll('[data-open-intake]').forEach(function (button) {
+    button.addEventListener('click', function () {
+        var intake = document.getElementById('new-patient');
+        if (intake) intake.open = true;
+    });
+});
+var intake = document.getElementById('new-patient');
+var shouldOpenIntake = ${showIntakeForm == true || param.newPatient == '1'};
+if (intake && shouldOpenIntake) intake.open = true;
+if (${showIntakeForm == true}) {
+    window.addEventListener('load', function () {
+        document.getElementById('new-patient').scrollIntoView({ block: 'start' });
+    });
+}
+</script>
+<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260720-ui4"></script>
+<jsp:include page="footer.jsp"/>
+</body>
+</html>

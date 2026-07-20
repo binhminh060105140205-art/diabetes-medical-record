@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <title>Hồ Sơ Bệnh Án</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ux1">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui3">
     <style>
         .role-bar{padding:10px 16px;border-radius:8px;margin-bottom:16px;font-size:14px;font-weight:600;}
         .role-staff {background:#cff4fc;color:#055160;border-left:4px solid #0dcaf0;}
@@ -47,6 +47,12 @@
             Xem tóm tắt tiểu đường, nhật ký sức khỏe, kết quả xét nghiệm rồi nhập kết luận, đơn thuốc và ngày tái khám.
         </div>
         </c:when>
+        <c:when test="${sessionScope.user.role == 'ADMIN'}">
+        <div class="role-bar role-admin-readonly">
+            👁 <strong>Quản trị viên:</strong>
+            Bạn đang xem bệnh án ở chế độ chỉ đọc. Dữ liệu chuyên môn chỉ do nhân viên tiếp nhận và bác sĩ phụ trách cập nhật.
+        </div>
+        </c:when>
     </c:choose>
 
     <div class="record-progress" aria-label="Tiến độ bệnh án">
@@ -74,7 +80,7 @@
                 <div class="ind-value">${latestIndicator.bloodGlucose}</div><div class="ind-unit">mg/dL</div></div>
             <div class="indicator-item"><div class="ind-label">Huyết áp gần nhất</div>
                 <div class="ind-value">${latestIndicator.systolicBp}/${latestIndicator.diastolicBp}</div><div class="ind-unit">mmHg</div></div>
-            <div class="indicator-item"><div class="ind-label">Chỉ số khối cơ thể gần nhất</div>
+                <div class="indicator-item"><div class="ind-label">BMI gần nhất <span>(chỉ số khối cơ thể)</span></div>
                 <div class="ind-value">${latestIndicator.bmi}</div></div>
         </div>
     </div>
@@ -203,7 +209,7 @@
                                oninput="calcBMI()" placeholder="65" min="10" max="300">
                     </div>
                     <div class="form-group">
-                        <label>Chỉ số khối cơ thể (tự tính)</label>
+                        <label>BMI (chỉ số khối cơ thể, tự tính)</label>
                         <input type="text" id="bmiDisplay" class="form-control ind-readonly"
                                readonly value="${indicator.bmi}">
                     </div>

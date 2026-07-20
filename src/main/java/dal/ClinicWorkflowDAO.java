@@ -142,6 +142,7 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
           SELECT 'DOCTOR',NULL,d.doctor_id,u.full_name,NULL,d.specialty,d.diabetes_focus,
                  NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL
           FROM doctors d JOIN users u ON u.user_id=d.user_id AND u.status='ACTIVE'
+          WHERE d.diabetes_focus IN ('TYPE_1','TYPE_2','BOTH')
           UNION ALL
           SELECT 'APPOINTMENT',a.patient_id,a.doctor_id,NULL,p.phone,NULL,NULL,
                  a.appointment_id,a.appointment_at,a.preferred_date,a.preferred_period,
@@ -264,7 +265,7 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
 
     public void createAppointment(int patientId, int doctorId, LocalDateTime at,
             String reason, String note, int actor) {
-        AppointmentRules.validate(at, LocalDateTime.now());
+        AppointmentRules.validate(at, AppointmentRules.nowInVietnam());
         inTransaction("Không thể tạo lịch hẹn.", () -> {
             lockAndValidateCapacity(patientId, doctorId, at, null);
             String period = AppointmentRules.periodOf(at.toLocalTime());
@@ -280,7 +281,7 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
 
     public void rescheduleAppointment(int appointmentId, LocalDateTime newTime,
             String note, int actor) {
-        AppointmentRules.validate(newTime, LocalDateTime.now());
+        AppointmentRules.validate(newTime, AppointmentRules.nowInVietnam());
         inTransaction("Không thể đổi lịch hẹn.", () -> {
             List<Map<String, Object>> rows = query("""
                     SELECT patient_id,doctor_id,status FROM appointments

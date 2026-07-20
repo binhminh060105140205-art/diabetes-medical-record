@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public class Doctor {
+    public static final String DIABETES_SPECIALTY = "Nội tiết - Đái tháo đường";
     private int doctorId;
     private int userId;
     private String specialty;
@@ -13,7 +14,7 @@ public class Doctor {
     private String licenseIssuedBy;
     private String degree;
     private BigDecimal consultationFee;
-    private String diabetesFocus = "GENERAL";
+    private String diabetesFocus = "BOTH";
 
     // Đường dẫn (tên file) ảnh lưu trên server — xem thêm util.FileStorageUtil
     private String faceImagePath;
@@ -74,12 +75,12 @@ public class Doctor {
     public void setDiabetesFocus(String v)           { this.diabetesFocus = v; }
 
     public String getDiabetesFocusLabel() {
-        if (diabetesFocus == null) return "Chuyên khoa hỗ trợ";
+        if (diabetesFocus == null) return "Đái tháo đường típ 1 và típ 2";
         return switch (diabetesFocus) {
             case "TYPE_1" -> "Ưu tiên đái tháo đường típ 1";
             case "TYPE_2" -> "Ưu tiên đái tháo đường típ 2";
             case "BOTH" -> "Đái tháo đường típ 1 và típ 2";
-            default -> "Chuyên khoa hỗ trợ";
+            default -> "Đái tháo đường típ 1 và típ 2";
         };
     }
 

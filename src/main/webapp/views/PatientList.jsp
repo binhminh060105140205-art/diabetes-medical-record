@@ -7,13 +7,13 @@
         <meta charset="UTF-8">
         <title>Danh Sách Bệnh Nhân</title>
         <meta name="viewport" content="width=device-width,initial-scale=1">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ux1">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui3">
     </head>
     <body>
         <jsp:include page="header.jsp"/>
         <jsp:include page="topnav.jsp"/>
         <div class="page-wrapper">
-            <div class="workspace-heading"><div><span class="workspace-kicker">HỒ SƠ ĐIỀU TRỊ</span><h1>Danh sách bệnh nhân</h1><p>Tra cứu theo thông tin nhận diện trước khi mở lịch sử khám hoặc nhật ký sức khỏe.</p></div><div class="heading-actions"><c:if test="${sessionScope.user.role=='STAFF'}"><a class="btn btn-primary" href="${pageContext.request.contextPath}/PatientForm">Tiếp nhận bệnh nhân mới</a></c:if><c:if test="${sessionScope.user.role=='DOCTOR'}"><a class="btn btn-light" href="${pageContext.request.contextPath}/ClinicWorkflow?view=clinical">Dị ứng & tiền sử</a></c:if></div></div>
+            <div class="workspace-heading"><div><span class="workspace-kicker">HỒ SƠ ĐIỀU TRỊ</span><h1>Danh sách bệnh nhân</h1><p>Tra cứu theo thông tin nhận diện trước khi mở lịch sử khám hoặc nhật ký sức khỏe.</p></div><div class="heading-actions"><c:if test="${sessionScope.user.role=='DOCTOR'}"><a class="btn btn-light" href="${pageContext.request.contextPath}/ClinicWorkflow?view=clinical">Dị ứng & tiền sử</a></c:if></div></div>
 
             <div class="card patient-search-card">
                 <form action="${pageContext.request.contextPath}/PatientList" method="get" class="compact-search">

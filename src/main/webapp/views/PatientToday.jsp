@@ -2,7 +2,7 @@
 <%@taglib prefix="c" uri="jakarta.tags.core"%>
 <%@taglib prefix="fn" uri="jakarta.tags.functions"%>
 <!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sức khỏe hôm nay — DiaCare</title><link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ux1"></head>
+<title>Sức khỏe hôm nay — DiaCare</title><link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui3"></head>
 <body><jsp:include page="header.jsp"/><jsp:include page="topnav.jsp"/>
 <main class="page-wrapper patient-today-page"><div class="page-heading"><div><div class="eyebrow">THEO DÕI HẰNG NGÀY</div><h1 class="page-title">Sức khỏe hôm nay</h1><p class="text-muted">Việc chính hôm nay là ghi chỉ số. Lời khuyên hỗ trợ được đặt sau phần nhập để bạn không bị phân tán.</p></div><a class="btn btn-light" href="${pageContext.request.contextPath}/PatientJournal">Xem nhật ký 30 ngày</a></div>
 <c:if test="${not empty msg}"><div class="alert alert-info"><c:out value="${msg}"/></div></c:if>

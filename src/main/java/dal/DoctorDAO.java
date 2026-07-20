@@ -47,7 +47,9 @@ public class DoctorDAO extends DBContext {
 
     public List<Doctor> getAll() {
         List<Doctor> list = new ArrayList<>();
-        String sql = "SELECT d.*, u.full_name FROM Doctors d JOIN Users u ON d.user_id=u.user_id WHERE u.status='ACTIVE' ORDER BY u.full_name";
+        String sql = "SELECT d.*, u.full_name FROM Doctors d JOIN Users u ON d.user_id=u.user_id "
+                + "WHERE u.status='ACTIVE' AND d.diabetes_focus IN ('TYPE_1','TYPE_2','BOTH') "
+                + "ORDER BY u.full_name";
         try (PreparedStatement statement = connection.prepareStatement(sql);
              ResultSet rows = statement.executeQuery()) {
             while (rows.next()) list.add(mapRow(rows));
@@ -62,7 +64,7 @@ public class DoctorDAO extends DBContext {
         try (PreparedStatement statement = connection.prepareStatement(
                 sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setInt(1, d.getUserId());
-            statement.setString(2, d.getSpecialty());
+            statement.setString(2, Doctor.DIABETES_SPECIALTY);
             statement.setString(3, d.getLicenseNo());
             statement.setString(4, normalizeFocus(d.getDiabetesFocus()));
             if (statement.executeUpdate() > 0) {
@@ -88,8 +90,8 @@ public class DoctorDAO extends DBContext {
     }
 
     private String normalizeFocus(String focus) {
-        return java.util.Set.of("TYPE_1", "TYPE_2", "BOTH", "GENERAL").contains(focus)
-                ? focus : "GENERAL";
+        return java.util.Set.of("TYPE_1", "TYPE_2", "BOTH").contains(focus)
+                ? focus : "BOTH";
     }
 
     // Cập nhật riêng 3 đường dẫn ảnh (khuôn mặt, CCCD, chứng chỉ hành nghề).

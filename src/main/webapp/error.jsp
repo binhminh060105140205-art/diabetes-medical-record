@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <title>Lỗi — Hệ thống</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ux1">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui3">
 </head>
-<body>
+<body class="error-body">
 <jsp:include page="views/header.jsp"/>
 <div class="page-wrapper" style="text-align:center;padding-top:80px;">
     <div style="font-size:72px;">🏥</div>

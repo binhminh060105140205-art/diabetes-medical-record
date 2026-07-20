@@ -8,6 +8,8 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @WebServlet("/PatientList")
 public class PatientListController extends HttpServlet {
@@ -18,6 +20,16 @@ public class PatientListController extends HttpServlet {
         User user = ControllerSupport.currentUser(request);
         if (!ControllerSupport.hasRole(user, "STAFF", "DOCTOR", "ADMIN")) {
             ControllerSupport.redirectToLogin(request, response);
+            return;
+        }
+
+        if ("STAFF".equals(user.getRole())) {
+            String keyword = ControllerSupport.clean(request.getParameter("keyword"));
+            String target = request.getContextPath() + "/StaffDashboard";
+            if (!keyword.isEmpty()) {
+                target += "?keyword=" + URLEncoder.encode(keyword, StandardCharsets.UTF_8);
+            }
+            response.sendRedirect(target + "#patients");
             return;
         }
         

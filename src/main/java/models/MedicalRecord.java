@@ -2,8 +2,11 @@ package models;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class MedicalRecord {
+    private static final DateTimeFormatter VISIT_DATE_FORMAT =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private int recordId;
     private int patientId;
     private int doctorId;
@@ -44,6 +47,9 @@ public class MedicalRecord {
 
     public LocalDateTime getVisitDate()              { return visitDate; }
     public void setVisitDate(LocalDateTime v)        { this.visitDate = v; }
+    public String getVisitDateLabel() {
+        return visitDate == null ? "—" : visitDate.format(VISIT_DATE_FORMAT);
+    }
 
     public String getReasonForVisit()           { return reasonForVisit; }
     public void setReasonForVisit(String v)     { this.reasonForVisit = v; }

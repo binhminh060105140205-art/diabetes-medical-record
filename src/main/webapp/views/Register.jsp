@@ -2,7 +2,7 @@
 <%@taglib prefix="c" uri="jakarta.tags.core"%>
 <!DOCTYPE html>
 <html lang="vi">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Đăng ký — DiaCare</title><link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ux1"></head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Đăng ký — DiaCare</title><link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui3"></head>
 <body class="register-body">
 <main class="register-shell">
     <section class="register-intro">
@@ -19,7 +19,7 @@
                 <div class="form-grid register-grid">
                     <div class="form-group"><label class="required">Họ và tên</label><input class="form-control" name="fullName" maxlength="100" value="${param.fullName}" autocomplete="name" required></div>
                     <div class="form-group"><label class="required">Số điện thoại</label><input class="form-control" name="phone" maxlength="13" value="${param.phone}" placeholder="0912345678" autocomplete="tel" required></div>
-                    <div class="form-group"><label class="required">Thư điện tử</label><input class="form-control" type="email" name="email" maxlength="100" value="${param.email}" autocomplete="email" required></div>
+                <div class="form-group"><label class="required">Email/Gmail</label><input class="form-control" type="email" name="email" maxlength="100" value="${param.email}" autocomplete="email" required></div>
                     <div class="form-group"><label class="required">Ngày sinh</label><input class="form-control" type="date" name="dateOfBirth" value="${param.dateOfBirth}" required></div>
                     <div class="form-group"><label class="required">Giới tính</label><select class="form-control" name="gender" required><option value="">Chọn giới tính</option><option>Nam</option><option>Nữ</option><option>Khác</option></select></div>
                     <div class="form-group"><label>Số BHYT</label><input class="form-control" name="healthInsuranceNo" maxlength="20" value="${param.healthInsuranceNo}" placeholder="Nếu có"></div>
@@ -35,6 +35,6 @@
         </div>
     </section>
 </main>
-<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260720-ux1"></script><script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260720-ux1"></script>
+<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260720-ui4"></script><script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260720-ui4"></script>
 </body>
 </html>

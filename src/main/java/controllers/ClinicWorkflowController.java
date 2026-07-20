@@ -10,7 +10,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.Date;
-import java.time.LocalDateTime;
 import java.util.Set;
 import models.User;
 import vn.diabetes.service.ClinicWorkflowService;
@@ -95,6 +94,10 @@ public class ClinicWorkflowController extends HttpServlet {
             request.setAttribute("patients", page.patients());
             request.setAttribute("doctors", page.doctors());
             request.setAttribute("appointments", page.appointments());
+            request.setAttribute("appointmentDates",
+                    ControllerSupport.appointmentDateOptions(true));
+            request.setAttribute("appointmentTimeSlots",
+                    ControllerSupport.appointmentTimeOptions());
         }
 
         if ("DOCTOR".equals(user.getRole())) {
@@ -173,7 +176,7 @@ public class ClinicWorkflowController extends HttpServlet {
         service.createAppointment(
                 positiveParameter(request, "patientId"),
                 positiveParameter(request, "doctorId"),
-                LocalDateTime.parse(ControllerSupport.requiredParameter(request, "appointmentAt")),
+                appointmentDateTime(request),
                 ControllerSupport.requiredParameter(request, "reason"),
                 request.getParameter("note"),
                 user.getUserId());
@@ -186,7 +189,7 @@ public class ClinicWorkflowController extends HttpServlet {
         service.assignAppointmentRequest(
                 positiveParameter(request, "appointmentId"),
                 positiveParameter(request, "doctorId"),
-                LocalDateTime.parse(ControllerSupport.requiredParameter(request, "appointmentAt")),
+                appointmentDateTime(request),
                 request.getParameter("note"),
                 user.getUserId());
         return "appointments";
@@ -197,7 +200,7 @@ public class ClinicWorkflowController extends HttpServlet {
         requireReception(user);
         service.rescheduleAppointment(
                 positiveParameter(request, "appointmentId"),
-                LocalDateTime.parse(ControllerSupport.requiredParameter(request, "appointmentAt")),
+                appointmentDateTime(request),
                 request.getParameter("note"),
                 user.getUserId());
         return "appointments";
@@ -351,6 +354,13 @@ public class ClinicWorkflowController extends HttpServlet {
 
     private int positiveParameter(HttpServletRequest request, String name) {
         return ControllerSupport.positiveId(
-                ControllerSupport.requiredParameter(request, name), name);
+                ControllerSupport.requiredParameter(request, name),
+                ControllerSupport.parameterLabel(name));
+    }
+
+    private java.time.LocalDateTime appointmentDateTime(HttpServletRequest request) {
+        return ControllerSupport.appointmentDateTime(
+                request.getParameter("appointmentDate"),
+                request.getParameter("appointmentTime"));
     }
 }

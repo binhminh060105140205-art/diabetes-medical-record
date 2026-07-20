@@ -20,7 +20,7 @@ public class MedicalRecordFormController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         User user = ControllerSupport.currentUser(request);
-        if (!ControllerSupport.hasRole(user, "STAFF", "DOCTOR")) {
+        if (!ControllerSupport.hasRole(user, "ADMIN", "STAFF", "DOCTOR")) {
             ControllerSupport.redirectToLogin(request, response);
             return;
         }

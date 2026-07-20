@@ -94,7 +94,7 @@ public class AdminDoctorDetailController extends HttpServlet {
         int userId = targetUser.getUserId();
         try {
             String focus = request.getParameter("diabetesFocus");
-            if (!java.util.Set.of("TYPE_1", "TYPE_2", "BOTH", "GENERAL").contains(focus)) {
+            if (!java.util.Set.of("TYPE_1", "TYPE_2", "BOTH").contains(focus)) {
                 throw new IllegalArgumentException("Nhóm tiểu đường không hợp lệ.");
             }
             new DoctorDAO().updateDiabetesFocus(doctor.getDoctorId(), focus);

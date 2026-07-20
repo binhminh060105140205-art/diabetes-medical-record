@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <title>Tạo Tài Khoản</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ux1">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui3">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
@@ -47,7 +47,7 @@
                     <input type="text" name="fullName" class="form-control" required>
                 </div>
                 <div class="form-group">
-                    <label class="required">Thư điện tử nhận thông báo</label>
+                    <label class="required">Email/Gmail nhận thông báo</label>
                     <input type="email" name="email" class="form-control" required>
                 </div>
                 <div class="form-group">
@@ -88,11 +88,12 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Chuyên khoa</label>
-                        <input type="text" name="specialty" class="form-control" placeholder="Nội tiết - Tiểu đường">
+                        <input type="text" name="specialty" class="form-control" value="Nội tiết - Đái tháo đường" readonly>
+                        <small>Hệ thống chỉ quản lý bác sĩ điều trị đái tháo đường.</small>
                     </div>
                     <div class="form-group">
-                        <label>Số chứng chỉ hành nghề</label>
-                        <input type="text" name="licenseNo" class="form-control">
+                        <label class="required">Số chứng chỉ hành nghề</label>
+                        <input type="text" name="licenseNo" class="form-control" data-doctor-required>
                     </div>
                     <div class="form-group">
                         <label>Học vị / Bằng cấp</label>
@@ -101,12 +102,11 @@
                     <div class="form-group">
                         <label>Nhóm tiểu đường ưu tiên</label>
                         <select name="diabetesFocus" class="form-control">
-                            <option value="GENERAL">Chuyên khoa chung</option>
+                            <option value="BOTH" selected>Theo dõi cả típ 1 và típ 2</option>
                             <option value="TYPE_1">Ưu tiên đái tháo đường típ 1</option>
                             <option value="TYPE_2">Ưu tiên đái tháo đường típ 2</option>
-                            <option value="BOTH">Theo dõi cả típ 1 và típ 2</option>
                         </select>
-                        <small>Chỉ dùng để gợi ý khi đặt lịch, không khóa lựa chọn.</small>
+                        <small>Chỉ chọn riêng một típ khi bác sĩ có phạm vi chuyên môn ưu tiên rõ ràng.</small>
                     </div>
                 </div>
                 <div class="form-row">
@@ -133,11 +133,15 @@
 <script>
     function toggleDoctorFields() {
         const role = document.getElementById('roleSelect').value;
-        document.getElementById('doctorFields').style.display = (role === 'DOCTOR') ? 'block' : 'none';
+        const doctorSelected = role === 'DOCTOR';
+        document.getElementById('doctorFields').style.display = doctorSelected ? 'block' : 'none';
+        document.querySelectorAll('[data-doctor-required]').forEach(function (field) {
+            field.required = doctorSelected;
+        });
     }
     toggleDoctorFields();
 </script>
 <jsp:include page="footer.jsp"/>
-<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260719-ai1"></script>
+<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260720-ui3"></script>
 </body>
 </html>

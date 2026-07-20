@@ -34,13 +34,10 @@
         </c:when>
         <c:when test="${sessionScope.user.role=='STAFF'}">
             <div class="sidebar-label">CÔNG VIỆC HÔM NAY</div>
-            <a class="${uri.contains('StaffDashboard')?'active':''}" href="${pageContext.request.contextPath}/StaffDashboard"><span>⌂</span><b>Tổng quan hôm nay</b></a>
+            <a class="${uri.contains('StaffDashboard')||uri.contains('PatientForm')?'active':''}" href="${pageContext.request.contextPath}/StaffDashboard"><span>♙</span><b>Tiếp nhận & bệnh nhân</b></a>
             <a class="${uri.contains('ClinicWorkflow') && param.view=='appointments'?'active':''}" href="${pageContext.request.contextPath}/ClinicWorkflow?view=appointments"><span>▦</span><b>Lịch hẹn</b></a>
             <a class="${uri.contains('ClinicWorkflow') && (empty param.view || param.view=='encounters')?'active':''}" href="${pageContext.request.contextPath}/ClinicWorkflow?view=encounters"><span>≡</span><b>Tiếp nhận đến khám</b></a>
             <a class="${uri.contains('ClinicWorkflow') && param.view=='labs'?'active':''}" href="${pageContext.request.contextPath}/ClinicWorkflow?view=labs"><span>◇</span><b>Trả kết quả xét nghiệm</b></a>
-            <div class="sidebar-label">BỆNH NHÂN</div>
-            <a class="${uri.contains('PatientList')?'active':''}" href="${pageContext.request.contextPath}/PatientList"><span>♙</span><b>Danh sách bệnh nhân</b></a>
-            <a class="${uri.contains('PatientForm')?'active':''}" href="${pageContext.request.contextPath}/PatientForm"><span>＋</span><b>Tiếp nhận bệnh nhân</b></a>
         </c:when>
         <c:when test="${sessionScope.user.role=='DOCTOR'}">
             <div class="sidebar-label">CÔNG VIỆC HÔM NAY</div>
@@ -63,11 +60,9 @@
         </c:when>
     </c:choose></nav>
     <div class="sidebar-bottom">
-        <a class="${uri.contains('EditProfile')?'active':''}" href="${pageContext.request.contextPath}/EditProfile"><span>⚙</span><b>Hồ sơ & cài đặt</b></a>
-        <a class="sidebar-main-link" href="${pageContext.request.contextPath}/"><span>⌂</span><b>Trang giới thiệu</b></a>
-        <a href="${pageContext.request.contextPath}/Logout"><span>⇥</span><b>Đăng xuất</b></a>
+        <a class="${uri.contains('Settings')||uri.contains('EditProfile')?'active':''}" href="${pageContext.request.contextPath}/Settings"><span>⚙</span><b>Cài đặt tài khoản</b></a>
     </div>
 </aside>
 <button class="sidebar-toggle" type="button" aria-label="Mở menu" aria-controls="app-sidebar" aria-expanded="false">☰</button>
 <button class="sidebar-backdrop" type="button" aria-label="Đóng menu"></button>
-<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260720-ux1" defer></script>
+<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260720-ui4" defer></script>

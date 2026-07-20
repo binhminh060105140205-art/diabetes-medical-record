@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hồ sơ bác sĩ — Quản trị viên</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ux1">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui3">
     <style>
         .form-container {
             max-width: 820px;
@@ -76,7 +76,7 @@
         <div class="info-row">
             <div><b>Tên đăng nhập</b>${targetUser.username}</div>
             <div><b>Số điện thoại</b>${targetUser.phone}</div>
-            <div><b>Thư điện tử</b>${targetUser.email}</div>
+                    <div><b>Email/Gmail</b>${targetUser.email}</div>
             <div><b>Số CCCD</b>${targetUser.cccd}</div>
         </div>
 
@@ -99,12 +99,11 @@
                 <div class="form-group">
                     <label>Nhóm tiểu đường ưu tiên</label>
                     <select name="diabetesFocus" class="form-control">
-                        <option value="GENERAL" ${doctor.diabetesFocus=='GENERAL'?'selected':''}>Chuyên khoa hỗ trợ</option>
+                        <option value="BOTH" ${doctor.diabetesFocus=='BOTH'?'selected':''}>Theo dõi cả típ 1 và típ 2</option>
                         <option value="TYPE_1" ${doctor.diabetesFocus=='TYPE_1'?'selected':''}>Ưu tiên đái tháo đường típ 1</option>
                         <option value="TYPE_2" ${doctor.diabetesFocus=='TYPE_2'?'selected':''}>Ưu tiên đái tháo đường típ 2</option>
-                        <option value="BOTH" ${doctor.diabetesFocus=='BOTH'?'selected':''}>Theo dõi cả típ 1 và típ 2</option>
                     </select>
-                    <small>Chỉ dùng để sắp xếp gợi ý bác sĩ; bệnh nhân vẫn có thể chọn bác sĩ khác.</small>
+                    <small>Mặc định bác sĩ theo dõi cả hai típ; chỉ chọn riêng khi có ưu tiên chuyên môn rõ ràng.</small>
                 </div>
                 <div class="doc-image-row">
                     <div class="doc-image-box">

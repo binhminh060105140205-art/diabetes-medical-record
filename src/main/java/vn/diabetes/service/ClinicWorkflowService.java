@@ -18,7 +18,7 @@ public class ClinicWorkflowService {
     private final Supplier<LocalDateTime> clock;
 
     public ClinicWorkflowService(ClinicWorkflowGateway gateway) {
-        this(gateway, LocalDateTime::now);
+        this(gateway, AppointmentRules::nowInVietnam);
     }
 
     ClinicWorkflowService(ClinicWorkflowGateway gateway, Supplier<LocalDateTime> clock) {
@@ -121,8 +121,10 @@ public class ClinicWorkflowService {
         if (!Set.of("NORMAL", "HIGH", "LOW", "CRITICAL").contains(flag))
             throw new IllegalArgumentException("Cờ kết quả không hợp lệ.");
         positive(orderId, "Chỉ định");
-        gateway.resultLab(orderId, Validators.required(value, "Kết quả"),
-                unit, range, flag, actor);
+        gateway.resultLab(orderId,
+                Validators.max(Validators.required(value, "Kết quả"), 100, "Kết quả"),
+                Validators.max(unit, 30, "Đơn vị"),
+                Validators.max(range, 100, "Khoảng tham chiếu"), flag, actor);
     }
 
     public static Map<String,String> labTests() { return LAB_TESTS; }

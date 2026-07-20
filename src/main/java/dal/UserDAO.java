@@ -142,7 +142,7 @@ public class UserDAO extends DBContext {
     }
 
     public void updateProfile(User u) throws SQLException {
-        String sql = "UPDATE Users SET username=?, password=?, full_name=?, phone=?, email=?, dob=?, gender=?, cccd=? WHERE user_id=?";
+        String sql = "UPDATE Users SET username=?, password=?, full_name=?, phone=?, email=?, dob=?, gender=?, address=?, cccd=? WHERE user_id=?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, u.getUsername());
             statement.setString(2, Passwords.isEncoded(u.getPassword())
@@ -156,8 +156,9 @@ public class UserDAO extends DBContext {
                 statement.setNull(6, java.sql.Types.DATE);
             }
             statement.setString(7, u.getGender());
-            statement.setString(8, u.getCccd());
-            statement.setInt(9, u.getUserId());
+            statement.setString(8, u.getAddress());
+            statement.setString(9, u.getCccd());
+            statement.setInt(10, u.getUserId());
             statement.executeUpdate();
         } catch (SQLException e) {
             throw e;

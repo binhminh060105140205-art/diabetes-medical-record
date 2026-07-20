@@ -217,7 +217,7 @@ function validateRegister() {
     if (!/^[A-Za-z0-9_]{4,30}$/.test(val('username'))) { showErr('username', 'Tên đăng nhập gồm 4–30 chữ, số hoặc dấu gạch dưới'); ok = false; }
     if (val('password').length < 8) { showErr('password', 'Mật khẩu phải có ít nhất 8 ký tự'); ok = false; }
     if (val('password') !== val('confirmPassword')) { showErr('confirmPassword', 'Mật khẩu nhập lại không khớp'); ok = false; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val('email'))) { showErr('email', 'Thư điện tử không hợp lệ'); ok = false; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val('email'))) { showErr('email', 'Email không hợp lệ'); ok = false; }
     return ok;
 }
 
@@ -297,29 +297,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Bind submit validators tự động theo form action
-    const form = document.querySelector('form[data-validate]');
-    if (form) {
-        const type = form.getAttribute('data-validate');
-        form.addEventListener('submit', function(e) {
-            let valid = true;
-            if (type === 'patient')     valid = validatePatientForm();
-            if (type === 'indicators')  valid = validateIndicators();
-            if (type === 'login')       valid = validateLogin();
-            if (type === 'register')    valid = validateRegister();
-            if (type === 'createUser')  valid = validateCreateUser();
-            if (type === 'basicRecord') valid = validateBasicRecord();
-            if (type === 'conclusion')  valid = validateConclusion();
-            if (!valid) {
-                e.preventDefault();
-                // Scroll đến lỗi đầu tiên
-                const firstErr = document.querySelector('.input-error');
-                if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        });
-    }
-
-    // Bind nhiều form trong cùng trang (MedicalRecordForm)
+    // Mỗi biểu mẫu chỉ được gắn một bộ kiểm tra, kể cả trang có nhiều form.
     document.querySelectorAll('form[data-validate]').forEach(function(f) {
         const type = f.getAttribute('data-validate');
         f.addEventListener('submit', function(e) {

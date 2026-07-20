@@ -41,6 +41,8 @@ public class PatientAppointmentsController extends HttpServlet {
         request.getSession().setAttribute(
                 ControllerSupport.PATIENT_ID_SESSION_KEY, data.patientId());
         request.setAttribute("appointments", data.appointments());
+        request.setAttribute("appointmentDates",
+                ControllerSupport.appointmentDateOptions(false));
         request.getRequestDispatcher("views/PatientAppointmentsSimple.jsp")
                 .forward(request, response);
     }

@@ -6,13 +6,13 @@
     <meta charset="UTF-8">
     <title>Hồ Sơ Bệnh Nhân</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ux1">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui4">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
 <jsp:include page="topnav.jsp"/>
 <div class="page-wrapper">
-    <div class="page-heading"><div><div class="eyebrow">TIẾP NHẬN BỆNH NHÂN</div><h1 class="page-title"><c:choose><c:when test="${editMode}">Cập nhật thông tin bệnh nhân</c:when><c:otherwise>Tạo hồ sơ bệnh nhân mới</c:otherwise></c:choose></h1><p class="text-muted">Kiểm tra số điện thoại và thông tin nhận diện trước khi lưu để tránh tạo hồ sơ trùng.</p></div><a class="btn btn-light" href="${pageContext.request.contextPath}/PatientList">Quay lại danh sách</a></div>
+    <div class="page-heading"><div><div class="eyebrow">HỒ SƠ BỆNH NHÂN</div><h1 class="page-title">Cập nhật thông tin bệnh nhân</h1><p class="text-muted">Kiểm tra số điện thoại và thông tin nhận diện trước khi lưu.</p></div><a class="btn btn-light" href="${pageContext.request.contextPath}/StaffDashboard#patients">Quay lại danh sách</a></div>
 
     <c:if test="${not empty err}">
         <div class="alert alert-danger">${err}</div>
@@ -74,7 +74,7 @@
             </div>
 
             <c:if test="${not editMode}">
-            <div class="account-section"><div class="card-title">Tài khoản đăng nhập</div><p class="text-muted">Có địa chỉ thư điện tử: hệ thống đưa thông tin vào hàng đợi gửi tự động. Không có: cấp trực tiếp cho bệnh nhân.</p><div class="form-row"><div class="form-group"><label class="required">Tên đăng nhập</label><input class="form-control" name="username" minlength="4" maxlength="30" pattern="[A-Za-z0-9_]+" value="${param.username}" placeholder="Ví dụ: nguyenvana" required></div><div class="form-group"><label class="required">Mật khẩu tạm thời</label><input class="form-control" type="password" name="password" minlength="8" maxlength="72" autocomplete="new-password" required></div><div class="form-group"><label>Thư điện tử nhận tài khoản</label><input class="form-control" type="email" name="email" maxlength="100" value="${param.email}" placeholder="benhnhan@gmail.com"></div></div></div>
+            <div class="account-section"><div class="card-title">Tài khoản đăng nhập</div><p class="text-muted">Có Email/Gmail: hệ thống đưa thông tin vào hàng đợi gửi tự động. Không có email: cấp trực tiếp cho bệnh nhân.</p><div class="form-row"><div class="form-group"><label class="required">Tên đăng nhập</label><input class="form-control" name="username" minlength="4" maxlength="30" pattern="[A-Za-z0-9_]+" value="${param.username}" placeholder="Ví dụ: nguyenvana" required></div><div class="form-group"><label class="required">Mật khẩu tạm thời</label><input class="form-control" type="password" name="password" minlength="8" maxlength="72" autocomplete="new-password" required></div><div class="form-group"><label>Email/Gmail nhận tài khoản</label><input class="form-control" type="email" name="email" maxlength="100" value="${param.email}" placeholder="benhnhan@gmail.com"></div></div></div>
             </c:if>
 
             <div class="form-actions">
@@ -84,13 +84,13 @@
                         <c:otherwise>Tạo hồ sơ và tài khoản</c:otherwise>
                     </c:choose>
                 </button>
-                <a href="${pageContext.request.contextPath}/PatientList" class="btn btn-light">Hủy</a>
+                <a href="${pageContext.request.contextPath}/StaffDashboard#patients" class="btn btn-light">Hủy</a>
             </div>
         </form>
     </div>
 </div>
 
-<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260719-ai1"></script>
+<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260720-ui4"></script>
 <jsp:include page="footer.jsp"/>
 </body>
 </html>

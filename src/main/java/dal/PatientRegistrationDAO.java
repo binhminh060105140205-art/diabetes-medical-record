@@ -22,7 +22,7 @@ public class PatientRegistrationDAO extends DBContext implements vn.diabetes.ser
                 throw new IllegalArgumentException("Số điện thoại đã có hồ sơ. Vui lòng đăng nhập hoặc liên hệ lễ tân.");
             if (email != null && !email.isBlank()
                     && exists("SELECT 1 FROM users WHERE LOWER(email)=LOWER(?)", email))
-                throw new IllegalArgumentException("Thư điện tử đã được sử dụng.");
+            throw new IllegalArgumentException("Email đã được sử dụng.");
 
             int userId;
             try (PreparedStatement ps = connection.prepareStatement("""

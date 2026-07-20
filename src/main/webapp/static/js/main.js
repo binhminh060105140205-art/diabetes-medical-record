@@ -30,6 +30,97 @@ document.addEventListener('DOMContentLoaded', function () {
     if (weightInput) weightInput.addEventListener('input', calcBMI);
 });
 
+// Replace browser-dependent English validation bubbles with consistent
+// Vietnamese messages shown next to the field on every form.
+function validationFieldLabel(control) {
+    const fieldset = control.closest('fieldset');
+    const legend = fieldset ? fieldset.querySelector('legend') : null;
+    const formGroup = control.closest('.form-group');
+    const label = formGroup ? formGroup.querySelector('label') : null;
+    const text = (label ? label.textContent : legend ? legend.textContent : 'thông tin')
+        .replace('*', '').replace(/^\s*\d+\.\s*/, '').trim();
+    return text.charAt(0).toLowerCase() + text.slice(1);
+}
+
+function vietnameseValidationMessage(control) {
+    const label = validationFieldLabel(control);
+    const validity = control.validity;
+    if (validity.valueMissing) {
+        const action = control.tagName === 'SELECT' || control.type === 'radio'
+            || control.type === 'checkbox' ? 'chọn' : 'nhập';
+        return 'Vui lòng ' + action + ' ' + label + '.';
+    }
+    if (validity.typeMismatch) return label.includes('email') || label.includes('gmail')
+        ? 'Email không đúng định dạng.' : 'Giá trị không đúng định dạng.';
+    if (validity.tooShort) return 'Vui lòng nhập ít nhất ' + control.minLength + ' ký tự.';
+    if (validity.tooLong) return 'Nội dung vượt quá ' + control.maxLength + ' ký tự.';
+    if (validity.rangeUnderflow) return 'Giá trị nhỏ nhất cho phép là ' + control.min + '.';
+    if (validity.rangeOverflow) return 'Giá trị lớn nhất cho phép là ' + control.max + '.';
+    if (validity.stepMismatch) return 'Vui lòng chọn giá trị theo đúng khoảng cho phép.';
+    if (validity.patternMismatch) return 'Giá trị không đúng định dạng yêu cầu.';
+    if (validity.badInput) return 'Vui lòng nhập giá trị hợp lệ.';
+    return 'Vui lòng kiểm tra lại ' + label + '.';
+}
+
+function showNativeValidationError(control) {
+    const container = control.closest('.form-group, fieldset') || control.parentElement;
+    if (!container) return;
+    control.classList.add('input-error');
+    let error = container.querySelector('.err-msg');
+    if (!error) {
+        error = document.createElement('span');
+        error.className = 'err-msg';
+        container.appendChild(error);
+    }
+    error.textContent = '⚠ ' + vietnameseValidationMessage(control);
+}
+
+document.addEventListener('invalid', function (event) {
+    event.preventDefault();
+    showNativeValidationError(event.target);
+}, true);
+
+document.addEventListener('input', function (event) {
+    if (!event.target.matches('input, select, textarea')) return;
+    event.target.classList.remove('input-error');
+    const container = event.target.closest('.form-group, fieldset') || event.target.parentElement;
+    const error = container ? container.querySelector('.err-msg') : null;
+    if (error) error.textContent = '';
+});
+
+document.addEventListener('change', function (event) {
+    if (!event.target.matches('input, select, textarea')) return;
+    event.target.dispatchEvent(new Event('input', { bubbles: true }));
+});
+
+function refreshAppointmentTimeOptions(form) {
+    const dateControl = form.querySelector('[name=appointmentDate]');
+    const timeControl = form.querySelector('[name=appointmentTime]');
+    if (!dateControl || !timeControl || !dateControl.value) return;
+    const now = new Date();
+    const minimum = new Date(now.getTime() + 15 * 60 * 1000);
+    const today = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0')
+        + '-' + String(now.getDate()).padStart(2, '0');
+    Array.from(timeControl.options).forEach(function (option) {
+        if (!option.value) return;
+        const candidate = new Date(dateControl.value + 'T' + option.value + ':00');
+        option.disabled = dateControl.value === today && candidate <= minimum;
+    });
+    if (timeControl.selectedOptions.length && timeControl.selectedOptions[0].disabled) {
+        timeControl.value = '';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('form[data-appointment-form]').forEach(function (form) {
+        refreshAppointmentTimeOptions(form);
+        const dateControl = form.querySelector('[name=appointmentDate]');
+        if (dateControl) dateControl.addEventListener('change', function () {
+            refreshAppointmentTimeOptions(form);
+        });
+    });
+});
+
 // Accessible sidebar on tablet/mobile.
 document.addEventListener('DOMContentLoaded', function () {
     const toggle = document.querySelector('.sidebar-toggle');

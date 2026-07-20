@@ -6,13 +6,13 @@
     <meta charset="UTF-8">
     <title>Chi Tiết Hồ Sơ Bệnh Án</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ux1">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui4">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
 <jsp:include page="topnav.jsp"/>
 <div class="page-wrapper">
-    <div class="page-heading"><div><div class="eyebrow">CHI TIẾT LẦN KHÁM</div><h1 class="page-title">Bệnh án #${detail.record.recordId}</h1><p class="text-muted">Ngày khám ${detail.record.visitDate} · <span class="status-pill status-${detail.record.status}">${detail.record.status=='COMPLETED'?'Đã hoàn tất':'Đang xử lý'}</span></p></div><div class="heading-actions"><a href="${pageContext.request.contextPath}/PatientHistory?patientId=${detail.patient.patientId}" class="btn btn-light">Lịch sử khám</a><c:if test="${sessionScope.user.role=='DOCTOR'&&detail.record.status=='DRAFT'}"><a href="${pageContext.request.contextPath}/MedicalRecordForm?recordId=${detail.record.recordId}&tab=4" class="btn btn-primary">Tiếp tục kết luận</a></c:if></div></div>
+    <div class="page-heading"><div><div class="eyebrow">CHI TIẾT LẦN KHÁM</div><h1 class="page-title">Bệnh án #${detail.record.recordId}</h1><p class="text-muted">Ngày khám ${detail.record.visitDateLabel} · <span class="status-pill status-${detail.record.status}">${detail.record.status=='COMPLETED'?'Đã hoàn tất':'Đang xử lý'}</span></p></div><div class="heading-actions"><a href="${pageContext.request.contextPath}/PatientHistory?patientId=${detail.patient.patientId}" class="btn btn-light">Lịch sử khám</a><c:if test="${sessionScope.user.role=='DOCTOR'&&detail.record.status=='DRAFT'}"><a href="${pageContext.request.contextPath}/MedicalRecordForm?recordId=${detail.record.recordId}&tab=4" class="btn btn-primary">Tiếp tục kết luận</a></c:if></div></div>
     <div class="patient-summary-bar"><strong><c:out value="${detail.patient.fullName}"/></strong><div class="patient-summary-meta"><span>SĐT: <c:out value="${detail.patient.phone}" default="—"/></span><span>BHYT: <c:out value="${detail.patient.healthInsuranceNo}" default="—"/></span><span>Bác sĩ: <c:out value="${detail.doctor.fullName}"/></span></div></div>
 
     <c:if test="${not empty diabetesProfile}">
@@ -37,7 +37,7 @@
                 <th>Số điện thoại</th><td>${detail.patient.phone}</td></tr>
             <tr><th>Địa chỉ</th><td colspan="3">${detail.patient.address}</td></tr>
             <tr><th>Số BHYT</th><td>${detail.patient.healthInsuranceNo}</td>
-                <th>Ngày khám</th><td>${detail.record.visitDate}</td></tr>
+                <th>Ngày khám</th><td>${detail.record.visitDateLabel}</td></tr>
             <tr><th>Bác sĩ khám</th><td colspan="3">${detail.doctor.fullName} — ${detail.doctor.specialty}</td></tr>
         </table>
     </div>
@@ -70,7 +70,7 @@
                 <div class="ind-unit">kg</div>
             </div>
             <div class="indicator-item">
-                <div class="ind-label">Chỉ số khối cơ thể</div>
+                <div class="ind-label">BMI <span>(chỉ số khối cơ thể)</span></div>
                 <div class="ind-value">${detail.indicator.bmi}</div>
                 <div class="ind-unit">kg/m²</div>
             </div>

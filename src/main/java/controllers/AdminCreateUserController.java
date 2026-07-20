@@ -59,7 +59,7 @@ public class AdminCreateUserController extends HttpServlet {
         String role      = request.getParameter("role"); 
         String cccd      = request.getParameter("cccd");
         
-        String specialty = request.getParameter("specialty");
+        String specialty = Doctor.DIABETES_SPECIALTY;
         String licenseNo = request.getParameter("licenseNo");
         String degree    = request.getParameter("degree");
         String diabetesFocus = request.getParameter("diabetesFocus");
@@ -69,9 +69,9 @@ public class AdminCreateUserController extends HttpServlet {
             fullName=Validators.fullName(fullName); phone=Validators.phone(phone); email=Validators.email(email,false);
             gender=Validators.gender(gender); address=Validators.address(address); role=Validators.role(role); cccd=Validators.cccd(cccd);
             if("PATIENT".equals(role))throw new IllegalArgumentException("Hãy tạo tài khoản bệnh nhân tại màn Tiếp nhận bệnh nhân.");
-            specialty=Validators.max(specialty,100,"Chuyên khoa"); licenseNo=Validators.max(licenseNo,50,"Số chứng chỉ"); degree=Validators.max(degree,100,"Học vị");
-            if("DOCTOR".equals(role)){specialty=Validators.required(specialty,"Chuyên khoa");licenseNo=Validators.required(licenseNo,"Số chứng chỉ hành nghề");}
-            if (diabetesFocus == null || !java.util.Set.of("TYPE_1","TYPE_2","BOTH","GENERAL").contains(diabetesFocus)) diabetesFocus="GENERAL";
+            licenseNo=Validators.max(licenseNo,50,"Số chứng chỉ"); degree=Validators.max(degree,100,"Học vị");
+            if("DOCTOR".equals(role)) licenseNo=Validators.required(licenseNo,"Số chứng chỉ hành nghề");
+            if (diabetesFocus == null || !java.util.Set.of("TYPE_1","TYPE_2","BOTH").contains(diabetesFocus)) diabetesFocus="BOTH";
         } catch(IllegalArgumentException ex) {
             request.setAttribute("err",ex.getMessage()); request.getRequestDispatcher("views/AdminCreateUser.jsp").forward(request,response); return;
         }
@@ -131,7 +131,7 @@ public class AdminCreateUserController extends HttpServlet {
         String roleLabel = "DOCTOR".equals(role) ? "bác sĩ" : "nhân viên tiếp nhận";
         currentSession.setAttribute("toastMessage", queued
                 ? "Đã tạo tài khoản " + roleLabel + ". Thông tin đăng nhập đã được đưa vào hàng đợi gửi tới " + email + "."
-                : "Đã tạo tài khoản " + roleLabel + ". Chưa thể gửi thư vì máy chủ chưa cấu hình dịch vụ thư điện tử.");
+                : "Đã tạo tài khoản " + roleLabel + ". Chưa thể gửi email vì máy chủ chưa cấu hình dịch vụ email.");
         currentSession.setAttribute("toastType", "success");
 
         if ("DOCTOR".equals(role) && newUser.getUserId() > 0) {

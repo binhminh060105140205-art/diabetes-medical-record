@@ -7,7 +7,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Điều hành khám — DiaCare</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ux1">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui4">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
@@ -25,12 +25,6 @@
                 </c:choose>
             </p>
         </div>
-        <c:if test="${sessionScope.user.role=='STAFF'}">
-            <div class="heading-actions">
-                <a class="btn btn-light" href="${pageContext.request.contextPath}/PatientList">Tìm bệnh nhân</a>
-                <a class="btn btn-primary" href="${pageContext.request.contextPath}/PatientForm">Tiếp nhận bệnh nhân mới</a>
-            </div>
-        </c:if>
     </div>
 
     <c:if test="${not empty workflowFlash}"><div class="alert alert-info"><c:out value="${workflowFlash}"/></div></c:if>
@@ -60,36 +54,49 @@
                     <span><strong>Tạo lịch trực tiếp tại quầy</strong><small>Dùng khi bệnh nhân liên hệ trực tiếp và đã thống nhất bác sĩ, giờ khám.</small></span>
                     <span class="btn btn-light btn-sm">Mở biểu mẫu</span>
                 </summary>
-                <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="form-grid disclosure-content">
+                <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="appointment-booking-form disclosure-content" data-appointment-form>
                     <input type="hidden" name="action" value="createAppointment">
-                    <div class="form-group">
-                        <label class="required">Bệnh nhân</label>
-                        <select class="form-control" name="patientId" required>
-                            <option value="">Chọn bệnh nhân</option>
-                            <c:forEach var="p" items="${patients}"><option value="${p.patientId}"><c:out value="${p.fullName}"/> — <c:out value="${p.phone}"/></option></c:forEach>
-                        </select>
+                    <div class="appointment-form-grid">
+                        <div class="form-group">
+                            <label class="required">Bệnh nhân</label>
+                            <select class="form-control" name="patientId" required>
+                                <option value="">Chọn bệnh nhân</option>
+                                <c:forEach var="p" items="${patients}"><option value="${p.patientId}"><c:out value="${p.fullName}"/> — <c:out value="${p.phone}"/></option></c:forEach>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Bác sĩ điều trị tiểu đường</label>
+                            <select class="form-control" name="doctorId" required>
+                                <option value="">Chọn bác sĩ</option>
+                                <c:forEach var="d" items="${doctors}"><option value="${d.doctorId}"><c:out value="${d.fullName}"/> — <c:out value="${d.diabetesFocusLabel}"/></option></c:forEach>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Ngày khám</label>
+                            <select class="form-control" name="appointmentDate" required>
+                                <option value="">Chọn ngày khám</option>
+                                <c:forEach var="date" items="${appointmentDates}"><option value="${date.value}"><c:out value="${date.label}"/></option></c:forEach>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Khung giờ</label>
+                            <select class="form-control" name="appointmentTime" required>
+                                <option value="">Chọn khung giờ</option>
+                                <optgroup label="Buổi sáng (07:30–11:30)"><c:forEach var="slot" items="${appointmentTimeSlots}"><c:if test="${slot.period=='MORNING'}"><option value="${slot.value}">${slot.label}</option></c:if></c:forEach></optgroup>
+                                <optgroup label="Buổi chiều (13:00–17:00)"><c:forEach var="slot" items="${appointmentTimeSlots}"><c:if test="${slot.period=='AFTERNOON'}"><option value="${slot.value}">${slot.label}</option></c:if></c:forEach></optgroup>
+                            </select>
+                            <small>Chỉ hiển thị khung 30 phút hợp lệ; phòng khám nghỉ Chủ nhật và giờ nghỉ trưa.</small>
+                        </div>
+                        <div class="form-group appointment-form-wide">
+                            <label class="required">Lý do khám</label>
+                            <input class="form-control" name="reason" minlength="5" maxlength="255" placeholder="Ví dụ: Tái khám tiểu đường định kỳ" required>
+                        </div>
+                        <div class="form-group appointment-form-wide">
+                            <label>Ghi chú thêm</label>
+                            <input class="form-control" name="note" maxlength="500" placeholder="Thông tin cần lưu ý khi sắp xếp lịch">
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label class="required">Bác sĩ</label>
-                        <select class="form-control" name="doctorId" required>
-                            <option value="">Chọn bác sĩ</option>
-                            <c:forEach var="d" items="${doctors}"><option value="${d.doctorId}"><c:out value="${d.fullName}"/> — <c:out value="${d.specialty}"/></option></c:forEach>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="required">Thời gian</label>
-                        <input class="form-control appointment-time" type="datetime-local" name="appointmentAt" step="1800" required>
-                        <small>Thứ 2–7, 07:30–11:30 và 13:00–17:00.</small>
-                    </div>
-                    <div class="form-group">
-                        <label class="required">Lý do khám</label>
-                        <input class="form-control" name="reason" minlength="5" maxlength="255" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Ghi chú</label>
-                        <input class="form-control" name="note" maxlength="500">
-                    </div>
-                    <div class="form-actions"><button class="btn btn-primary" type="submit">Tạo lịch khám</button></div>
+                    <div class="appointment-form-footer"><p>Kiểm tra đúng bệnh nhân, bác sĩ, ngày và khung giờ trước khi tạo lịch.</p><button class="btn btn-primary" type="submit">Tạo lịch khám</button></div>
                 </form>
             </details>
         </c:if>
@@ -140,14 +147,19 @@
                                         <details class="row-disclosure">
                                             <summary class="btn btn-primary btn-sm">Phân công lịch</summary>
                                             <div class="row-disclosure-panel">
-                                                <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="request-assignment-form">
+                                                <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="request-assignment-form" data-appointment-form>
                                                     <input type="hidden" name="action" value="assignAppointmentRequest">
                                                     <input type="hidden" name="appointmentId" value="${a.appointment_id}">
+                                                    <input type="hidden" name="appointmentDate" value="${a.preferred_date}">
                                                     <select class="form-control" name="doctorId" required>
                                                         <option value="">Chọn bác sĩ</option>
-                                                        <c:forEach var="d" items="${doctors}"><option value="${d.doctorId}"><c:out value="${d.fullName}"/></option></c:forEach>
+                                                        <c:forEach var="d" items="${doctors}"><option value="${d.doctorId}"><c:out value="${d.fullName}"/> — <c:out value="${d.diabetesFocusLabel}"/></option></c:forEach>
                                                     </select>
-                                                    <input class="form-control appointment-time" type="datetime-local" name="appointmentAt" step="1800" value="${a.preferred_date}T${a.preferred_period=='MORNING'?'08:30':'13:30'}" required>
+                                                    <div class="requested-appointment-date"><small>Ngày bệnh nhân chọn</small><strong>${a.preferred_date} · ${a.preferred_period=='MORNING'?'Buổi sáng':'Buổi chiều'}</strong></div>
+                                                    <select class="form-control" name="appointmentTime" required>
+                                                        <option value="">Chọn giờ khám</option>
+                                                        <c:forEach var="slot" items="${appointmentTimeSlots}"><c:if test="${slot.period==a.preferred_period}"><option value="${slot.value}">${slot.label}</option></c:if></c:forEach>
+                                                    </select>
                                                     <button class="btn btn-primary btn-sm" type="submit">Xác nhận lịch</button>
                                                 </form>
                                                 <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="danger-form" onsubmit="return confirm('Hủy yêu cầu đặt lịch này?')">
@@ -168,11 +180,19 @@
                                             <details class="row-disclosure align-right">
                                                 <summary class="btn btn-light btn-sm">Tùy chọn</summary>
                                                 <div class="row-disclosure-panel">
-                                                    <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="compact-form">
+                                                    <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="compact-form" data-appointment-form>
                                                         <input type="hidden" name="action" value="rescheduleAppointment">
                                                         <input type="hidden" name="appointmentId" value="${a.appointment_id}">
-                                                        <label>Đổi ngày giờ</label>
-                                                        <input class="form-control appointment-time" type="datetime-local" name="appointmentAt" step="1800" value="${fn:replace(fn:substring(a.appointment_at,0,16),' ','T')}" required>
+                                                        <label>Ngày khám mới</label>
+                                                        <select class="form-control" name="appointmentDate" required>
+                                                            <option value="">Chọn ngày khám</option>
+                                                            <c:forEach var="date" items="${appointmentDates}"><option value="${date.value}" ${date.value==fn:substring(a.appointment_at,0,10)?'selected':''}><c:out value="${date.label}"/></option></c:forEach>
+                                                        </select>
+                                                        <label>Khung giờ mới</label>
+                                                        <select class="form-control" name="appointmentTime" required>
+                                                            <option value="">Chọn khung giờ</option>
+                                                            <c:forEach var="slot" items="${appointmentTimeSlots}"><option value="${slot.value}" ${slot.value==fn:substring(a.appointment_at,11,16)?'selected':''}>${slot.label} · ${slot.period=='MORNING'?'Buổi sáng':'Buổi chiều'}</option></c:forEach>
+                                                        </select>
                                                         <input class="form-control" name="note" maxlength="500" placeholder="Lý do đổi lịch">
                                                         <button class="btn btn-primary btn-sm" type="submit">Lưu lịch mới</button>
                                                     </form>
@@ -222,7 +242,7 @@
                             <td><div class="table-actions">
                                 <c:choose>
                                     <c:when test="${empty e.record_id}"><c:if test="${sessionScope.user.role=='STAFF'}"><a class="btn btn-primary btn-sm" href="${pageContext.request.contextPath}/MedicalRecordForm?patientId=${e.patient_id}&encounterId=${e.encounter_id}">Nhập thông tin & sinh hiệu</a></c:if></c:when>
-                                    <c:otherwise><a class="btn btn-light btn-sm" href="${pageContext.request.contextPath}/MedicalRecordForm?recordId=${e.record_id}&tab=4">Mở bệnh án</a></c:otherwise>
+                                    <c:otherwise><a class="btn btn-light btn-sm" href="${pageContext.request.contextPath}/MedicalRecordForm?recordId=${e.record_id}&tab=4">${sessionScope.user.role=='ADMIN'?'Xem bệnh án':'Mở bệnh án'}</a></c:otherwise>
                                 </c:choose>
                                 <c:if test="${sessionScope.user.role=='DOCTOR' && e.status!='IN_CONSULTATION' && e.status!='WAITING_LAB'}">
                                     <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="inline-form">
@@ -319,17 +339,53 @@
                             <td><span class="status-pill status-${l.status}">${l.status=='ORDERED'?'Chờ kết quả':l.status=='RESULTED'?'Đã có kết quả':l.status=='REVIEWED'?'Đã xem xét':l.status=='CANCELLED'?'Đã hủy':'Đang xử lý'}</span></td>
                             <td>
                                 <c:if test="${(sessionScope.user.role=='STAFF'||sessionScope.user.role=='ADMIN')&&l.status!='REVIEWED'&&l.status!='CANCELLED'}">
-                                    <details class="row-disclosure align-right">
-                                        <summary class="btn btn-primary btn-sm">Nhập kết quả</summary>
-                                        <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="result-form row-disclosure-panel">
-                                            <input type="hidden" name="action" value="labResult"><input type="hidden" name="labOrderId" value="${l.lab_order_id}">
-                                            <label>Kết quả<input name="resultValue" placeholder="Ví dụ: 7.2" required></label>
-                                            <label>Đơn vị<input name="resultUnit" placeholder="mmol/L"></label>
-                                            <label>Tham chiếu<input name="referenceRange" placeholder="3.9–6.1"></label>
-                                            <label>Đánh giá<select name="resultFlag"><option value="NORMAL">Bình thường</option><option value="LOW">Thấp</option><option value="HIGH">Cao</option><option value="CRITICAL">Nguy cấp</option></select></label>
-                                            <button class="btn btn-success btn-sm" type="submit">Lưu kết quả</button>
+                                    <button class="btn btn-primary btn-sm" type="button"
+                                            onclick="document.getElementById('lab-result-${l.lab_order_id}').showModal()">Nhập kết quả</button>
+                                    <dialog class="lab-result-dialog" id="lab-result-${l.lab_order_id}"
+                                            aria-labelledby="lab-result-title-${l.lab_order_id}">
+                                        <div class="lab-result-dialog-header">
+                                            <div>
+                                                <span>NHẬP KẾT QUẢ XÉT NGHIỆM</span>
+                                                <strong id="lab-result-title-${l.lab_order_id}"><c:out value="${l.test_code}"/> · <c:out value="${l.patient_name}"/></strong>
+                                                <small><c:out value="${l.test_name}"/></small>
+                                            </div>
+                                            <button class="dialog-close" type="button"
+                                                    onclick="this.closest('dialog').close()" aria-label="Đóng form">×</button>
+                                        </div>
+                                        <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="result-form lab-result-form">
+                                            <input type="hidden" name="action" value="labResult">
+                                            <input type="hidden" name="labOrderId" value="${l.lab_order_id}">
+                                            <div class="form-group">
+                                                <label class="required">Kết quả</label>
+                                                <input class="form-control" name="resultValue" maxlength="100"
+                                                       placeholder="Ví dụ: 7.2" required autofocus>
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Đơn vị (Unit)</label>
+                                                <input class="form-control" name="resultUnit" maxlength="30"
+                                                       placeholder="Ví dụ: mmol/L, mg/dL hoặc %">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Khoảng tham chiếu</label>
+                                                <input class="form-control" name="referenceRange" maxlength="100"
+                                                       placeholder="Ví dụ: 3.9–6.1 mmol/L">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Đánh giá kết quả</label>
+                                                <select class="form-control" name="resultFlag">
+                                                    <option value="NORMAL">Bình thường</option>
+                                                    <option value="LOW">Thấp</option>
+                                                    <option value="HIGH">Cao</option>
+                                                    <option value="CRITICAL">Nguy cấp</option>
+                                                </select>
+                                            </div>
+                                            <div class="lab-result-note">Giữ nguyên các đơn vị chuẩn như <strong>mmol/L</strong>, <strong>mg/dL</strong>, <strong>%</strong>. Kiểm tra lại kết quả trước khi lưu.</div>
+                                            <div class="lab-result-actions">
+                                                <button class="btn btn-light" type="button" onclick="this.closest('dialog').close()">Hủy</button>
+                                                <button class="btn btn-success" type="submit">Lưu kết quả</button>
+                                            </div>
                                         </form>
-                                    </details>
+                                    </dialog>
                                 </c:if>
                             </td>
                         </tr>

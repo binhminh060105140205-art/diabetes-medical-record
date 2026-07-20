@@ -55,9 +55,9 @@ public final class Validators {
 
     public static String email(String value, boolean required) {
         String cleaned = clean(value);
-        if (required && cleaned.isEmpty()) throw new IllegalArgumentException("Thư điện tử là bắt buộc.");
+        if (required && cleaned.isEmpty()) throw new IllegalArgumentException("Email là bắt buộc.");
         if (!cleaned.isEmpty() && (!EMAIL.matcher(cleaned).matches() || cleaned.length() > 100)) {
-            throw new IllegalArgumentException("Thư điện tử không hợp lệ.");
+            throw new IllegalArgumentException("Email không hợp lệ.");
         }
         return cleaned;
     }

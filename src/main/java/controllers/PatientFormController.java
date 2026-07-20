@@ -22,11 +22,17 @@ public class PatientFormController extends HttpServlet {
             return;
         }
         String id = request.getParameter("id");
-        if (id != null && id.matches("[1-9][0-9]*")) {
-            Patient patient = new PatientDAO().getById(Integer.parseInt(id));
-            if (patient == null) { response.sendError(404); return; }
-            request.setAttribute("patient", patient); request.setAttribute("editMode", true);
+        if (id == null || id.isBlank()) {
+            response.sendRedirect(request.getContextPath()
+                    + "/StaffDashboard?newPatient=1#new-patient");
+            return;
         }
+        if (!id.matches("[1-9][0-9]*")) { response.sendError(400); return; }
+        Patient patient = new PatientDAO().getById(Integer.parseInt(id));
+        if (patient == null) { response.sendError(404); return; }
+        request.setAttribute("patient", patient);
+        request.setAttribute("editMode", true);
+        request.setAttribute("maxDOB", LocalDate.now().toString());
         request.getRequestDispatcher("views/PatientForm.jsp").forward(request, response);
     }
 
@@ -67,10 +73,18 @@ public class PatientFormController extends HttpServlet {
                 new PatientDAO().update(patient);
                 request.getSession().setAttribute("flashSuccess", "Đã cập nhật thông tin bệnh nhân " + fullName + ".");
             }
-            response.sendRedirect(request.getContextPath() + "/PatientList");
+            response.sendRedirect(request.getContextPath() + "/StaffDashboard#patients");
         } catch (IllegalArgumentException ex) {
+            if (id.isBlank()) {
+                request.setAttribute("intakeError", ex.getMessage());
+                request.setAttribute("showIntakeForm", true);
+                request.getRequestDispatcher("/StaffDashboard").forward(request, response);
+                return;
+            }
             request.setAttribute("err", ex.getMessage());
-            if (!id.isBlank() && id.matches("[1-9][0-9]*")) { request.setAttribute("editMode", true); request.setAttribute("patient", new PatientDAO().getById(Integer.parseInt(id))); }
+            request.setAttribute("editMode", true);
+            request.setAttribute("patient", new PatientDAO().getById(Integer.parseInt(id)));
+            request.setAttribute("maxDOB", LocalDate.now().toString());
             request.getRequestDispatcher("views/PatientForm.jsp").forward(request, response);
         }
     }

@@ -4,9 +4,11 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 
 public final class AppointmentRules {
+    private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     public static final LocalTime OPEN_TIME = LocalTime.of(7, 30);
     public static final LocalTime MORNING_END = LocalTime.NOON;
     public static final LocalTime AFTERNOON_START = LocalTime.of(13, 0);
@@ -18,6 +20,10 @@ public final class AppointmentRules {
     public static final int MAX_ADVANCE_DAYS = 90;
 
     private AppointmentRules() {}
+
+    public static LocalDateTime nowInVietnam() {
+        return LocalDateTime.now(VIETNAM_ZONE);
+    }
 
     public static void validate(LocalDateTime appointmentAt, LocalDateTime now) {
         if (appointmentAt == null || !appointmentAt.isAfter(now.plusMinutes(15))) {

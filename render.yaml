@@ -19,7 +19,7 @@ services:
       - key: DB_POOL_SIZE
         value: "5"
       - key: DB_POOL_MIN_IDLE
-        value: "0"
+        value: "1"
       - key: DB_STATEMENT_TIMEOUT_MS
         value: "10000"
       - key: FLYWAY_ENABLED

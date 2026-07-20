@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Lịch khám — DiaCare</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ux1">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui3">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
@@ -33,7 +33,10 @@
             <form method="post" action="${pageContext.request.contextPath}/PatientAppointments" class="compact-form">
                 <div class="form-group">
                     <label class="required" for="preferredDate">1. Chọn ngày muốn đến</label>
-                    <input id="preferredDate" class="form-control" type="date" name="preferredDate" required>
+                    <select id="preferredDate" class="form-control" name="preferredDate" required>
+                        <option value="">Chọn ngày khám</option>
+                        <c:forEach var="date" items="${appointmentDates}"><option value="${date.value}"><c:out value="${date.label}"/></option></c:forEach>
+                    </select>
                     <small class="form-hint">Từ thứ Hai đến thứ Bảy, trong 90 ngày tới.</small>
                 </div>
 
@@ -115,23 +118,5 @@
     </div>
 </main>
 <jsp:include page="footer.jsp"/>
-<script>
-(function () {
-    const input = document.getElementById('preferredDate');
-    if (!input) return;
-    const format = date => {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return year + '-' + month + '-' + day;
-    };
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const latest = new Date();
-    latest.setDate(latest.getDate() + 90);
-    input.min = format(tomorrow);
-    input.max = format(latest);
-})();
-</script>
 </body>
 </html>
