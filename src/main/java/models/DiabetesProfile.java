@@ -2,6 +2,7 @@ package models;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class DiabetesProfile {
     private int patientId;
@@ -53,5 +54,47 @@ public class DiabetesProfile {
             case "COMBINATION" -> "Điều trị phối hợp";
             default -> "Chưa xác định";
         };
+    }
+
+    public String getCarePathTitle() {
+        if ("TYPE_1".equals(diabetesType)) return "Quy trình điều trị típ 1";
+        if ("TYPE_2".equals(diabetesType)) return "Quy trình điều trị típ 2";
+        return "Cần bác sĩ xác nhận loại đái tháo đường";
+    }
+
+    public String getCarePathSummary() {
+        if ("TYPE_1".equals(diabetesType)) {
+            return "Trọng tâm là insulin, theo dõi đường huyết sát và phòng hạ đường huyết hoặc nhiễm toan ceton.";
+        }
+        if ("TYPE_2".equals(diabetesType)) {
+            return "Trọng tâm là lối sống, thuốc phù hợp và kiểm soát đồng thời cân nặng, huyết áp, mỡ máu.";
+        }
+        return "Chưa áp dụng phác đồ theo típ cho đến khi bác sĩ xác nhận chẩn đoán.";
+    }
+
+    public List<String> getCarePathSteps() {
+        if ("TYPE_1".equals(diabetesType)) {
+            return List.of(
+                    "Xác nhận phác đồ có insulin và hướng dẫn thời điểm sử dụng.",
+                    "Theo dõi đường huyết theo kế hoạch; ghi nhận bữa ăn, vận động và triệu chứng.",
+                    "Đánh giá hạ đường huyết, ketone hoặc dấu hiệu nhiễm toan khi có nguy cơ.",
+                    "Bác sĩ xem kết quả, điều chỉnh điều trị và hẹn tái khám.");
+        }
+        if ("TYPE_2".equals(diabetesType)) {
+            return List.of(
+                    "Đánh giá ăn uống, vận động, cân nặng và nguy cơ tim mạch.",
+                    "Chọn lối sống, thuốc uống, insulin hoặc điều trị phối hợp theo bác sĩ.",
+                    "Theo dõi HbA1c, đường huyết, huyết áp, chức năng thận và mỡ máu.",
+                    "Đánh giá đáp ứng để duy trì hoặc tăng bậc điều trị khi cần.");
+        }
+        return List.of(
+                "Bác sĩ xác nhận típ 1, típ 2 hoặc cần đánh giá thêm.",
+                "Sau khi phân loại, hệ thống mới áp dụng luồng điều trị và theo dõi phù hợp.");
+    }
+
+    public String getCarePathCode() {
+        if ("TYPE_1".equals(diabetesType)) return "type-1";
+        if ("TYPE_2".equals(diabetesType)) return "type-2";
+        return "unknown";
     }
 }
