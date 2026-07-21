@@ -89,7 +89,8 @@ public class PatientDAO extends DBContext {
                 ? " WHERE COALESCE(u.status,'ACTIVE') <> 'DELETED' AND "
                   + "(p.full_name ILIKE ? OR p.phone ILIKE ? OR p.health_insurance_no ILIKE ? OR p.national_id ILIKE ?)"
                 : " WHERE COALESCE(u.status,'ACTIVE') <> 'DELETED'";
-        String order = searching ? " ORDER BY p.full_name" : " ORDER BY p.created_at DESC";
+        // The outer CTE query exposes patient columns without the original p alias.
+        String order = searching ? " ORDER BY full_name" : " ORDER BY created_at DESC";
         String sql = "WITH filtered AS (SELECT p.* FROM patients p LEFT JOIN users u ON u.user_id=p.user_id"
                 + where + "), total AS (SELECT COUNT(*) value FROM filtered), data AS (SELECT * FROM filtered"
                 + order + " LIMIT ? OFFSET ?) SELECT d.*,t.value total FROM total t LEFT JOIN data d ON TRUE";
