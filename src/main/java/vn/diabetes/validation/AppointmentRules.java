@@ -16,7 +16,7 @@ public final class AppointmentRules {
     public static final int SLOT_MINUTES = 30;
     public static final int MAX_PATIENTS_PER_DOCTOR_PER_PERIOD = 8;
     public static final int MAX_PATIENTS_PER_DOCTOR_PER_DAY = 16;
-    public static final int MAX_ACTIVE_FUTURE_APPOINTMENTS_PER_PATIENT = 2;
+    public static final int MAX_ACTIVE_FUTURE_APPOINTMENTS_PER_PATIENT = 5;
     public static final int MAX_ADVANCE_DAYS = 90;
 
     private AppointmentRules() {}
@@ -104,6 +104,6 @@ public final class AppointmentRules {
     public static void validatePatientRequestCapacity(long sameDay, long activeFuture) {
         if (sameDay > 0) throw new IllegalArgumentException("Bạn đã có một lịch đang xử lý trong ngày này.");
         if (activeFuture >= MAX_ACTIVE_FUTURE_APPOINTMENTS_PER_PATIENT)
-            throw new IllegalArgumentException("Bạn chỉ được có tối đa 2 lịch khám sắp tới.");
+            throw new IllegalArgumentException("Bạn chỉ được có tối đa 5 lịch khám sắp tới.");
     }
 }

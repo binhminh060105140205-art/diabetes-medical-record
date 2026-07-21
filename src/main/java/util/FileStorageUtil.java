@@ -44,6 +44,23 @@ public class FileStorageUtil {
         return submitted.substring(submitted.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT);
     }
 
+    public static void validateDoctorImage(Part part, String label, boolean required) {
+        if (part == null || part.getSize() == 0) {
+            if (required) throw new IllegalArgumentException(label + " là bắt buộc.");
+            return;
+        }
+        if (part.getSize() > MAX_FILE_SIZE) {
+            throw new IllegalArgumentException(label + " vượt quá 5MB.");
+        }
+        String contentType = part.getContentType();
+        String ext = extractExtension(part);
+        if (contentType == null || !contentType.toLowerCase(Locale.ROOT).startsWith("image/")
+                || ext == null || !ALLOWED_EXT.contains(ext)) {
+            throw new IllegalArgumentException(
+                    label + " chỉ chấp nhận JPG, JPEG, PNG hoặc WEBP.");
+        }
+    }
+
     /**
      * Lưu ảnh upload cho bác sĩ. Trả về tên file đã lưu (chỉ cần lưu tên này vào DB),
      * hoặc null nếu part rỗng / không hợp lệ.
@@ -54,17 +71,8 @@ public class FileStorageUtil {
      */
     public static String saveDoctorImage(Part part, int doctorId, String type) throws IOException {
         if (part == null || part.getSize() == 0) return null;
-
-        if (part.getSize() > MAX_FILE_SIZE) {
-            throw new IOException("File vượt quá dung lượng cho phép (tối đa 5MB).");
-        }
-
-        String contentType = part.getContentType();
+        validateDoctorImage(part, "Ảnh hồ sơ bác sĩ", false);
         String ext = extractExtension(part);
-        if (contentType == null || !contentType.toLowerCase(Locale.ROOT).startsWith("image/")
-                || ext == null || !ALLOWED_EXT.contains(ext)) {
-            throw new IOException("Chỉ chấp nhận file ảnh (jpg, jpeg, png, webp).");
-        }
 
         File targetFile = new File(getDoctorDir(doctorId), type + "." + ext);
 

@@ -1,5 +1,6 @@
 package controllers;
 
+import dal.ClinicWorkflowDAO;
 import dal.MedicalRecordDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -36,6 +37,8 @@ public class DoctorDashboardController extends HttpServlet {
             request.setAttribute("myRecords", data.recent());
             request.setAttribute("pendingRecords", data.pending());
             request.setAttribute("totalPending", data.pendingCount());
+            request.setAttribute("assignedAppointments",
+                    new ClinicWorkflowDAO().assignedAppointmentsForDoctor(doctor.getDoctorId()));
         }
 
         request.getRequestDispatcher("views/DoctorDashboard.jsp").forward(request, response);

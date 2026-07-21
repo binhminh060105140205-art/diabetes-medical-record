@@ -75,16 +75,16 @@
     <div class="form-container">
         <div class="info-row">
             <div><b>Tên đăng nhập</b><c:out value="${targetUser.username}"/></div>
-            <div><b>Số điện thoại</b><c:out value="${targetUser.phone}" default="—"/></div>
-            <div><b>Email/Gmail</b><c:out value="${targetUser.email}" default="—"/></div>
-            <div><b>Số CCCD</b><c:out value="${targetUser.cccd}" default="—"/></div>
+            <div><b>Số điện thoại</b><c:choose><c:when test="${not empty targetUser.phone}"><c:out value="${targetUser.phone}"/></c:when><c:otherwise>Chưa cập nhật</c:otherwise></c:choose></div>
+            <div><b>Email/Gmail</b><c:choose><c:when test="${not empty targetUser.email}"><c:out value="${targetUser.email}"/></c:when><c:otherwise>Chưa cập nhật</c:otherwise></c:choose></div>
+            <div><b>Số CCCD</b><c:choose><c:when test="${not empty targetUser.cccd}"><c:out value="${targetUser.cccd}"/></c:when><c:otherwise>Chưa cập nhật</c:otherwise></c:choose></div>
         </div>
 
         <c:if test="${not empty doctor}">
         <div class="info-row">
-            <div><b>Chuyên khoa</b><c:out value="${doctor.specialty}"/></div>
-            <div><b>Số chứng chỉ hành nghề</b><c:out value="${doctor.licenseNo}"/></div>
-            <div><b>Học vị / Bằng cấp</b><c:out value="${doctor.degree}" default="—"/></div>
+            <div><b>Chuyên khoa</b><c:choose><c:when test="${not empty doctor.specialty}"><c:out value="${doctor.specialty}"/></c:when><c:otherwise>Chưa cập nhật</c:otherwise></c:choose></div>
+            <div><b>Số chứng chỉ hành nghề</b><c:choose><c:when test="${not empty doctor.licenseNo}"><c:out value="${doctor.licenseNo}"/></c:when><c:otherwise>Chưa cập nhật</c:otherwise></c:choose></div>
+            <div><b>Học vị / Bằng cấp</b><c:choose><c:when test="${not empty doctor.degree}"><c:out value="${doctor.degree}"/></c:when><c:otherwise>Chưa cập nhật</c:otherwise></c:choose></div>
             <div><b>Nhóm tiểu đường ưu tiên</b><c:out value="${doctor.diabetesFocusLabel}"/></div>
         </div>
         </c:if>

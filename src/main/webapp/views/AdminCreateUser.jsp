@@ -26,7 +26,7 @@
     </c:if>
 
     <div class="card">
-        <form action="${pageContext.request.contextPath}/AdminCreateUser" method="post" enctype="multipart/form-data" data-validate="createUser">
+        <form action="${pageContext.request.contextPath}/AdminCreateUser" method="post" enctype="multipart/form-data" data-validate="createUser" novalidate>
             <div class="form-row">
                 <div class="form-group">
                     <label class="required">Tên đăng nhập</label>
@@ -62,8 +62,8 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label>Ngày sinh</label>
-                    <input type="date" name="dob" class="form-control" min="1900-01-01" max="${today}" value="${fn:escapeXml(param.dob)}">
+                    <label class="required">Ngày sinh</label>
+                    <input type="date" name="dob" class="form-control" min="1900-01-01" max="${today}" value="${fn:escapeXml(param.dob)}" required>
                 </div>
                 <div class="form-group">
                     <label>Giới tính</label>
@@ -74,15 +74,15 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Số CCCD</label>
-                    <input type="text" name="cccd" class="form-control" inputmode="numeric" pattern="[0-9]{12}" maxlength="12" value="${fn:escapeXml(param.cccd)}">
+                    <label class="required">Số CCCD</label>
+                    <input type="text" name="cccd" class="form-control" inputmode="numeric" pattern="[0-9]{12}" maxlength="12" value="${fn:escapeXml(param.cccd)}" required>
                 </div>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label>Địa chỉ</label>
-                    <input type="text" name="address" class="form-control" maxlength="255" value="${fn:escapeXml(param.address)}" autocomplete="street-address">
+                    <label class="required">Địa chỉ</label>
+                    <input type="text" name="address" class="form-control" maxlength="255" value="${fn:escapeXml(param.address)}" autocomplete="street-address" required>
                 </div>
             </div>
 
@@ -100,8 +100,8 @@
                         <input type="text" name="licenseNo" class="form-control" maxlength="50" value="${fn:escapeXml(param.licenseNo)}" data-doctor-required>
                     </div>
                     <div class="form-group">
-                        <label>Học vị / Bằng cấp</label>
-                        <input type="text" name="degree" class="form-control" maxlength="50" value="${fn:escapeXml(param.degree)}" placeholder="Thạc sĩ, Bác sĩ CKI...">
+                        <label class="required">Học vị / Bằng cấp</label>
+                        <input type="text" name="degree" class="form-control" maxlength="50" value="${fn:escapeXml(param.degree)}" placeholder="Thạc sĩ, Bác sĩ CKI..." data-doctor-required>
                     </div>
                     <div class="form-group">
                         <label>Nhóm tiểu đường ưu tiên</label>
@@ -115,19 +115,19 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Ảnh khuôn mặt</label>
-                        <input type="file" name="faceImage" class="form-control" accept="image/png,image/jpeg,image/webp">
+                        <label class="required">Ảnh khuôn mặt</label>
+                        <input type="file" name="faceImage" class="form-control" accept="image/png,image/jpeg,image/webp" data-doctor-required>
                     </div>
                     <div class="form-group">
-                        <label>Ảnh CCCD</label>
-                        <input type="file" name="cccdImage" class="form-control" accept="image/png,image/jpeg,image/webp">
+                        <label class="required">Ảnh CCCD</label>
+                        <input type="file" name="cccdImage" class="form-control" accept="image/png,image/jpeg,image/webp" data-doctor-required>
                     </div>
                     <div class="form-group">
-                        <label>Ảnh chứng chỉ hành nghề</label>
-                        <input type="file" name="licenseImage" class="form-control" accept="image/png,image/jpeg,image/webp">
+                        <label class="required">Ảnh chứng chỉ hành nghề</label>
+                        <input type="file" name="licenseImage" class="form-control" accept="image/png,image/jpeg,image/webp" data-doctor-required>
                     </div>
                 </div>
-                <p class="form-hint file-hint">Có thể bỏ trống và để quản trị viên bổ sung sau trong hồ sơ bác sĩ. Bác sĩ chỉ được xem, không tự thay ảnh. Chỉ nhận JPG/PNG/WEBP, tối đa 5MB mỗi ảnh.</p>
+                <p class="form-hint file-hint">Bắt buộc đủ ba ảnh khi tạo bác sĩ. Bác sĩ chỉ được xem; quản trị viên chịu trách nhiệm cập nhật. Chỉ nhận JPG/PNG/WEBP, tối đa 5MB mỗi ảnh.</p>
             </div>
 
             <div class="form-actions"><button type="submit" class="btn btn-primary">Tạo tài khoản</button><a href="${pageContext.request.contextPath}/AdminDashboard" class="btn btn-light">Hủy</a></div>
@@ -146,6 +146,6 @@
     toggleDoctorFields();
 </script>
 <jsp:include page="footer.jsp"/>
-<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260721-web-audit1"></script>
+<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260721-web-audit2"></script>
 </body>
 </html>

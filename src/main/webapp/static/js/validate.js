@@ -62,12 +62,25 @@ function validatePatientForm() {
     }
 
     const dob = val('dateOfBirth');
-    if (dob) {
+    if (!dob) {
+        showErr('dateOfBirth', 'Ngày sinh là bắt buộc');
+        ok = false;
+    } else {
         const year = new Date(dob).getFullYear();
         if (year < 1900 || new Date(dob) > new Date()) {
             showErr('dateOfBirth', 'Ngày sinh không hợp lệ');
             ok = false;
         }
+    }
+
+    if (val('address').length < 5) {
+        showErr('address', 'Vui lòng nhập địa chỉ đầy đủ');
+        ok = false;
+    }
+
+    if (!val('gender')) {
+        showErr('gender', 'Vui lòng chọn giới tính');
+        ok = false;
     }
 
     const bhyt = val('healthInsuranceNo');
@@ -245,6 +258,29 @@ function validateCreateUser() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val('email'))) {
         showErr('email', 'Email không đúng định dạng');
         ok = false;
+    }
+    if (!val('dob')) {
+        showErr('dob', 'Ngày sinh là bắt buộc');
+        ok = false;
+    }
+    if (!/^[0-9]{12}$/.test(val('cccd'))) {
+        showErr('cccd', 'CCCD phải gồm đúng 12 chữ số');
+        ok = false;
+    }
+    if (val('address').length < 5) {
+        showErr('address', 'Vui lòng nhập địa chỉ đầy đủ');
+        ok = false;
+    }
+    if (val('role') === 'DOCTOR') {
+        if (!val('licenseNo')) { showErr('licenseNo', 'Số chứng chỉ hành nghề là bắt buộc'); ok = false; }
+        if (!val('degree')) { showErr('degree', 'Học vị / Bằng cấp là bắt buộc'); ok = false; }
+        ['faceImage', 'cccdImage', 'licenseImage'].forEach(function (name) {
+            const input = document.querySelector('[name=' + name + ']');
+            if (!input || !input.files || input.files.length === 0) {
+                showErr(name, 'Vui lòng chọn đủ ảnh bắt buộc');
+                ok = false;
+            }
+        });
     }
     return ok;
 }

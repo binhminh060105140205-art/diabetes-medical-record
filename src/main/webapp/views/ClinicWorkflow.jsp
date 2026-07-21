@@ -322,19 +322,13 @@
             <c:if test="${sessionScope.user.role=='STAFF'||sessionScope.user.role=='ADMIN'}">
                 <div class="lab-import-panel">
                     <div>
-                        <strong>Import kết quả từ file xét nghiệm</strong>
-                        <small>File TXT/CSV gồm mã bệnh án, đường huyết, HbA1c và các chỉ số mỡ máu. Hệ thống sẽ kiểm tra phạm vi và chỉ định trước khi lưu.</small>
+                        <strong>Nhận kết quả từ máy xét nghiệm</strong>
+                        <small>Sửa dữ liệu trong <code>src/main/webapp/static/templates/lab-results-import.txt</code>, sau đó bấm nút import.</small>
                     </div>
                     <div class="lab-import-actions">
                         <form method="post" action="${pageContext.request.contextPath}/LabResultImport" class="lab-import-form">
-                            <input type="hidden" name="source" value="template">
-                            <button class="btn btn-primary" type="submit">Import file trong project</button>
+                            <button class="btn btn-primary" type="submit">Import kết quả từ máy xét nghiệm</button>
                         </form>
-                        <form method="post" action="${pageContext.request.contextPath}/LabResultImport" enctype="multipart/form-data" class="lab-import-form">
-                            <input type="file" name="labFile" class="form-control" accept=".txt,.csv,text/plain,text/csv" required>
-                            <button class="btn btn-light" type="submit">Import file đã chọn</button>
-                        </form>
-                        <a class="btn btn-light" href="${pageContext.request.contextPath}/static/templates/lab-results-import.txt" download>Tải file mẫu</a>
                     </div>
                 </div>
             </c:if>

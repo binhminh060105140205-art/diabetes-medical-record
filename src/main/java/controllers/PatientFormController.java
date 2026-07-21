@@ -51,8 +51,9 @@ public class PatientFormController extends HttpServlet {
         String address = ControllerSupport.clean(request.getParameter("address"));
         String insurance = ControllerSupport.clean(request.getParameter("healthInsuranceNo"));
         try {
-            fullName=Validators.fullName(fullName); phone=Validators.phone(phone); gender=Validators.gender(gender); address=Validators.address(address); insurance=Validators.insurance(insurance);
-            LocalDate dob = Validators.dateOfBirth(dobText,false);
+            fullName=Validators.fullName(fullName); phone=Validators.phone(phone); gender=Validators.gender(gender);
+            address=Validators.max(Validators.required(address,"Địa chỉ"),255,"Địa chỉ"); insurance=Validators.insurance(insurance);
+            LocalDate dob = Validators.dateOfBirth(dobText,true);
             if (id.isBlank()) {
                 String username = ControllerSupport.clean(request.getParameter("username"));
                 String password = request.getParameter("password");
@@ -92,6 +93,11 @@ public class PatientFormController extends HttpServlet {
             request.setAttribute("patient", new PatientDAO().getById(Integer.parseInt(id)));
             request.setAttribute("maxDOB", LocalDate.now().toString());
             request.getRequestDispatcher("views/PatientForm.jsp").forward(request, response);
+        } catch (IllegalStateException ex) {
+            request.setAttribute("intakeError",
+                    "Không thể lưu hồ sơ lúc này. Vui lòng kiểm tra dữ liệu và thử lại.");
+            request.setAttribute("showIntakeForm", true);
+            request.getRequestDispatcher("/StaffDashboard").forward(request, response);
         }
     }
 }

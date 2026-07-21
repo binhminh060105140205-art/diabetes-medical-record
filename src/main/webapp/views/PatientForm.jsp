@@ -24,7 +24,7 @@
 
     <div class="card">
         <div class="card-title">Thông tin hành chính</div>
-        <form action="${pageContext.request.contextPath}/PatientForm" method="post" data-validate="patient">
+        <form action="${pageContext.request.contextPath}/PatientForm" method="post" data-validate="patient" novalidate>
             <input type="hidden" name="patientId" value="${patient.patientId}">
 
             <div class="form-row">
@@ -36,10 +36,10 @@
                     <span class="err-msg" id="err_fullName"></span>
                 </div>
                 <div class="form-group">
-                    <label>Ngày sinh</label>
+                    <label class="required">Ngày sinh</label>
                     <input type="date" name="dateOfBirth" class="form-control"
                            value="${fn:escapeXml(not empty param.dateOfBirth ? param.dateOfBirth : patient.dateOfBirth)}"
-                           min="1900-01-01" max="${maxDOB}">
+                           min="1900-01-01" max="${maxDOB}" required>
                     <span class="err-msg" id="err_dob"></span>
                 </div>
                 <div class="form-group">
@@ -71,9 +71,9 @@
             </div>
 
             <div class="form-group">
-                <label>Địa chỉ</label>
+                <label class="required">Địa chỉ</label>
                 <textarea name="address" class="form-control"
-                          maxlength="255" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố"><c:out value="${not empty param.address ? param.address : patient.address}"/></textarea>
+                          maxlength="255" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố" required><c:out value="${not empty param.address ? param.address : patient.address}"/></textarea>
             </div>
 
             <c:if test="${not editMode}">
@@ -93,7 +93,7 @@
     </div>
 </div>
 
-<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260721-web-audit1"></script>
+<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260721-web-audit2"></script>
 <jsp:include page="footer.jsp"/>
 </body>
 </html>

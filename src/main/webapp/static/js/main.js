@@ -168,13 +168,18 @@ document.addEventListener('DOMContentLoaded', function () {
 // Make long forms explicit about the action currently being processed without
 // disabling named submit buttons that carry status values to the server.
 document.addEventListener('submit', function (event) {
-    if (!event.target.checkValidity()) return;
-    event.target.classList.add('is-submitting');
+    // Chờ các bộ validate khác chạy xong để không khóa form khi submit bị hủy.
+    if (event.defaultPrevented || !event.target.checkValidity()) return;
+    const form = event.target;
     const submitter = event.submitter;
-    if (submitter) {
-        submitter.dataset.originalLabel = submitter.textContent;
-        submitter.textContent = submitter.dataset.loadingLabel || 'Đang xử lý...';
-    }
+    window.setTimeout(function () {
+        if (event.defaultPrevented || !form.checkValidity()) return;
+        form.classList.add('is-submitting');
+        if (submitter) {
+            submitter.dataset.originalLabel = submitter.textContent;
+            submitter.textContent = submitter.dataset.loadingLabel || 'Đang xử lý...';
+        }
+    }, 0);
 });
 
 // Show feedback only when a request is genuinely slow. Normal 150-300 ms

@@ -30,14 +30,11 @@
         <% session.removeAttribute("flashSuccess"); %>
     </c:if>
 
-    <details class="card intake-disclosure" id="new-patient">
-        <summary>
-            <span>
-                <strong>Tiếp nhận bệnh nhân mới</strong>
-                <small>Tạo hồ sơ và tài khoản đăng nhập ngay tại trang này.</small>
-            </span>
-            <span class="btn btn-light btn-sm">Mở / thu gọn form</span>
-        </summary>
+    <section class="card intake-disclosure" id="new-patient" hidden>
+        <div class="intake-panel-heading">
+            <div><strong>Tiếp nhận bệnh nhân mới</strong><small>Tạo hồ sơ và tài khoản đăng nhập.</small></div>
+            <button class="btn btn-light btn-sm" type="button" data-close-intake>Đóng form</button>
+        </div>
         <div class="intake-disclosure-content">
             <c:if test="${not empty intakeError}">
                 <div class="alert alert-danger"><c:out value="${intakeError}"/></div>
@@ -47,7 +44,7 @@
                 <span>Tìm bằng số điện thoại, BHYT hoặc CCCD ở danh sách bên dưới để tránh hồ sơ trùng.</span>
             </div>
             <form action="${pageContext.request.contextPath}/PatientForm" method="post"
-                  data-validate="patient" class="patient-intake-form">
+                  data-validate="patient" class="patient-intake-form" novalidate>
                 <div class="patient-intake-grid">
                     <div class="form-group">
                         <label class="required" for="intakeFullName">Họ và tên</label>
@@ -57,9 +54,9 @@
                         <span class="err-msg" id="err_fullName"></span>
                     </div>
                     <div class="form-group">
-                        <label for="intakeDob">Ngày sinh</label>
+                        <label class="required" for="intakeDob">Ngày sinh</label>
                         <input id="intakeDob" class="form-control" type="date" name="dateOfBirth"
-                               value="${fn:escapeXml(param.dateOfBirth)}" max="${maxDOB}">
+                               value="${fn:escapeXml(param.dateOfBirth)}" min="1900-01-01" max="${maxDOB}" required>
                         <span class="err-msg" id="err_dob"></span>
                     </div>
                     <div class="form-group">
@@ -85,10 +82,10 @@
                         <span class="err-msg" id="err_bhyt"></span>
                     </div>
                     <div class="form-group patient-intake-wide">
-                        <label for="intakeAddress">Địa chỉ</label>
+                        <label class="required" for="intakeAddress">Địa chỉ</label>
                         <textarea id="intakeAddress" class="form-control" name="address" maxlength="255"
                                   autocomplete="street-address"
-                                  placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố"><c:out value="${param.address}"/></textarea>
+                                  placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố" required><c:out value="${param.address}"/></textarea>
                     </div>
                 </div>
 
@@ -126,7 +123,7 @@
                 </div>
             </form>
         </div>
-    </details>
+    </section>
 
     <section class="card patient-management-card" id="patients">
         <div class="section-header">
@@ -203,21 +200,33 @@
 
 <script>
 document.querySelectorAll('[data-open-intake]').forEach(function (button) {
+    button.addEventListener('click', function (event) {
+        event.preventDefault();
+        var intake = document.getElementById('new-patient');
+        if (intake) {
+            intake.hidden = false;
+            intake.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            var firstField = intake.querySelector('input,select,textarea');
+            if (firstField) firstField.focus({ preventScroll: true });
+        }
+    });
+});
+document.querySelectorAll('[data-close-intake]').forEach(function (button) {
     button.addEventListener('click', function () {
         var intake = document.getElementById('new-patient');
-        if (intake) intake.open = true;
+        if (intake) intake.hidden = true;
     });
 });
 var intake = document.getElementById('new-patient');
 var shouldOpenIntake = ${showIntakeForm == true || param.newPatient == '1'};
-if (intake && shouldOpenIntake) intake.open = true;
+if (intake && shouldOpenIntake) intake.hidden = false;
 if (${showIntakeForm == true}) {
     window.addEventListener('load', function () {
         document.getElementById('new-patient').scrollIntoView({ block: 'start' });
     });
 }
 </script>
-<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260721-web-audit1"></script>
+<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260721-web-audit2"></script>
 <jsp:include page="footer.jsp"/>
 </body>
 </html>

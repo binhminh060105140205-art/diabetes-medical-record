@@ -63,8 +63,14 @@ public class MedicalRecordDAO extends DBContext {
                      dp.hba1c_target dp_hba1c_target,
                      dp.updated_at dp_updated_at,
                      CASE WHEN ? IS NULL THEN TRUE ELSE EXISTS (
-                       SELECT 1 FROM doctors d JOIN encounters e ON e.doctor_id=d.doctor_id
-                       WHERE d.user_id=? AND e.patient_id=p.patient_id
+                       SELECT 1 FROM doctors d
+                       WHERE d.user_id=? AND (
+                         EXISTS (SELECT 1 FROM encounters e
+                                 WHERE e.doctor_id=d.doctor_id AND e.patient_id=p.patient_id)
+                         OR EXISTS (SELECT 1 FROM appointments a
+                                    WHERE a.doctor_id=d.doctor_id AND a.patient_id=p.patient_id
+                                      AND a.status IN ('BOOKED','CONFIRMED','CHECKED_IN'))
+                       )
                      ) END authorized
               FROM patients p
               LEFT JOIN diabetes_profiles dp ON dp.patient_id=p.patient_id
@@ -362,6 +368,7 @@ public class MedicalRecordDAO extends DBContext {
             )
             SELECT i.*,s.doctor_id selected_doctor_id,s.user_id selected_user_id,
                    s.specialty selected_specialty,s.license_no selected_license_no,
+                   s.degree selected_degree,
                    s.face_image_path selected_face_image_path,
                    s.cccd_image_path selected_cccd_image_path,
                    s.license_image_path selected_license_image_path,
@@ -384,6 +391,7 @@ public class MedicalRecordDAO extends DBContext {
                         doctor.setFullName(rows.getString("selected_full_name"));
                         doctor.setSpecialty(rows.getString("selected_specialty"));
                         doctor.setLicenseNo(rows.getString("selected_license_no"));
+                        doctor.setDegree(rows.getString("selected_degree"));
                         doctor.setFaceImagePath(rows.getString("selected_face_image_path"));
                         doctor.setCccdImagePath(rows.getString("selected_cccd_image_path"));
                         doctor.setLicenseImagePath(rows.getString("selected_license_image_path"));

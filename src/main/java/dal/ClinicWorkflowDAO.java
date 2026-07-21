@@ -128,6 +128,21 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
     public record PatientAppointmentPageData(Integer patientId,
             List<Map<String,Object>> appointments) {}
 
+    public List<Map<String,Object>> assignedAppointmentsForDoctor(int doctorId) {
+        return query("""
+                SELECT a.appointment_id,a.appointment_at,a.preferred_date,a.preferred_period,
+                       a.status,a.reason,a.note,p.patient_id,p.full_name patient_name,p.phone,
+                       COALESCE(dp.diabetes_type,'UNKNOWN') diabetes_type
+                FROM appointments a
+                JOIN patients p ON p.patient_id=a.patient_id
+                LEFT JOIN diabetes_profiles dp ON dp.patient_id=p.patient_id
+                WHERE a.doctor_id=?
+                  AND a.status IN ('BOOKED','CONFIRMED','CHECKED_IN')
+                  AND (a.appointment_at IS NULL OR a.appointment_at>=CURRENT_DATE)
+                ORDER BY a.appointment_at NULLS LAST,a.preferred_date,a.appointment_id
+                LIMIT 30""", doctorId);
+    }
+
     /** Loads patients, doctors and the latest appointments in one Aiven round-trip. */
     public AppointmentOperationsPageData loadAppointmentOperationsPage() {
         String sql = """

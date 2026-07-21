@@ -1348,6 +1348,18 @@ tbody tr:hover { background: #f7fbfc; }
 .staff-patient-workspace { display: grid; gap: 18px; }
 .staff-patient-workspace .workspace-heading { margin-bottom: 0; }
 .intake-disclosure { padding: 0; overflow: hidden; }
+.intake-panel-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--ux-line);
+    background: #f7f8ff;
+}
+.intake-panel-heading > div { display: grid; gap: 4px; }
+.intake-panel-heading strong { color: var(--ux-navy); font-size: 15px; }
+.intake-panel-heading small { color: var(--ux-muted); font-size: 11px; }
 .intake-disclosure > summary {
     display: flex;
     align-items: center;

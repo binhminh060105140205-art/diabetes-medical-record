@@ -79,11 +79,11 @@ class AppointmentRulesTest {
 
     @Test
     void limitsFutureAppointmentsPerPatient() {
-        assertDoesNotThrow(() -> AppointmentRules.validatePatientRequestCapacity(0, 1));
+        assertDoesNotThrow(() -> AppointmentRules.validatePatientRequestCapacity(0, 4));
         assertThrows(IllegalArgumentException.class,
                 () -> AppointmentRules.validatePatientRequestCapacity(1, 1));
         assertThrows(IllegalArgumentException.class,
-                () -> AppointmentRules.validatePatientRequestCapacity(0, 2));
+                () -> AppointmentRules.validatePatientRequestCapacity(0, 5));
     }
 
     @Test

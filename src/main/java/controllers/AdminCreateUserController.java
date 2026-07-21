@@ -63,19 +63,37 @@ public class AdminCreateUserController extends HttpServlet {
         String licenseNo = request.getParameter("licenseNo");
         String degree    = request.getParameter("degree");
         String diabetesFocus = request.getParameter("diabetesFocus");
+        Part facePart = null;
+        Part cccdPart = null;
+        Part licensePart = null;
 
         try {
             username=Validators.username(username); password=Validators.password(password,"Mật khẩu");
             fullName=Validators.fullName(fullName); phone=Validators.phone(phone); email=Validators.email(email,true);
-            gender=Validators.gender(gender); address=Validators.address(address); role=Validators.role(role); cccd=Validators.cccd(cccd);
+            gender=Validators.gender(gender);
+            address=Validators.max(Validators.required(address,"Địa chỉ"),255,"Địa chỉ");
+            role=Validators.role(role);
+            cccd=Validators.cccd(Validators.required(cccd,"Số CCCD"));
             if (!java.util.Set.of("STAFF", "DOCTOR").contains(role)) {
                 throw new IllegalArgumentException("Chỉ được tạo tài khoản nhân viên tiếp nhận hoặc bác sĩ.");
             }
-            licenseNo=Validators.max(licenseNo,50,"Số chứng chỉ"); degree=Validators.max(degree,50,"Học vị");
-            if("DOCTOR".equals(role)) licenseNo=Validators.required(licenseNo,"Số chứng chỉ hành nghề");
+            licenseNo=Validators.max(licenseNo,50,"Số chứng chỉ"); degree=Validators.max(degree,50,"Học vị / Bằng cấp");
+            if("DOCTOR".equals(role)) {
+                licenseNo=Validators.required(licenseNo,"Số chứng chỉ hành nghề");
+                degree=Validators.required(degree,"Học vị / Bằng cấp");
+                facePart=request.getPart("faceImage");
+                cccdPart=request.getPart("cccdImage");
+                licensePart=request.getPart("licenseImage");
+                FileStorageUtil.validateDoctorImage(facePart,"Ảnh khuôn mặt",true);
+                FileStorageUtil.validateDoctorImage(cccdPart,"Ảnh CCCD",true);
+                FileStorageUtil.validateDoctorImage(licensePart,"Ảnh chứng chỉ hành nghề",true);
+            }
             if (diabetesFocus == null || !java.util.Set.of("TYPE_1","TYPE_2","BOTH").contains(diabetesFocus)) diabetesFocus="BOTH";
         } catch(IllegalArgumentException ex) {
             request.setAttribute("err",ex.getMessage()); request.getRequestDispatcher("views/AdminCreateUser.jsp").forward(request,response); return;
+        } catch (ServletException | IOException | IllegalStateException ex) {
+            request.setAttribute("err", "Không thể đọc ảnh hồ sơ. Vui lòng chọn ảnh JPG, PNG hoặc WEBP dưới 5MB.");
+            request.getRequestDispatcher("views/AdminCreateUser.jsp").forward(request,response); return;
         }
 
         User newUser = new User();
@@ -89,7 +107,7 @@ public class AdminCreateUserController extends HttpServlet {
         newUser.setRole(role);
         newUser.setCccd(cccd);
 
-        try { LocalDate dob=Validators.dateOfBirth(dobString,false); if(dob!=null)newUser.setDob(java.sql.Date.valueOf(dob)); }
+        try { LocalDate dob=Validators.dateOfBirth(dobString,true); newUser.setDob(java.sql.Date.valueOf(dob)); }
         catch(IllegalArgumentException ex){request.setAttribute("err",ex.getMessage());request.getRequestDispatcher("views/AdminCreateUser.jsp").forward(request,response);return;}
 
         Doctor doc = null;
@@ -122,10 +140,6 @@ public class AdminCreateUserController extends HttpServlet {
             DoctorDAO docDAO = new DoctorDAO();
 
             try {
-                Part facePart    = request.getPart("faceImage");
-                Part cccdPart    = request.getPart("cccdImage");
-                Part licensePart = request.getPart("licenseImage");
-
                 String faceFile    = FileStorageUtil.saveDoctorImage(facePart, doc.getDoctorId(), FileStorageUtil.TYPE_FACE);
                 String cccdFile    = FileStorageUtil.saveDoctorImage(cccdPart, doc.getDoctorId(), FileStorageUtil.TYPE_CCCD);
                 String licenseFile = FileStorageUtil.saveDoctorImage(licensePart, doc.getDoctorId(), FileStorageUtil.TYPE_LICENSE);

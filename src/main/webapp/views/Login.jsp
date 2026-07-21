@@ -45,7 +45,7 @@
                 <div class="alert alert-danger"><span>!</span><c:out value="${requestScope.err}"/></div>
             </c:if>
 
-            <form action="${pageContext.request.contextPath}/Login" method="post" data-validate="login" class="auth-form">
+            <form action="${pageContext.request.contextPath}/Login" method="post" data-validate="login" class="auth-form" novalidate>
                 <div class="form-group">
                     <label class="required" for="username">Tên đăng nhập</label>
                     <div class="input-with-icon">
@@ -78,8 +78,8 @@
         <footer>© 2026 DiaCare</footer>
     </section>
 </main>
-<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260721-web-audit1"></script>
-<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260721-web-audit1"></script>
+<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260721-web-audit2"></script>
+<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260721-web-audit2"></script>
 <c:if test="${not empty requestScope.lockUntil}">
     <script>
         (function () {

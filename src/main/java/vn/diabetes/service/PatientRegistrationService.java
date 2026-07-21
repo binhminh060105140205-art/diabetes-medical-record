@@ -22,10 +22,10 @@ public class PatientRegistrationService {
         String fullName = Validators.fullName(command.fullName());
         String phone = Validators.phone(command.phone());
         String email = Validators.email(command.email(), command.createdBy() == null);
-        LocalDate dateOfBirth = Validators.dateOfBirth(
-                command.dateOfBirth(), command.createdBy() == null);
+        LocalDate dateOfBirth = Validators.dateOfBirth(command.dateOfBirth(), true);
         String gender = Validators.gender(command.gender());
-        String address = Validators.address(command.address());
+        String address = Validators.max(
+                Validators.required(command.address(), "Địa chỉ"), 255, "Địa chỉ");
         String insurance = Validators.insurance(command.insuranceNo());
 
         int patientId = gateway.register(username, password, fullName, phone,
