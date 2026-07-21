@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class PatientAdviceRuleEngine {
-    private static final String ADVICE_VERSION = "daily-advice-v2-full";
+    private static final String ADVICE_VERSION = "daily-advice-v3-grouped";
     private static final Map<String, String> SYMPTOMS = Map.ofEntries(
             Map.entry("met moi", "fatigue"), Map.entry("khat nhieu", "excessive_thirst"),
             Map.entry("chong mat", "dizziness"), Map.entry("run tay", "tremor_or_sweating"),
@@ -124,49 +124,55 @@ public class PatientAdviceRuleEngine {
     private List<String> fallbackAdvice(SanitizedContext c, boolean doctorRecommendation) {
         List<String> advice = new ArrayList<>();
         if (c.recentMeasurementDays() == 0) {
-            advice.add("Hãy nhập đường huyết và huyết áp hôm nay để hệ thống theo dõi sát hơn.");
+            advice.add(tag("THEO_DOI", "Hãy nhập đường huyết và huyết áp hôm nay để hệ thống theo dõi sát hơn."));
         } else if ("rising".equals(c.glucoseTrend())) {
-            advice.add("Đường huyết gần đây có xu hướng tăng; hãy đo đúng thời điểm và ghi lại bữa ăn, triệu chứng.");
+            advice.add(tag("THEO_DOI", "Đường huyết gần đây có xu hướng tăng; hãy đo đúng thời điểm và ghi lại bữa ăn, triệu chứng."));
         } else if ("falling".equals(c.glucoseTrend())) {
-            advice.add("Đường huyết gần đây có xu hướng giảm; nên theo dõi sát và báo người thân nếu thấy run tay, vã mồ hôi hoặc chóng mặt.");
+            advice.add(tag("THEO_DOI", "Đường huyết gần đây có xu hướng giảm; nên theo dõi sát và báo người thân nếu thấy run tay, vã mồ hôi hoặc chóng mặt."));
         } else {
-            advice.add("Tiếp tục ghi chỉ số đều đặn vào cùng thời điểm mỗi ngày để dễ so sánh.");
+            advice.add(tag("THEO_DOI", "Tiếp tục ghi chỉ số đều đặn vào cùng thời điểm mỗi ngày để dễ so sánh."));
         }
         if ("TYPE_1".equals(c.diabetesType())) {
-            advice.add("Dùng insulin đúng đơn, đúng loại và đúng giờ; không tự đổi liều, bỏ mũi tiêm hoặc tiêm bù khi chưa hỏi nhân viên y tế.");
-            advice.add("Ăn đúng bữa, chuẩn bị sẵn nguồn đường hấp thu nhanh theo hướng dẫn đã được bác sĩ dặn và chú ý dấu hiệu hạ đường huyết như run tay, vã mồ hôi, chóng mặt hoặc lú lẫn.");
+            advice.add(tag("DIEU_TRI", "Dùng insulin đúng đơn, đúng loại và đúng giờ; không tự đổi liều, bỏ mũi tiêm hoặc tiêm bù khi chưa hỏi nhân viên y tế."));
+            advice.add(tag("AN_UONG", "Ăn đúng bữa, chuẩn bị sẵn nguồn đường hấp thu nhanh theo hướng dẫn đã được bác sĩ dặn và chú ý dấu hiệu hạ đường huyết như run tay, vã mồ hôi, chóng mặt hoặc lú lẫn."));
         } else if ("TYPE_2".equals(c.diabetesType())) {
-            advice.add("Dùng thuốc hoặc insulin đúng hướng dẫn; không tự ngừng thuốc khi chỉ số thay đổi hoặc khi cảm thấy khỏe hơn.");
-            advice.add("Ăn đúng bữa, ưu tiên rau và thực phẩm ít chế biến; hạn chế đồ uống nhiều đường như nước ngọt, trà sữa, cùng bánh kẹo và khẩu phần tinh bột quá lớn.");
+            advice.add(tag("DIEU_TRI", "Dùng thuốc hoặc insulin đúng hướng dẫn; không tự ngừng thuốc khi chỉ số thay đổi hoặc khi cảm thấy khỏe hơn."));
+            advice.add(tag("AN_UONG", "Ăn đúng bữa, ưu tiên rau và thực phẩm ít chế biến; hạn chế đồ uống nhiều đường như nước ngọt, trà sữa, cùng bánh kẹo và khẩu phần tinh bột quá lớn."));
             if (!Boolean.TRUE.equals(c.comorbidities().get("heart_disease"))
                     && !Boolean.TRUE.equals(c.comorbidities().get("kidney_disease"))) {
-                advice.add("Nếu cơ thể ổn và bác sĩ không dặn hạn chế, có thể đi bộ hoặc vận động nhẹ theo khả năng; dừng lại khi chóng mặt, khó thở hay đau ngực.");
+                advice.add(tag("VAN_DONG", "Nếu cơ thể ổn và bác sĩ không dặn hạn chế, có thể đi bộ hoặc vận động nhẹ theo khả năng; dừng lại khi chóng mặt, khó thở hay đau ngực."));
             } else {
-                advice.add("Vì có bệnh tim hoặc thận đi kèm, hãy thực hiện ăn uống, lượng nước và vận động theo hướng dẫn riêng của bác sĩ.");
+                advice.add(tag("VAN_DONG", "Vì có bệnh tim hoặc thận đi kèm, hãy thực hiện ăn uống, lượng nước và vận động theo hướng dẫn riêng của bác sĩ."));
             }
         } else {
-            advice.add("Chưa xác định loại tiểu đường; hãy hỏi bác sĩ trong lần khám tới và không tự thay đổi điều trị.");
+            advice.add(tag("DIEU_TRI", "Chưa xác định loại tiểu đường; hãy hỏi bác sĩ trong lần khám tới và không tự thay đổi điều trị."));
         }
         if (doctorRecommendation) {
-            advice.add("Nên liên hệ bác sĩ hoặc phòng khám để được hướng dẫn phù hợp, đặc biệt khi triệu chứng lặp lại hoặc chỉ số tiếp tục bất thường.");
+            advice.add(tag("LIEN_HE", "Nên liên hệ bác sĩ hoặc phòng khám để được hướng dẫn phù hợp, đặc biệt khi triệu chứng lặp lại hoặc chỉ số tiếp tục bất thường."));
+        } else {
+            advice.add(tag("LIEN_HE", "Liên hệ bác sĩ hoặc phòng khám nếu xuất hiện triệu chứng mới, kéo dài hoặc chỉ số thay đổi bất thường."));
         }
         if (c.latestSystolicBp() != null || c.latestDiastolicBp() != null) {
-            advice.add("Tiếp tục đo huyết áp khi đã nghỉ yên, ngồi đúng tư thế và ghi lại kết quả để bác sĩ so sánh giữa các ngày.");
+            advice.add(tag("THEO_DOI", "Tiếp tục đo huyết áp khi đã nghỉ yên, ngồi đúng tư thế và ghi lại kết quả để bác sĩ so sánh giữa các ngày."));
         } else {
-            advice.add("Nếu có máy đo, nên ghi thêm huyết áp trong ngày để theo dõi đồng thời nguy cơ tim mạch.");
+            advice.add(tag("THEO_DOI", "Nếu có máy đo, nên ghi thêm huyết áp trong ngày để theo dõi đồng thời nguy cơ tim mạch."));
         }
         if ("75_84".equals(c.ageBand()) || "85_plus".equals(c.ageBand())) {
-            advice.add("Nên có người thân hỗ trợ theo dõi thuốc, bữa ăn và các dấu hiệu bất thường; ưu tiên an toàn, nghỉ ngơi và tránh vận động một mình khi không khỏe.");
+            advice.add(tag("CHAM_SOC", "Nên có người thân hỗ trợ theo dõi thuốc, bữa ăn và các dấu hiệu bất thường; ưu tiên an toàn, nghỉ ngơi và tránh vận động một mình khi không khỏe."));
         }
-        advice.add("Kiểm tra bàn chân mỗi ngày, giữ da sạch và khô; không tự xử lý vết phồng, vết loét hoặc vùng đỏ đau kéo dài.");
-        advice.add("Ngủ đủ, hạn chế thức khuya và ghi lại bữa ăn, thời điểm dùng thuốc cùng triệu chứng để lần khám sau bác sĩ dễ đánh giá.");
+        advice.add(tag("CHAM_SOC", "Kiểm tra bàn chân mỗi ngày, giữ da sạch và khô; không tự xử lý vết phồng, vết loét hoặc vùng đỏ đau kéo dài."));
+        advice.add(tag("CHAM_SOC", "Ngủ đủ, hạn chế thức khuya và ghi lại bữa ăn, thời điểm dùng thuốc cùng triệu chứng để lần khám sau bác sĩ dễ đánh giá."));
         if (c.physicianHba1cTarget() != null) {
-            advice.add("Mục tiêu HbA1c do bác sĩ đặt là " + c.physicianHba1cTarget()
-                    + "%; tiếp tục theo kế hoạch điều trị và tái khám để đánh giá mức kiểm soát dài hạn.");
+            advice.add(tag("THEO_DOI", "Mục tiêu HbA1c do bác sĩ đặt là " + c.physicianHba1cTarget()
+                    + "%; tiếp tục theo kế hoạch điều trị và tái khám để đánh giá mức kiểm soát dài hạn."));
         } else {
-            advice.add("Hãy hỏi bác sĩ về mục tiêu HbA1c phù hợp với tuổi, loại tiểu đường và bệnh đi kèm trong lần tái khám.");
+            advice.add(tag("THEO_DOI", "Hãy hỏi bác sĩ về mục tiêu HbA1c phù hợp với tuổi, loại tiểu đường và bệnh đi kèm trong lần tái khám."));
         }
         return advice.stream().distinct().limit(8).toList();
+    }
+
+    private String tag(String category, String value) {
+        return "[" + category + "] " + value;
     }
 
     private String fallbackSummary(SanitizedContext c, String severity) {

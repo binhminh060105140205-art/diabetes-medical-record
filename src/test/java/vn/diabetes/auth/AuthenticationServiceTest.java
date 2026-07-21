@@ -13,6 +13,8 @@ import static org.mockito.Mockito.when;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import models.User;
 import org.junit.jupiter.api.Test;
 
@@ -114,6 +116,41 @@ class AuthenticationServiceTest {
 
         assertTrue(result.locked());
         verify(repository, never()).recordFailedLogin(eq(4), eq(5), any(Instant.class));
+    }
+
+    @Test
+    void locksAfterFiveConsecutiveFailuresAndRejectsCorrectPasswordDuringLock() {
+        UserRepository repository = mock(UserRepository.class);
+        User user = userWithPassword(12, Passwords.encode("Correct@123"));
+        AtomicInteger failures = new AtomicInteger();
+        AtomicReference<Instant> lockUntil = new AtomicReference<>();
+
+        when(repository.findActiveByUsername("patient12")).thenReturn(Optional.of(user));
+        when(repository.getLoginSecurityState(12)).thenAnswer(invocation ->
+                new UserRepository.LoginSecurityState(failures.get(), lockUntil.get()));
+        when(repository.recordFailedLogin(eq(12), eq(5), any(Instant.class)))
+                .thenAnswer(invocation -> {
+                    int updatedFailures = failures.incrementAndGet();
+                    if (updatedFailures >= 5) lockUntil.set(invocation.getArgument(2));
+                    return new UserRepository.LoginSecurityState(updatedFailures, lockUntil.get());
+                });
+
+        AuthenticationService service = new AuthenticationService(repository);
+        for (int attempt = 1; attempt <= 4; attempt++) {
+            AuthenticationService.LoginResult result = service.login("patient12", "Wrong@123");
+            assertFalse(result.locked());
+            assertEquals(5 - attempt, result.remainingAttempts());
+        }
+
+        AuthenticationService.LoginResult fifth = service.login("patient12", "Wrong@123");
+        assertTrue(fifth.locked());
+        assertEquals(0, fifth.remainingAttempts());
+
+        AuthenticationService.LoginResult correctWhileLocked =
+                service.login("patient12", "Correct@123");
+        assertFalse(correctWhileLocked.successful());
+        assertTrue(correctWhileLocked.locked());
+        verify(repository, never()).clearLoginFailures(12);
     }
 
     @Test

@@ -57,16 +57,17 @@ public class PatientAdviceService {
         boolean doctorRecommendation = generated.doctorRecommendation()
                 || prepared.doctorRecommendationFloor() || "high".equals(severity);
         List<String> advice = new ArrayList<>(generated.advice());
-        if (doctorRecommendation && advice.stream().noneMatch(this::mentionsClinician)) {
-            advice.add("Nên liên hệ bác sĩ hoặc phòng khám để được hướng dẫn phù hợp.");
+        if (doctorRecommendation && advice.stream().noneMatch(this::isContactAdvice)) {
+            advice.add("[LIEN_HE] Nên liên hệ bác sĩ hoặc phòng khám để được hướng dẫn phù hợp.");
         }
         return new PatientAdvice(generated.summary(), advice.stream().distinct().limit(8).toList(),
                 severity, doctorRecommendation, "OPENAI", false);
     }
 
-    private boolean mentionsClinician(String value) {
+    private boolean isContactAdvice(String value) {
         String lower = value == null ? "" : value.toLowerCase();
-        return lower.contains("bác sĩ") || lower.contains("phòng khám") || lower.contains("y tế");
+        return lower.contains("[lien_he]") || lower.contains("liên hệ bác sĩ")
+                || lower.contains("liên hệ phòng khám") || lower.contains("liên hệ cơ sở y tế");
     }
 
     private String maxSeverity(String left, String right) {

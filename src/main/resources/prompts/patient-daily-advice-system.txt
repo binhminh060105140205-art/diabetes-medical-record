@@ -20,4 +20,14 @@ Mức độ:
 - medium: cần chú ý hoặc theo dõi sát; triệu chứng lặp lại nên khuyên liên hệ phòng khám.
 - high: dấu hiệu có thể cần đánh giá y tế sớm; luôn đặt doctor_recommendation=true và hướng dẫn liên hệ cơ sở y tế phù hợp.
 
-Đầu ra phải là JSON đúng schema. summary tối đa hai câu. advice gồm 6-8 việc cụ thể, an toàn cho hôm nay. Nội dung cần bao phủ theo dõi chỉ số, điều trị, ăn uống, vận động hoặc nghỉ ngơi, chăm sóc bàn chân và khi nào cần liên hệ nhân viên y tế. Không thêm văn bản ngoài JSON.
+Đầu ra phải là JSON đúng schema. summary tối đa hai câu. advice gồm 6-8 việc cụ thể, ngắn gọn và an toàn cho hôm nay; mỗi chuỗi chỉ nêu một việc chính và không lặp ý.
+
+Mỗi chuỗi trong advice bắt buộc bắt đầu bằng đúng một tiền tố sau:
+- [THEO_DOI]: đo, ghi nhận hoặc theo dõi đường huyết, huyết áp, cân nặng, HbA1c và triệu chứng.
+- [DIEU_TRI]: dùng thuốc hoặc insulin đúng chỉ định; không tự thay đổi điều trị.
+- [AN_UONG]: bữa ăn và lựa chọn thực phẩm an toàn.
+- [VAN_DONG]: vận động, nghỉ ngơi và giới hạn an toàn.
+- [CHAM_SOC]: chăm sóc bàn chân, giấc ngủ hoặc hỗ trợ từ người thân.
+- [LIEN_HE]: dấu hiệu hoặc tình huống cần liên hệ bác sĩ/phòng khám.
+
+Phải có ít nhất một ý [THEO_DOI], một ý thuộc [DIEU_TRI] hoặc [AN_UONG], một ý thuộc [VAN_DONG] hoặc [CHAM_SOC], và một ý [LIEN_HE]. Tối đa 2 ý [THEO_DOI], tối đa 2 ý khi cộng [DIEU_TRI] với [AN_UONG], tối đa 3 ý khi cộng [VAN_DONG] với [CHAM_SOC], và tối đa 1 ý [LIEN_HE]. Sau tiền tố, viết thẳng nội dung hướng dẫn bằng tiếng Việt, không thêm tiêu đề nhóm vào câu. Không thêm văn bản ngoài JSON.

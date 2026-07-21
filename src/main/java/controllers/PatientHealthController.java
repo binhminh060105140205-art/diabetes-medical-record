@@ -127,18 +127,18 @@ public class PatientHealthController extends HttpServlet {
         if (log.getMealType() != null && !MEAL_TYPES.contains(log.getMealType())) {
             throw new IllegalArgumentException("Thời điểm đo không hợp lệ.");
         }
+        if (log.getMealType() != null && log.getBloodGlucose() == null) {
+            throw new IllegalArgumentException("Đã chọn thời điểm đo thì cần nhập đường huyết.");
+        }
+        if (log.getBloodGlucose() != null && log.getMealType() == null) {
+            throw new IllegalArgumentException("Vui lòng chọn thời điểm đo đường huyết.");
+        }
         boolean hasMeasurement = log.getBloodGlucose() != null || log.getSystolicBp() != null
                 || log.getDiastolicBp() != null || log.getWeight() != null
                 || log.getHeartRate() != null || log.getSpo2() != null;
         boolean hasNote = log.getSymptoms() != null || log.getNote() != null;
         if (!hasMeasurement && !hasNote) {
             throw new IllegalArgumentException("Cần nhập ít nhất một chỉ số hoặc ghi chú.");
-        }
-        if (log.getMealType() != null && log.getBloodGlucose() == null) {
-            throw new IllegalArgumentException("Đã chọn thời điểm đo thì cần nhập đường huyết.");
-        }
-        if (log.getBloodGlucose() != null && log.getMealType() == null) {
-            throw new IllegalArgumentException("Vui lòng chọn thời điểm đo đường huyết.");
         }
     }
 

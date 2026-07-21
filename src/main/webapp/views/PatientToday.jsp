@@ -2,7 +2,7 @@
 <%@taglib prefix="c" uri="jakarta.tags.core"%>
 <%@taglib prefix="fn" uri="jakarta.tags.functions"%>
 <!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sức khỏe hôm nay — DiaCare</title><link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260721-web-audit1"><link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/patient-care-path.css?v=20260721-patient1"></head>
+<title>Sức khỏe hôm nay — DiaCare</title><link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260721-patient-advice2"><link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/patient-care-path.css?v=20260721-patient1"></head>
 <body><jsp:include page="header.jsp"/><jsp:include page="topnav.jsp"/>
 <main class="page-wrapper patient-today-page"><div class="page-heading"><div><div class="eyebrow">THEO DÕI HẰNG NGÀY</div><h1 class="page-title">Sức khỏe hôm nay</h1></div><a class="btn btn-light" href="${pageContext.request.contextPath}/PatientJournal">Nhật ký 30 ngày</a></div>
 <c:if test="${not empty msg}"><div class="alert alert-info"><c:out value="${msg}"/></div></c:if>
@@ -26,7 +26,7 @@
     <div class="ai-advice-actions"><button type="button" class="btn btn-primary" id="aiAdviceButton" onclick="loadPatientAdvice()">Nhận lời khuyên</button></div>
     <div class="ai-advice-result" id="aiAdviceResult" hidden aria-live="polite">
         <div class="ai-advice-result-head"><strong id="aiAdviceSummary"></strong><span id="aiAdviceSeverity" class="ai-severity"></span></div>
-        <ol id="aiAdviceItems"></ol><p id="aiAdviceDoctor" class="ai-doctor-note" hidden></p><small id="aiAdviceSource"></small>
+        <div id="aiAdviceItems" class="ai-advice-groups"></div><p id="aiAdviceDoctor" class="ai-doctor-note" hidden></p><small id="aiAdviceSource"></small>
     </div>
 </section>
 
@@ -38,7 +38,7 @@
 <div class="form-group"><label>Cân nặng (kg)</label><input type="number" min="20" max="300" step="0.1" id="log_weight" class="form-control" value="${todayLog.weight}" placeholder="65"></div>
 <div class="form-group"><label>Triệu chứng hôm nay</label><div class="checkbox-grid"><label><input type="checkbox" name="symptom" value="Không có triệu chứng"> Không có</label><label><input type="checkbox" name="symptom" value="Mệt mỏi"> Mệt mỏi</label><label><input type="checkbox" name="symptom" value="Khát nhiều"> Khát nhiều</label><label><input type="checkbox" name="symptom" value="Chóng mặt"> Chóng mặt</label><label><input type="checkbox" name="symptom" value="Run tay/vã mồ hôi"> Run tay/vã mồ hôi</label><c:if test="${diabetesProfile.diabetesType=='TYPE_1'}"><label><input type="checkbox" name="symptom" value="Buồn nôn hoặc đau bụng"> Buồn nôn/đau bụng</label><label><input type="checkbox" name="symptom" value="Thở nhanh hoặc thở sâu"> Thở nhanh/thở sâu</label></c:if><c:if test="${diabetesProfile.diabetesType=='TYPE_2'}"><label><input type="checkbox" name="symptom" value="Tê bì bàn chân"> Tê bì bàn chân</label><label><input type="checkbox" name="symptom" value="Phù chân"> Phù chân</label></c:if></div></div>
 <div class="form-group"><label>Ghi chú</label><textarea id="log_note" class="form-control" maxlength="1000" placeholder="Thông tin khác muốn bác sĩ biết"><c:out value="${todayLog.note}"/></textarea></div>
-<button type="button" onclick="saveLog()" class="btn btn-primary" id="saveLogBtn">Lưu chỉ số hôm nay</button><div id="logResult" class="form-hint" aria-live="polite"></div></section></c:if>
+<button type="button" onclick="saveLog()" class="btn btn-primary" id="saveLogBtn">Lưu chỉ số hôm nay</button><div id="logResult" class="daily-log-message" role="status" aria-live="polite" hidden></div></section></c:if>
 </main><span id="savedSymptoms" hidden><c:out value="${todayLog.symptoms}"/></span><jsp:include page="footer.jsp"/>
 <script>
 const CTX='${pageContext.request.contextPath}';
@@ -54,7 +54,6 @@ symptomInputs.forEach(input=>{
 });
 async function saveLog(){
     const button=document.getElementById('saveLogBtn');
-    const result=document.getElementById('logResult');
     const meal=document.getElementById('log_meal');
     const glucose=document.getElementById('log_bg');
     const systolic=document.getElementById('log_sbp');
@@ -62,32 +61,79 @@ async function saveLog(){
     const weight=document.getElementById('log_weight');
     const note=document.getElementById('log_note');
     const fields=[meal,glucose,systolic,diastolic,weight];
+    showLogResult('');
     const invalid=fields.find(field=>field.value && !field.checkValidity());
-    if (invalid) { invalid.reportValidity(); return; }
-    if (glucose.value && !meal.value) { result.textContent='Vui lòng chọn thời điểm đo đường huyết.'; meal.focus(); return; }
-    if (meal.value && !glucose.value) { result.textContent='Đã chọn thời điểm đo thì cần nhập đường huyết.'; glucose.focus(); return; }
+    if (invalid) { showLogResult('Giá trị vừa nhập chưa hợp lệ. Vui lòng kiểm tra lại giới hạn của chỉ số.', 'error'); invalid.reportValidity(); return; }
+    if (glucose.value && !meal.value) { showLogResult('Vui lòng chọn thời điểm đo đường huyết.', 'error'); meal.focus(); return; }
+    if (meal.value && !glucose.value) { showLogResult('Đã chọn thời điểm đo thì cần nhập đường huyết.', 'error'); glucose.focus(); return; }
     const symptoms=symptomInputs.filter(input=>input.checked).map(input=>input.value).join(', ');
-    if (!glucose.value&&!systolic.value&&!diastolic.value&&!weight.value&&!symptoms&&!note.value.trim()) { result.textContent='Cần nhập ít nhất một chỉ số hoặc ghi chú.'; return; }
-    button.disabled=true; result.textContent='Đang lưu...';
+    if (!glucose.value&&!systolic.value&&!diastolic.value&&!weight.value&&!symptoms&&!note.value.trim()) { showLogResult('Cần nhập ít nhất một chỉ số hoặc ghi chú.', 'error'); return; }
+    button.disabled=true; showLogResult('Đang lưu chỉ số...', 'loading');
     try{
         const body=new URLSearchParams({action:'saveLog',mealType:meal.value,bloodGlucose:glucose.value,systolicBp:systolic.value,diastolicBp:diastolic.value,weight:weight.value,symptoms,note:note.value});
         const response=await fetch(CTX+'/PatientHealth',{method:'POST',body});
         const data=await response.json();
-        result.textContent=data.success?'Đã lưu chỉ số hôm nay.':(data.error||'Không thể lưu dữ liệu.');
-    }catch(error){ result.textContent='Không thể kết nối máy chủ.'; }
+        showLogResult(data.success?'Đã lưu chỉ số hôm nay.':(data.error||'Không thể lưu dữ liệu.'), data.success?'success':'error');
+    }catch(error){ showLogResult('Không thể kết nối máy chủ.', 'error'); }
     finally{ button.disabled=false; }
+}
+function showLogResult(message,type){
+    const result=document.getElementById('logResult');
+    result.textContent=message;
+    result.className='daily-log-message'+(type?' is-'+type:'');
+    result.hidden=!message;
+}
+const adviceGroups=[
+    {key:'monitoring',title:'Theo dõi hôm nay',marker:'01',prefixes:['THEO_DOI'],keywords:['duong huyet','huyet ap','chi so','hba1c','theo doi','ghi lai ket qua','thoi diem do']},
+    {key:'treatment',title:'Thuốc và ăn uống',marker:'02',prefixes:['DIEU_TRI','AN_UONG'],keywords:['insulin','thuoc','dieu tri','an dung bua','bua an','thuc pham','nuoc ngot','tra sua','tinh bot']},
+    {key:'care',title:'Vận động và chăm sóc',marker:'03',prefixes:['VAN_DONG','CHAM_SOC'],keywords:['van dong','di bo','nghi ngoi','ban chan','ngu du','nguoi than','da sach']},
+    {key:'contact',title:'Khi cần liên hệ bác sĩ',marker:'!',prefixes:['LIEN_HE'],keywords:['lien he','phong kham','tai kham','nhan vien y te','hoi bac si']}
+];
+function normalizeAdvice(value){
+    return value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\u0111/g,'d').replace(/\u0110/g,'D').toLowerCase();
+}
+function splitAdvice(value){
+    const text=String(value||'').trim();
+    const prefix=text.match(/^\[(THEO_DOI|DIEU_TRI|AN_UONG|VAN_DONG|CHAM_SOC|LIEN_HE)]\s*/i);
+    if(prefix){
+        const code=prefix[1].toUpperCase();
+        return {text:text.slice(prefix[0].length).trim(),group:adviceGroups.find(group=>group.prefixes.includes(code))};
+    }
+    const normalized=normalizeAdvice(text);
+    return {text,group:adviceGroups.find(group=>group.keywords.some(keyword=>normalized.includes(keyword)))};
+}
+function renderAdviceGroups(values){
+    const container=document.getElementById('aiAdviceItems');
+    const grouped=new Map(adviceGroups.map(group=>[group.key,[]]));
+    (Array.isArray(values)?values:[]).forEach(value=>{
+        const parsed=splitAdvice(value);
+        if(!parsed.text)return;
+        const group=parsed.group||adviceGroups.slice(0,3).reduce((smallest,current)=>grouped.get(current.key).length<grouped.get(smallest.key).length?current:smallest);
+        grouped.get(group.key).push(parsed.text);
+    });
+    const sections=adviceGroups.filter(group=>grouped.get(group.key).length).map(group=>{
+        const section=document.createElement('section');section.className='ai-advice-section ai-advice-section-'+group.key;
+        const heading=document.createElement('div');heading.className='ai-advice-section-head';
+        const marker=document.createElement('span');marker.className='ai-advice-section-marker';marker.textContent=group.marker;
+        const title=document.createElement('h3');title.textContent=group.title;heading.append(marker,title);
+        const list=document.createElement('ul');list.replaceChildren(...grouped.get(group.key).map(value=>{const item=document.createElement('li');item.textContent=value;return item;}));
+        section.append(heading,list);return section;
+    });
+    container.replaceChildren(...sections);
 }
 async function loadPatientAdvice(){
     const consent=document.getElementById('aiConsent'),button=document.getElementById('aiAdviceButton'),box=document.getElementById('aiAdviceResult'),summary=document.getElementById('aiAdviceSummary'),items=document.getElementById('aiAdviceItems');
-    if(!consent.checked){box.hidden=false;summary.textContent='Vui lòng đọc và đánh dấu đồng ý trước khi tiếp tục.';items.replaceChildren();return;}
-    button.disabled=true;button.textContent='Đang phân tích...';box.hidden=false;summary.textContent='Đang tạo lời khuyên an toàn cho hôm nay...';items.replaceChildren();
+    const severity=document.getElementById('aiAdviceSeverity'),doctor=document.getElementById('aiAdviceDoctor'),source=document.getElementById('aiAdviceSource');
+    severity.textContent='';severity.className='ai-severity';doctor.hidden=true;doctor.textContent='';source.textContent='';items.replaceChildren();
+    if(!consent.checked){box.hidden=false;summary.textContent='Vui lòng đọc và đánh dấu đồng ý trước khi tiếp tục.';return;}
+    button.disabled=true;button.textContent='Đang phân tích...';box.hidden=false;summary.textContent='Đang tạo lời khuyên an toàn cho hôm nay...';
     try{
         const response=await fetch(CTX+'/api/patient/ai-advice',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({consent:true})});
         const data=await response.json();if(!response.ok)throw new Error(data.error||'Không thể tạo lời khuyên.');
-        summary.textContent=data.summary;const severity=document.getElementById('aiAdviceSeverity');severity.textContent=data.severity==='high'?'Nên liên hệ bác sĩ':data.severity==='medium'?'Cần chú ý':'Ổn định';severity.className='ai-severity ai-severity-'+data.severity;
-        items.replaceChildren(...data.advice.map(value=>{const li=document.createElement('li');li.textContent=value;return li;}));
-        const doctor=document.getElementById('aiAdviceDoctor');doctor.hidden=!data.doctorRecommendation;doctor.textContent=data.doctorRecommendation?'Nếu cảm thấy không khỏe hoặc triệu chứng tiếp diễn, hãy liên hệ bác sĩ/phòng khám.':'';
-        document.getElementById('aiAdviceSource').textContent=(data.source==='OPENAI'?'Lời khuyên từ hệ thống phân tích tự động':'Lời khuyên từ bộ quy tắc an toàn nội bộ')+(data.cached?' · đã lưu trong ngày':'');
+        summary.textContent=data.summary;severity.textContent=data.severity==='high'?'Nên liên hệ bác sĩ':data.severity==='medium'?'Cần chú ý':'Ổn định';severity.className='ai-severity ai-severity-'+data.severity;
+        renderAdviceGroups(data.advice);
+        doctor.hidden=!data.doctorRecommendation;doctor.textContent=data.doctorRecommendation?'Nếu cảm thấy không khỏe hoặc triệu chứng tiếp diễn, hãy liên hệ bác sĩ/phòng khám.':'';
+        source.textContent=(data.source==='OPENAI'?'Lời khuyên từ hệ thống phân tích tự động':'Lời khuyên từ bộ quy tắc an toàn nội bộ')+(data.cached?' · đã lưu trong ngày':'');
     }catch(error){summary.textContent=error.message;items.replaceChildren();}
     finally{button.disabled=false;button.textContent='Nhận lời khuyên';}
 }
