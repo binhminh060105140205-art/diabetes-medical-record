@@ -15,6 +15,7 @@ public class DoctorDAO extends DBContext {
         d.setLicenseNo(rs.getString("license_no"));
         d.setFaceImagePath(rs.getString("face_image_path"));
         d.setCccdImagePath(rs.getString("cccd_image_path"));
+        d.setCccdBackImagePath(rs.getString("cccd_back_image_path"));
         d.setLicenseImagePath(rs.getString("license_image_path"));
         Date issueDate = rs.getDate("license_issue_date");
         Date expireDate = rs.getDate("license_expire_date");
@@ -102,17 +103,18 @@ public class DoctorDAO extends DBContext {
                 ? focus : "BOTH";
     }
 
-    // Cập nhật riêng 3 đường dẫn ảnh (khuôn mặt, CCCD, chứng chỉ hành nghề).
+    // Cập nhật riêng các giấy tờ (CCCD mặt trước, mặt sau và chứng chỉ hành nghề).
     // Truyền null cho tham số nào không muốn thay đổi (giữ nguyên giá trị cũ trong DB).
-    public boolean updateImages(int doctorId, String faceImagePath, String cccdImagePath, String licenseImagePath) {
+    public boolean updateImages(int doctorId, String cccdFrontImagePath,
+            String cccdBackImagePath, String licenseImagePath) {
         String sql = "UPDATE Doctors SET "
-                + "face_image_path = COALESCE(?, face_image_path), "
                 + "cccd_image_path = COALESCE(?, cccd_image_path), "
+                + "cccd_back_image_path = COALESCE(?, cccd_back_image_path), "
                 + "license_image_path = COALESCE(?, license_image_path) "
                 + "WHERE doctor_id = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, faceImagePath);
-            statement.setString(2, cccdImagePath);
+            statement.setString(1, cccdFrontImagePath);
+            statement.setString(2, cccdBackImagePath);
             statement.setString(3, licenseImagePath);
             statement.setInt(4, doctorId);
             return statement.executeUpdate() > 0;

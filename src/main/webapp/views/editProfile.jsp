@@ -176,18 +176,18 @@
                             </dl>
                             <div class="professional-document-grid">
                                 <article class="professional-document">
-                                    <strong>Ảnh bác sĩ</strong>
-                                    <c:choose><c:when test="${not empty doctor.faceImagePath}">
-                                        <a href="${pageContext.request.contextPath}/DoctorFile?doctorId=${doctor.doctorId}&type=face" target="_blank" rel="noopener">
-                                            <img src="${pageContext.request.contextPath}/DoctorFile?doctorId=${doctor.doctorId}&type=face" alt="Ảnh bác sĩ" loading="lazy" decoding="async">
+                                    <strong>CCCD mặt trước</strong>
+                                    <c:choose><c:when test="${not empty doctor.cccdImagePath}">
+                                        <a href="${pageContext.request.contextPath}/DoctorFile?doctorId=${doctor.doctorId}&type=cccd" target="_blank" rel="noopener">
+                                            <img src="${pageContext.request.contextPath}/DoctorFile?doctorId=${doctor.doctorId}&type=cccd" alt="CCCD mặt trước" loading="lazy" decoding="async">
                                         </a>
                                     </c:when><c:otherwise><div class="professional-document-empty">Chưa được quản trị viên cập nhật</div></c:otherwise></c:choose>
                                 </article>
                                 <article class="professional-document">
-                                    <strong>Ảnh CCCD</strong>
-                                    <c:choose><c:when test="${not empty doctor.cccdImagePath}">
-                                        <a href="${pageContext.request.contextPath}/DoctorFile?doctorId=${doctor.doctorId}&type=cccd" target="_blank" rel="noopener">
-                                            <img src="${pageContext.request.contextPath}/DoctorFile?doctorId=${doctor.doctorId}&type=cccd" alt="Ảnh CCCD của bác sĩ" loading="lazy" decoding="async">
+                                    <strong>CCCD mặt sau</strong>
+                                    <c:choose><c:when test="${not empty doctor.cccdBackImagePath}">
+                                        <a href="${pageContext.request.contextPath}/DoctorFile?doctorId=${doctor.doctorId}&type=cccd-back" target="_blank" rel="noopener">
+                                            <img src="${pageContext.request.contextPath}/DoctorFile?doctorId=${doctor.doctorId}&type=cccd-back" alt="CCCD mặt sau" loading="lazy" decoding="async">
                                         </a>
                                     </c:when><c:otherwise><div class="professional-document-empty">Chưa được quản trị viên cập nhật</div></c:otherwise></c:choose>
                                 </article>

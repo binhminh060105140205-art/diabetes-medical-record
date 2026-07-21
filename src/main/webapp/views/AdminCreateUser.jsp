@@ -115,19 +115,19 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="required">Ảnh khuôn mặt</label>
-                        <input type="file" name="faceImage" class="form-control" accept="image/png,image/jpeg,image/webp" data-doctor-required>
+                        <label class="required">CCCD mặt trước</label>
+                        <input type="file" name="cccdFrontImage" class="form-control" accept="image/png,image/jpeg,image/webp" data-doctor-required>
                     </div>
                     <div class="form-group">
-                        <label class="required">Ảnh CCCD</label>
-                        <input type="file" name="cccdImage" class="form-control" accept="image/png,image/jpeg,image/webp" data-doctor-required>
+                        <label class="required">CCCD mặt sau</label>
+                        <input type="file" name="cccdBackImage" class="form-control" accept="image/png,image/jpeg,image/webp" data-doctor-required>
                     </div>
                     <div class="form-group">
                         <label class="required">Ảnh chứng chỉ hành nghề</label>
                         <input type="file" name="licenseImage" class="form-control" accept="image/png,image/jpeg,image/webp" data-doctor-required>
                     </div>
                 </div>
-                <p class="form-hint file-hint">Bắt buộc đủ ba ảnh khi tạo bác sĩ. Bác sĩ chỉ được xem; quản trị viên chịu trách nhiệm cập nhật. Chỉ nhận JPG/PNG/WEBP, tối đa 5MB mỗi ảnh.</p>
+                <p class="form-hint file-hint">Bắt buộc đủ CCCD mặt trước, CCCD mặt sau và chứng chỉ hành nghề khi tạo bác sĩ. Bác sĩ chỉ được xem; quản trị viên chịu trách nhiệm cập nhật. Chỉ nhận JPG/PNG/WEBP, tối đa 5MB mỗi ảnh.</p>
             </div>
 
             <div class="form-actions"><button type="submit" class="btn btn-primary">Tạo tài khoản</button><a href="${pageContext.request.contextPath}/AdminDashboard" class="btn btn-light">Hủy</a></div>

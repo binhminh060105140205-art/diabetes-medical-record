@@ -171,6 +171,7 @@ public class MedicalRecordDAO extends DBContext {
                     FROM lab_orders l WHERE l.encounter_id=r.encounter_id) lab_summary,
                    d.user_id d_user_id,d.specialty d_specialty,d.license_no d_license_no,
                    d.face_image_path d_face_image_path,d.cccd_image_path d_cccd_image_path,
+                   d.cccd_back_image_path d_cccd_back_image_path,
                    d.license_image_path d_license_image_path,u.full_name d_full_name,
                    pi.prescription_item_id pi_id,pi.medicine_name pi_name,pi.dosage pi_dosage,
                    pi.frequency pi_frequency,pi.duration_days pi_duration_days
@@ -238,6 +239,7 @@ public class MedicalRecordDAO extends DBContext {
                             doctor.setLicenseNo(rows.getString("d_license_no"));
                             doctor.setFaceImagePath(rows.getString("d_face_image_path"));
                             doctor.setCccdImagePath(rows.getString("d_cccd_image_path"));
+                            doctor.setCccdBackImagePath(rows.getString("d_cccd_back_image_path"));
                             doctor.setLicenseImagePath(rows.getString("d_license_image_path"));
                         }
                         if (rows.getObject("h_indicator_id") != null) {
@@ -371,6 +373,7 @@ public class MedicalRecordDAO extends DBContext {
                    s.degree selected_degree,
                    s.face_image_path selected_face_image_path,
                    s.cccd_image_path selected_cccd_image_path,
+                   s.cccd_back_image_path selected_cccd_back_image_path,
                    s.license_image_path selected_license_image_path,
                    s.full_name selected_full_name,
                    st.total_records,st.pending_records,st.total_patients
@@ -394,6 +397,7 @@ public class MedicalRecordDAO extends DBContext {
                         doctor.setDegree(rows.getString("selected_degree"));
                         doctor.setFaceImagePath(rows.getString("selected_face_image_path"));
                         doctor.setCccdImagePath(rows.getString("selected_cccd_image_path"));
+                        doctor.setCccdBackImagePath(rows.getString("selected_cccd_back_image_path"));
                         doctor.setLicenseImagePath(rows.getString("selected_license_image_path"));
                     }
                     totalRecords = rows.getInt("total_records");

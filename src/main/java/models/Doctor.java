@@ -19,6 +19,7 @@ public class Doctor {
     // Đường dẫn (tên file) ảnh lưu trên server — xem thêm util.FileStorageUtil
     private String faceImagePath;
     private String cccdImagePath;
+    private String cccdBackImagePath;
     private String licenseImagePath;
 
     // denormalized fields for display (lấy từ JOIN với Users, không có cột riêng trong Doctors)
@@ -89,6 +90,9 @@ public class Doctor {
 
     public String getCccdImagePath()          { return cccdImagePath; }
     public void setCccdImagePath(String v)    { this.cccdImagePath = v; }
+
+    public String getCccdBackImagePath()      { return cccdBackImagePath; }
+    public void setCccdBackImagePath(String v){ this.cccdBackImagePath = v; }
 
     public String getLicenseImagePath()       { return licenseImagePath; }
     public void setLicenseImagePath(String v) { this.licenseImagePath = v; }

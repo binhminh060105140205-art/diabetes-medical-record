@@ -107,25 +107,25 @@
                 </div>
                 <div class="doc-image-row">
                     <div class="doc-image-box">
-                        <label>Ảnh khuôn mặt</label>
-                        <c:choose>
-                            <c:when test="${not empty doctor.faceImagePath}">
-                                <img class="preview" src="${pageContext.request.contextPath}/DoctorFile?doctorId=${doctor.doctorId}&type=face">
-                            </c:when>
-                            <c:otherwise><div class="no-image">Chưa có ảnh</div></c:otherwise>
-                        </c:choose>
-                        <input type="file" name="faceImage" accept="image/png,image/jpeg,image/webp">
-                    </div>
-
-                    <div class="doc-image-box">
-                        <label>Ảnh CCCD</label>
+                        <label>CCCD mặt trước</label>
                         <c:choose>
                             <c:when test="${not empty doctor.cccdImagePath}">
                                 <img class="preview" src="${pageContext.request.contextPath}/DoctorFile?doctorId=${doctor.doctorId}&type=cccd">
                             </c:when>
                             <c:otherwise><div class="no-image">Chưa có ảnh</div></c:otherwise>
                         </c:choose>
-                        <input type="file" name="cccdImage" accept="image/png,image/jpeg,image/webp">
+                        <input type="file" name="cccdFrontImage" accept="image/png,image/jpeg,image/webp">
+                    </div>
+
+                    <div class="doc-image-box">
+                        <label>CCCD mặt sau</label>
+                        <c:choose>
+                            <c:when test="${not empty doctor.cccdBackImagePath}">
+                                <img class="preview" src="${pageContext.request.contextPath}/DoctorFile?doctorId=${doctor.doctorId}&type=cccd-back">
+                            </c:when>
+                            <c:otherwise><div class="no-image">Chưa có ảnh</div></c:otherwise>
+                        </c:choose>
+                        <input type="file" name="cccdBackImage" accept="image/png,image/jpeg,image/webp">
                     </div>
 
                     <div class="doc-image-box">

@@ -16,9 +16,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 
 /**
- * Phục vụ (stream) ảnh khuôn mặt / CCCD / chứng chỉ hành nghề của bác sĩ.
- * Ảnh khuôn mặt: mọi người dùng đã đăng nhập đều xem được.
- * Ảnh CCCD / chứng chỉ hành nghề: chỉ ADMIN hoặc chính bác sĩ đó được xem (giấy tờ nhạy cảm).
+ * Phục vụ (stream) ảnh CCCD mặt trước, mặt sau và chứng chỉ hành nghề của bác sĩ.
+ * Giấy tờ nhạy cảm chỉ ADMIN hoặc chính bác sĩ đó được xem.
  */
 @WebServlet(name = "DoctorFileController", urlPatterns = {"/DoctorFile"})
 public class DoctorFileController extends HttpServlet {
@@ -41,8 +40,8 @@ public class DoctorFileController extends HttpServlet {
             return;
         }
         String type = request.getParameter("type");
-        if (type == null || (!type.equals(FileStorageUtil.TYPE_FACE)
-                && !type.equals(FileStorageUtil.TYPE_CCCD)
+        if (type == null || (!type.equals(FileStorageUtil.TYPE_CCCD)
+                && !type.equals(FileStorageUtil.TYPE_CCCD_BACK)
                 && !type.equals(FileStorageUtil.TYPE_LICENSE))) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             return;
@@ -57,8 +56,7 @@ public class DoctorFileController extends HttpServlet {
 
         boolean isOwner = doctor.getUserId() == currentUser.getUserId();
         boolean isAdmin = "ADMIN".equals(currentUser.getRole());
-        boolean isSensitive = !type.equals(FileStorageUtil.TYPE_FACE);
-        if (isSensitive && !isOwner && !isAdmin) {
+        if (!isOwner && !isAdmin) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN);
             return;
         }
@@ -66,8 +64,9 @@ public class DoctorFileController extends HttpServlet {
         String storedFileName;
         switch (type) {
             case FileStorageUtil.TYPE_CCCD:    storedFileName = doctor.getCccdImagePath(); break;
+            case FileStorageUtil.TYPE_CCCD_BACK: storedFileName = doctor.getCccdBackImagePath(); break;
             case FileStorageUtil.TYPE_LICENSE: storedFileName = doctor.getLicenseImagePath(); break;
-            default:                           storedFileName = doctor.getFaceImagePath(); break;
+            default:                            storedFileName = null; break;
         }
 
         File imageFile = FileStorageUtil.resolveDoctorImage(doctorId, storedFileName);

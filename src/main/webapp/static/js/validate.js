@@ -274,7 +274,7 @@ function validateCreateUser() {
     if (val('role') === 'DOCTOR') {
         if (!val('licenseNo')) { showErr('licenseNo', 'Số chứng chỉ hành nghề là bắt buộc'); ok = false; }
         if (!val('degree')) { showErr('degree', 'Học vị / Bằng cấp là bắt buộc'); ok = false; }
-        ['faceImage', 'cccdImage', 'licenseImage'].forEach(function (name) {
+        ['cccdFrontImage', 'cccdBackImage', 'licenseImage'].forEach(function (name) {
             const input = document.querySelector('[name=' + name + ']');
             if (!input || !input.files || input.files.length === 0) {
                 showErr(name, 'Vui lòng chọn đủ ảnh bắt buộc');

@@ -19,8 +19,10 @@ public class FileStorageUtil {
     private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "webp");
     private static final long MAX_FILE_SIZE = 5L * 1024 * 1024; // 5MB
 
+    /** Kept for serving legacy uploads; new doctor records no longer collect a face photo. */
     public static final String TYPE_FACE = "face";
     public static final String TYPE_CCCD = "cccd";
+    public static final String TYPE_CCCD_BACK = "cccd-back";
     public static final String TYPE_LICENSE = "license";
 
     private static File getRootDir() {

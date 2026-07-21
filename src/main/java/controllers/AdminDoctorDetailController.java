@@ -98,16 +98,16 @@ public class AdminDoctorDetailController extends HttpServlet {
                 throw new IllegalArgumentException("Nhóm tiểu đường không hợp lệ.");
             }
             new DoctorDAO().updateDiabetesFocus(doctor.getDoctorId(), focus);
-            Part facePart    = request.getPart("faceImage");
-            Part cccdPart    = request.getPart("cccdImage");
+            Part cccdFrontPart = request.getPart("cccdFrontImage");
+            Part cccdBackPart  = request.getPart("cccdBackImage");
             Part licensePart = request.getPart("licenseImage");
 
-            String faceFile    = FileStorageUtil.saveDoctorImage(facePart, doctor.getDoctorId(), FileStorageUtil.TYPE_FACE);
-            String cccdFile    = FileStorageUtil.saveDoctorImage(cccdPart, doctor.getDoctorId(), FileStorageUtil.TYPE_CCCD);
+            String cccdFrontFile = FileStorageUtil.saveDoctorImage(cccdFrontPart, doctor.getDoctorId(), FileStorageUtil.TYPE_CCCD);
+            String cccdBackFile  = FileStorageUtil.saveDoctorImage(cccdBackPart, doctor.getDoctorId(), FileStorageUtil.TYPE_CCCD_BACK);
             String licenseFile = FileStorageUtil.saveDoctorImage(licensePart, doctor.getDoctorId(), FileStorageUtil.TYPE_LICENSE);
 
-            if (faceFile != null || cccdFile != null || licenseFile != null) {
-                new DoctorDAO().updateImages(doctor.getDoctorId(), faceFile, cccdFile, licenseFile);
+            if (cccdFrontFile != null || cccdBackFile != null || licenseFile != null) {
+                new DoctorDAO().updateImages(doctor.getDoctorId(), cccdFrontFile, cccdBackFile, licenseFile);
             }
 
             session.setAttribute("toastMessage", "Cập nhật ảnh hồ sơ bác sĩ thành công!");

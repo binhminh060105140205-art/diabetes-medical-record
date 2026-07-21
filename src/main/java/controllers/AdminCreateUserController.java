@@ -63,8 +63,8 @@ public class AdminCreateUserController extends HttpServlet {
         String licenseNo = request.getParameter("licenseNo");
         String degree    = request.getParameter("degree");
         String diabetesFocus = request.getParameter("diabetesFocus");
-        Part facePart = null;
-        Part cccdPart = null;
+        Part cccdFrontPart = null;
+        Part cccdBackPart = null;
         Part licensePart = null;
 
         try {
@@ -81,11 +81,11 @@ public class AdminCreateUserController extends HttpServlet {
             if("DOCTOR".equals(role)) {
                 licenseNo=Validators.required(licenseNo,"Số chứng chỉ hành nghề");
                 degree=Validators.required(degree,"Học vị / Bằng cấp");
-                facePart=request.getPart("faceImage");
-                cccdPart=request.getPart("cccdImage");
+                cccdFrontPart=request.getPart("cccdFrontImage");
+                cccdBackPart=request.getPart("cccdBackImage");
                 licensePart=request.getPart("licenseImage");
-                FileStorageUtil.validateDoctorImage(facePart,"Ảnh khuôn mặt",true);
-                FileStorageUtil.validateDoctorImage(cccdPart,"Ảnh CCCD",true);
+                FileStorageUtil.validateDoctorImage(cccdFrontPart,"Ảnh CCCD mặt trước",true);
+                FileStorageUtil.validateDoctorImage(cccdBackPart,"Ảnh CCCD mặt sau",true);
                 FileStorageUtil.validateDoctorImage(licensePart,"Ảnh chứng chỉ hành nghề",true);
             }
             if (diabetesFocus == null || !java.util.Set.of("TYPE_1","TYPE_2","BOTH").contains(diabetesFocus)) diabetesFocus="BOTH";
@@ -140,12 +140,12 @@ public class AdminCreateUserController extends HttpServlet {
             DoctorDAO docDAO = new DoctorDAO();
 
             try {
-                String faceFile    = FileStorageUtil.saveDoctorImage(facePart, doc.getDoctorId(), FileStorageUtil.TYPE_FACE);
-                String cccdFile    = FileStorageUtil.saveDoctorImage(cccdPart, doc.getDoctorId(), FileStorageUtil.TYPE_CCCD);
+                String cccdFrontFile = FileStorageUtil.saveDoctorImage(cccdFrontPart, doc.getDoctorId(), FileStorageUtil.TYPE_CCCD);
+                String cccdBackFile  = FileStorageUtil.saveDoctorImage(cccdBackPart, doc.getDoctorId(), FileStorageUtil.TYPE_CCCD_BACK);
                 String licenseFile = FileStorageUtil.saveDoctorImage(licensePart, doc.getDoctorId(), FileStorageUtil.TYPE_LICENSE);
 
-                if (faceFile != null || cccdFile != null || licenseFile != null) {
-                    docDAO.updateImages(doc.getDoctorId(), faceFile, cccdFile, licenseFile);
+                if (cccdFrontFile != null || cccdBackFile != null || licenseFile != null) {
+                    docDAO.updateImages(doc.getDoctorId(), cccdFrontFile, cccdBackFile, licenseFile);
                 }
             } catch (Exception ex) {
                 LOGGER.log(Level.WARNING,"Không thể lưu ảnh hồ sơ bác sĩ userId="+newUser.getUserId(),ex);

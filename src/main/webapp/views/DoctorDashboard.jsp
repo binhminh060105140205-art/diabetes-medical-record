@@ -57,7 +57,7 @@
         </section>
 
         <aside class="dashboard-side">
-            <c:if test="${not empty doctor}"><section class="card doctor-identity"><div class="doctor-avatar"><c:choose><c:when test="${not empty doctor.faceImagePath}"><img src="${pageContext.request.contextPath}/DoctorFile?doctorId=${doctor.doctorId}&type=face" alt="Ảnh bác sĩ"></c:when><c:otherwise>BS</c:otherwise></c:choose></div><h3><c:out value="${sessionScope.user.fullName}"/></h3><p><c:out value="${doctor.specialty}" default="Chưa cập nhật"/></p><dl><div><dt>Chứng chỉ</dt><dd><c:choose><c:when test="${not empty doctor.licenseNo}"><c:out value="${doctor.licenseNo}"/></c:when><c:otherwise>Chưa cập nhật</c:otherwise></c:choose></dd></div><div><dt>Học vị</dt><dd><c:choose><c:when test="${not empty doctor.degree}"><c:out value="${doctor.degree}"/></c:when><c:otherwise>Chưa cập nhật</c:otherwise></c:choose></dd></div></dl></section></c:if>
+            <c:if test="${not empty doctor}"><section class="card doctor-identity"><div class="doctor-avatar">BS</div><h3><c:out value="${sessionScope.user.fullName}"/></h3><p><c:out value="${doctor.specialty}" default="Chưa cập nhật"/></p><dl><div><dt>Chứng chỉ</dt><dd><c:choose><c:when test="${not empty doctor.licenseNo}"><c:out value="${doctor.licenseNo}"/></c:when><c:otherwise>Chưa cập nhật</c:otherwise></c:choose></dd></div><div><dt>Học vị</dt><dd><c:choose><c:when test="${not empty doctor.degree}"><c:out value="${doctor.degree}"/></c:when><c:otherwise>Chưa cập nhật</c:otherwise></c:choose></dd></div></dl></section></c:if>
         </aside>
     </div>
 
