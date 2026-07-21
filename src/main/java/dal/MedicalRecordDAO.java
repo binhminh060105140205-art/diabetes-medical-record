@@ -477,6 +477,9 @@ public class MedicalRecordDAO extends DBContext {
                     throw new IllegalArgumentException("Liều dùng tối đa 100 ký tự.");
                 }
                 String frequency = valueAt(frequencies, i);
+                if (frequency.isBlank()) {
+                    throw new IllegalArgumentException("Thuốc phải có số lần dùng trong ngày.");
+                }
                 if (frequency.length() > 100) {
                     throw new IllegalArgumentException("Tần suất dùng thuốc tối đa 100 ký tự.");
                 }
@@ -485,12 +488,12 @@ public class MedicalRecordDAO extends DBContext {
                 add.setString(3, dosage);
                 add.setString(4, frequency);
                 String duration = valueAt(durations, i);
-                if (duration.isBlank()) add.setNull(5, Types.INTEGER);
-                else {
-                    int days = Integer.parseInt(duration);
-                    if (days < 1 || days > 365) throw new IllegalArgumentException("Số ngày dùng thuốc phải từ 1 đến 365.");
-                    add.setInt(5, days);
+                if (duration.isBlank()) {
+                    throw new IllegalArgumentException("Thuốc phải có số ngày sử dụng.");
                 }
+                int days = Integer.parseInt(duration);
+                if (days < 1 || days > 365) throw new IllegalArgumentException("Số ngày dùng thuốc phải từ 1 đến 365.");
+                add.setInt(5, days);
                 add.addBatch();
             }
             add.executeBatch();

@@ -365,7 +365,7 @@
             <c:if test="${diabetesProfile.diabetesType=='TYPE_2'}"><div class="alert alert-info"><strong>Gợi ý cho đái tháo đường típ 2:</strong> ghi thuốc đang dùng, cân nặng, chỉ số khối cơ thể, huyết áp, mỡ máu và chế độ ăn vận động. Bác sĩ vẫn là người quyết định điều trị.</div></c:if>
             <c:if test="${not empty labSummary}"><div class="alert alert-info"><strong>Kết quả xét nghiệm:</strong> <c:out value="${labSummary}"/></div></c:if>
             <c:if test="${empty labSummary}"><div class="alert alert-info">Chưa có chỉ định hoặc kết quả xét nghiệm cho lượt khám này. Bác sĩ có thể kết luận nếu không cần xét nghiệm.</div></c:if>
-            <form action="${pageContext.request.contextPath}/MedicalRecordForm" method="post">
+            <form action="${pageContext.request.contextPath}/MedicalRecordForm" method="post" data-validate="conclusion" novalidate>
                 <input type="hidden" name="action" value="saveConclusion">
                 <input type="hidden" name="recordId" value="${record.recordId}">
                 <div class="form-group">
@@ -391,18 +391,18 @@
                         <c:forEach var="item" items="${prescriptionItems}">
                             <tr>
                                 <td><input name="medicineName" class="form-control" maxlength="150" value="${fn:escapeXml(item.medicineName)}" placeholder="Metformin 500mg"></td>
-                                <td><input name="dosage" class="form-control" maxlength="100" value="${fn:escapeXml(item.dosage)}" placeholder="1 viên/lần"></td>
-                                <td><input name="frequency" class="form-control" maxlength="100" value="${fn:escapeXml(item.frequency)}" placeholder="2 lần/ngày"></td>
-                                <td><input name="durationDays" type="number" min="1" max="365" class="form-control" value="${item.durationDays}" placeholder="30"></td>
+                                <td><input name="dosage" class="form-control" maxlength="100" value="${fn:escapeXml(item.dosage)}" placeholder="1 viên/lần"><span class="err-msg"></span></td>
+                                <td><input name="frequency" class="form-control" maxlength="100" value="${fn:escapeXml(item.frequency)}" placeholder="2 lần/ngày"><span class="err-msg"></span></td>
+                                <td><input name="durationDays" type="number" min="1" max="365" class="form-control" value="${item.durationDays}" placeholder="30"><span class="err-msg"></span></td>
                                 <td><button class="icon-button danger" type="button" onclick="removeMedicineRow(this)" aria-label="Xóa thuốc">×</button></td>
                             </tr>
                         </c:forEach>
                         <c:if test="${empty prescriptionItems}">
                             <tr>
                                 <td><input name="medicineName" class="form-control" maxlength="150" placeholder="Metformin 500mg"></td>
-                                <td><input name="dosage" class="form-control" maxlength="100" placeholder="1 viên/lần"></td>
-                                <td><input name="frequency" class="form-control" maxlength="100" placeholder="2 lần/ngày"></td>
-                                <td><input name="durationDays" type="number" min="1" max="365" class="form-control" placeholder="30"></td>
+                                <td><input name="dosage" class="form-control" maxlength="100" placeholder="1 viên/lần"><span class="err-msg"></span></td>
+                                <td><input name="frequency" class="form-control" maxlength="100" placeholder="2 lần/ngày"><span class="err-msg"></span></td>
+                                <td><input name="durationDays" type="number" min="1" max="365" class="form-control" placeholder="30"><span class="err-msg"></span></td>
                                 <td><button class="icon-button danger" type="button" onclick="removeMedicineRow(this)" aria-label="Xóa thuốc">×</button></td>
                             </tr>
                         </c:if>
@@ -503,10 +503,10 @@ function addMedicineRow() {
     var body = document.getElementById('medicineRows');
     if (!body) return;
     var row = document.createElement('tr');
-    row.innerHTML = '<td><input name="medicineName" class="form-control" maxlength="150" placeholder="Tên thuốc"></td>'
-        + '<td><input name="dosage" class="form-control" maxlength="100" placeholder="Liều dùng"></td>'
-        + '<td><input name="frequency" class="form-control" maxlength="100" placeholder="Số lần/ngày"></td>'
-        + '<td><input name="durationDays" type="number" min="1" max="365" class="form-control" placeholder="Số ngày"></td>'
+    row.innerHTML = '<td><input name="medicineName" class="form-control" maxlength="150" placeholder="Tên thuốc"><span class="err-msg"></span></td>'
+        + '<td><input name="dosage" class="form-control" maxlength="100" placeholder="Liều dùng"><span class="err-msg"></span></td>'
+        + '<td><input name="frequency" class="form-control" maxlength="100" placeholder="Số lần/ngày"><span class="err-msg"></span></td>'
+        + '<td><input name="durationDays" type="number" min="1" max="365" class="form-control" placeholder="Số ngày"><span class="err-msg"></span></td>'
         + '<td><button class="icon-button danger" type="button" onclick="removeMedicineRow(this)" aria-label="Xóa thuốc">×</button></td>';
     body.appendChild(row);
     row.querySelector('input').focus();
@@ -531,6 +531,7 @@ var defaultTab = serverErrTab ? parseInt(serverErrTab)
 showTab(defaultTab);
 syncDiabetesTreatmentOptions();
 </script>
+<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260721-prescription1"></script>
 <jsp:include page="footer.jsp"/>
 </body>
 </html>

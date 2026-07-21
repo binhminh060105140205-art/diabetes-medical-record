@@ -317,7 +317,41 @@ function validateConclusion() {
             ok = false;
         }
     }
+
+    // Validate each medicine row locally so errors stay under the right input.
+    document.querySelectorAll('#medicineRows tr').forEach(function (row) {
+        const name = row.querySelector('[name=medicineName]');
+        const dosage = row.querySelector('[name=dosage]');
+        const frequency = row.querySelector('[name=frequency]');
+        const duration = row.querySelector('[name=durationDays]');
+        if (!name || !dosage || !frequency || !duration) return;
+        const medicineName = name.value.trim();
+        const hasDetails = dosage.value.trim() || frequency.value.trim() || duration.value.trim();
+        if (!medicineName && !hasDetails) return;
+        if (!medicineName) { showLocalErr(name, 'Vui lòng nhập tên thuốc'); ok = false; }
+        if (!dosage.value.trim()) { showLocalErr(dosage, 'Vui lòng nhập liều dùng'); ok = false; }
+        else if (dosage.value.trim().length > 100) { showLocalErr(dosage, 'Liều dùng tối đa 100 ký tự'); ok = false; }
+        if (!frequency.value.trim()) { showLocalErr(frequency, 'Vui lòng nhập số lần/ngày'); ok = false; }
+        else if (frequency.value.trim().length > 100) { showLocalErr(frequency, 'Số lần/ngày tối đa 100 ký tự'); ok = false; }
+        const days = duration.value.trim();
+        if (!days) { showLocalErr(duration, 'Vui lòng nhập số ngày sử dụng'); ok = false; }
+        else if (!/^\d+$/.test(days) || Number(days) < 1 || Number(days) > 365) {
+            showLocalErr(duration, 'Số ngày phải từ 1 đến 365'); ok = false;
+        }
+    });
     return ok;
+}
+
+function showLocalErr(el, msg) {
+    if (!el) return;
+    el.classList.add('input-error');
+    let err = el.parentNode.querySelector('.err-msg');
+    if (!err) {
+        err = document.createElement('span');
+        err.className = 'err-msg';
+        el.parentNode.appendChild(err);
+    }
+    err.textContent = '⚠ ' + msg;
 }
 
 // ── REAL-TIME VALIDATION (bind on input) ────────────
