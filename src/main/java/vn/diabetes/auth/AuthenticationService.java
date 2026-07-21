@@ -53,7 +53,7 @@ public class AuthenticationService {
         if (Passwords.matches(password, user.getPassword())) {
             if (security.failedAttempts() > 0) clearFailures(user.getUserId());
             if (Passwords.needsRehash(user.getPassword())) {
-                users.updatePassword(user.getUserId(), password);
+                users.updatePassword(user.getUserId(), Passwords.encode(password));
             }
             user.setPassword(null);
             return LoginResult.success(user);

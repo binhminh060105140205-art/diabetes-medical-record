@@ -1729,3 +1729,25 @@ body.is-navigating:after {
     .care-path-steps { grid-template-columns: 1fr; }
     .care-path-steps li { min-height: auto; }
 }
+
+.lab-import-panel {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    margin: 14px 0 18px;
+    padding: 16px;
+    border: 1px solid #cfd7ee;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #f4f7ff, #fff);
+}
+.lab-import-panel > div { display: grid; gap: 4px; }
+.lab-import-panel strong { color: var(--ux-navy, #25315e); }
+.lab-import-panel small { max-width: 680px; color: var(--ux-muted, #667085); line-height: 1.5; }
+.lab-import-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 9px; }
+.lab-import-form { display: flex; align-items: center; gap: 9px; }
+.lab-import-form input[type="file"] { width: min(340px, 40vw); }
+@media (max-width: 900px) {
+    .lab-import-panel, .lab-import-actions, .lab-import-form { align-items: stretch; flex-direction: column; }
+    .lab-import-form input[type="file"] { width: 100%; }
+}

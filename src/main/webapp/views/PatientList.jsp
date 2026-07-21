@@ -7,7 +7,7 @@
         <meta charset="UTF-8">
         <title>Danh Sách Bệnh Nhân</title>
         <meta name="viewport" content="width=device-width,initial-scale=1">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui7">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260721-web-audit1">
     </head>
     <body>
         <jsp:include page="header.jsp"/>
@@ -45,11 +45,11 @@
                                 <c:forEach var="p" items="${patients}" varStatus="s">
                                     <tr>
                                         <td>${s.count + (currentPage - 1) * 10}</td>
-                                        <td><strong>${p.fullName}</strong></td>
-                                        <td>${p.dateOfBirth}</td>
-                                        <td>${p.genderLabel}</td>
-                                        <td>${p.phone}</td>
-                                        <td><code>${p.healthInsuranceNo}</code></td>
+                                        <td><strong><c:out value="${p.fullName}"/></strong></td>
+                                        <td><c:out value="${p.dateOfBirth}" default="—"/></td>
+                                        <td><c:out value="${p.genderLabel}" default="—"/></td>
+                                        <td><c:out value="${p.phone}" default="—"/></td>
+                                        <td><code><c:out value="${p.healthInsuranceNo}" default="—"/></code></td>
                                         <td><div class="row-actions"><a href="${pageContext.request.contextPath}/PatientHistory?patientId=${p.patientId}" class="primary">Xem hồ sơ</a><c:if test="${sessionScope.user.role=='DOCTOR'}"><a href="${pageContext.request.contextPath}/DoctorPatientJournal?patientId=${p.patientId}">Nhật ký 30 ngày</a></c:if><c:if test="${sessionScope.user.role=='STAFF'}"><a href="${pageContext.request.contextPath}/PatientForm?id=${p.patientId}">Cập nhật</a></c:if></div></td>
                                     </tr>
                                 </c:forEach>

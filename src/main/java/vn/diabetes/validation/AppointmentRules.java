@@ -79,6 +79,12 @@ public final class AppointmentRules {
         }
     }
 
+    public static void validateCheckInDate(LocalDateTime appointmentAt, LocalDate today) {
+        if (appointmentAt == null || today == null || !appointmentAt.toLocalDate().equals(today)) {
+            throw new IllegalArgumentException("Chỉ được ghi nhận đến khám trong ngày hẹn.");
+        }
+    }
+
     public static String periodOf(LocalTime time) {
         if (time != null && time.isBefore(MORNING_END)) return "MORNING";
         if (time != null && !time.isBefore(AFTERNOON_START)) return "AFTERNOON";

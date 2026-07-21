@@ -36,7 +36,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Cài đặt tài khoản — DiaCare</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui8">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260721-web-audit1">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
@@ -101,9 +101,9 @@
                             <label class="required" for="settingUsername">Tên đăng nhập</label>
                             <input id="settingUsername" class="form-control" name="username"
                                    value="${fn:escapeXml(profilePost ? param.username : profileUser.username)}"
-                                   minlength="4" maxlength="50" pattern="[A-Za-z0-9._-]+"
+                                   minlength="4" maxlength="30" pattern="[A-Za-z0-9_]+"
                                    autocomplete="username" required>
-                            <small>Dùng để đăng nhập; không chứa khoảng trắng.</small>
+                            <small>Gồm 4–30 chữ, số hoặc dấu gạch dưới.</small>
                         </div>
                         <div class="form-group">
                             <label class="required" for="settingFullName">Họ và tên</label>
@@ -160,7 +160,7 @@
             <c:if test="${profileUser.role=='DOCTOR'}">
                 <section class="card settings-section settings-panel ${selectedSetting=='personal'?'is-active':''}" id="professional" data-setting-panel="personal">
                     <div class="section-header">
-                        <div><span class="panel-eyebrow">HỒ SƠ HÀNH NGHỀ</span><h2>Minh chứng bác sĩ</h2><p>Ảnh do Admin cập nhật khi tạo hoặc quản lý tài khoản bác sĩ.</p></div>
+                        <div><span class="panel-eyebrow">HỒ SƠ HÀNH NGHỀ</span><h2>Minh chứng bác sĩ</h2><p>Ảnh do quản trị viên cập nhật khi tạo hoặc quản lý tài khoản bác sĩ.</p></div>
                         <span class="status-pill professional-readonly">Chỉ xem</span>
                     </div>
                     <c:if test="${not empty professionalError}"><div class="alert alert-danger"><c:out value="${professionalError}"/></div></c:if>
@@ -181,7 +181,7 @@
                                         <a href="${pageContext.request.contextPath}/DoctorFile?doctorId=${doctor.doctorId}&type=face" target="_blank" rel="noopener">
                                             <img src="${pageContext.request.contextPath}/DoctorFile?doctorId=${doctor.doctorId}&type=face" alt="Ảnh bác sĩ" loading="lazy" decoding="async">
                                         </a>
-                                    </c:when><c:otherwise><div class="professional-document-empty">Chưa được Admin cập nhật</div></c:otherwise></c:choose>
+                                    </c:when><c:otherwise><div class="professional-document-empty">Chưa được quản trị viên cập nhật</div></c:otherwise></c:choose>
                                 </article>
                                 <article class="professional-document">
                                     <strong>Ảnh CCCD</strong>
@@ -189,7 +189,7 @@
                                         <a href="${pageContext.request.contextPath}/DoctorFile?doctorId=${doctor.doctorId}&type=cccd" target="_blank" rel="noopener">
                                             <img src="${pageContext.request.contextPath}/DoctorFile?doctorId=${doctor.doctorId}&type=cccd" alt="Ảnh CCCD của bác sĩ" loading="lazy" decoding="async">
                                         </a>
-                                    </c:when><c:otherwise><div class="professional-document-empty">Chưa được Admin cập nhật</div></c:otherwise></c:choose>
+                                    </c:when><c:otherwise><div class="professional-document-empty">Chưa được quản trị viên cập nhật</div></c:otherwise></c:choose>
                                 </article>
                                 <article class="professional-document">
                                     <strong>Chứng chỉ hành nghề</strong>
@@ -197,10 +197,10 @@
                                         <a href="${pageContext.request.contextPath}/DoctorFile?doctorId=${doctor.doctorId}&type=license" target="_blank" rel="noopener">
                                             <img src="${pageContext.request.contextPath}/DoctorFile?doctorId=${doctor.doctorId}&type=license" alt="Chứng chỉ hành nghề của bác sĩ" loading="lazy" decoding="async">
                                         </a>
-                                    </c:when><c:otherwise><div class="professional-document-empty">Chưa được Admin cập nhật</div></c:otherwise></c:choose>
+                                    </c:when><c:otherwise><div class="professional-document-empty">Chưa được quản trị viên cập nhật</div></c:otherwise></c:choose>
                                 </article>
                             </div>
-                            <p class="professional-admin-note">Nếu tài liệu chưa đúng, bác sĩ liên hệ Admin để được kiểm tra và cập nhật.</p>
+                            <p class="professional-admin-note">Nếu tài liệu chưa đúng, bác sĩ liên hệ quản trị viên để được kiểm tra và cập nhật.</p>
                         </c:otherwise>
                     </c:choose>
                 </section>

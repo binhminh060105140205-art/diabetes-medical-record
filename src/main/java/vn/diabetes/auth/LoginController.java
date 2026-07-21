@@ -7,7 +7,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import dal.LoginHistoryDAO;
 import models.User;
-import org.springframework.dao.DataAccessException;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,10 +17,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Controller
 public class LoginController {
     private static final Logger LOGGER = Logger.getLogger(LoginController.class.getName());
-    private final AuthenticationService authentication;
+    private final ObjectProvider<AuthenticationService> authenticationProvider;
 
-    public LoginController(AuthenticationService authentication) {
-        this.authentication = authentication;
+    public LoginController(ObjectProvider<AuthenticationService> authenticationProvider) {
+        this.authenticationProvider = authenticationProvider;
     }
 
     @GetMapping("/Login")
@@ -40,8 +40,8 @@ public class LoginController {
         response.setHeader("Cache-Control", "no-store");
         AuthenticationService.LoginResult result;
         try {
-            result = authentication.login(username, password);
-        } catch (DataAccessException error) {
+            result = authenticationProvider.getObject().login(username, password);
+        } catch (Exception error) {
             LOGGER.log(Level.SEVERE, "Database unavailable during login", error);
             response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
             model.addAttribute("err", "Cơ sở dữ liệu đang khởi động hoặc mất kết nối. Vui lòng thử lại sau ít phút.");

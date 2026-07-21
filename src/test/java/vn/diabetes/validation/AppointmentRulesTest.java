@@ -3,6 +3,7 @@ package vn.diabetes.validation;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 
@@ -83,5 +84,14 @@ class AppointmentRulesTest {
                 () -> AppointmentRules.validatePatientRequestCapacity(1, 1));
         assertThrows(IllegalArgumentException.class,
                 () -> AppointmentRules.validatePatientRequestCapacity(0, 2));
+    }
+
+    @Test
+    void onlyAllowsCheckInOnAppointmentDate() {
+        LocalDate today = LocalDate.of(2026, 7, 21);
+        assertDoesNotThrow(() -> AppointmentRules.validateCheckInDate(
+                LocalDateTime.of(2026, 7, 21, 10, 0), today));
+        assertThrows(IllegalArgumentException.class, () -> AppointmentRules.validateCheckInDate(
+                LocalDateTime.of(2026, 7, 22, 10, 0), today));
     }
 }

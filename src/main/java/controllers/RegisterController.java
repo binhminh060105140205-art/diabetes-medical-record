@@ -35,6 +35,11 @@ public class RegisterController extends HttpServlet {
             service.register(new PatientRegistrationService.Command(username,password,confirm,fullName,phone,email,dobText,gender,address,insurance,null));
             req.getSession().setAttribute("registrationSuccess", "Đăng ký thành công. Bạn có thể đăng nhập ngay.");
             resp.sendRedirect(req.getContextPath() + "/Login");
+        } catch (IllegalStateException ex) {
+            resp.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+            req.setAttribute("err", "Cơ sở dữ liệu đang khởi động hoặc mất kết nối. Vui lòng thử lại sau ít phút.");
+            req.setAttribute("values", req.getParameterMap());
+            req.getRequestDispatcher("views/Register.jsp").forward(req, resp);
         } catch (IllegalArgumentException ex) {
             req.setAttribute("err", ex.getMessage()); req.setAttribute("values", req.getParameterMap());
             req.getRequestDispatcher("views/Register.jsp").forward(req, resp);

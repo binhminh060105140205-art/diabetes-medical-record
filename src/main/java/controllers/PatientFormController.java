@@ -81,6 +81,12 @@ public class PatientFormController extends HttpServlet {
                 request.getRequestDispatcher("/StaffDashboard").forward(request, response);
                 return;
             }
+            if (!id.matches("[1-9][0-9]*")) {
+                request.setAttribute("intakeError", "Mã bệnh nhân không hợp lệ.");
+                request.setAttribute("showIntakeForm", true);
+                request.getRequestDispatcher("/StaffDashboard").forward(request, response);
+                return;
+            }
             request.setAttribute("err", ex.getMessage());
             request.setAttribute("editMode", true);
             request.setAttribute("patient", new PatientDAO().getById(Integer.parseInt(id)));

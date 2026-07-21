@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hồ sơ bác sĩ — Quản trị viên</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui7">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260721-web-audit1">
     <style>
         .form-container {
             max-width: 820px;
@@ -66,26 +66,26 @@
 <jsp:include page="topnav.jsp"/>
 
 <div class="page-wrapper">
-    <h1 class="page-title">🪪 Hồ Sơ Minh Chứng — ${targetUser.fullName}</h1>
+    <h1 class="page-title">Hồ sơ minh chứng — <c:out value="${targetUser.fullName}"/></h1>
 
     <c:if test="${not empty toastMessage}">
-        <div class="alert alert-${toastType == 'danger' ? 'danger' : 'success'}">${toastMessage}</div>
+        <div class="alert alert-${toastType == 'danger' ? 'danger' : 'success'}"><c:out value="${toastMessage}"/></div>
     </c:if>
 
     <div class="form-container">
         <div class="info-row">
-            <div><b>Tên đăng nhập</b>${targetUser.username}</div>
-            <div><b>Số điện thoại</b>${targetUser.phone}</div>
-                    <div><b>Email/Gmail</b>${targetUser.email}</div>
-            <div><b>Số CCCD</b>${targetUser.cccd}</div>
+            <div><b>Tên đăng nhập</b><c:out value="${targetUser.username}"/></div>
+            <div><b>Số điện thoại</b><c:out value="${targetUser.phone}" default="—"/></div>
+            <div><b>Email/Gmail</b><c:out value="${targetUser.email}" default="—"/></div>
+            <div><b>Số CCCD</b><c:out value="${targetUser.cccd}" default="—"/></div>
         </div>
 
         <c:if test="${not empty doctor}">
         <div class="info-row">
-            <div><b>Chuyên khoa</b>${doctor.specialty}</div>
-            <div><b>Số chứng chỉ hành nghề</b>${doctor.licenseNo}</div>
-            <div><b>Học vị / Bằng cấp</b>${doctor.degree}</div>
-            <div><b>Nhóm tiểu đường ưu tiên</b>${doctor.diabetesFocusLabel}</div>
+            <div><b>Chuyên khoa</b><c:out value="${doctor.specialty}"/></div>
+            <div><b>Số chứng chỉ hành nghề</b><c:out value="${doctor.licenseNo}"/></div>
+            <div><b>Học vị / Bằng cấp</b><c:out value="${doctor.degree}" default="—"/></div>
+            <div><b>Nhóm tiểu đường ưu tiên</b><c:out value="${doctor.diabetesFocusLabel}"/></div>
         </div>
         </c:if>
 
@@ -140,7 +140,7 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary">💾 Lưu ảnh</button>
+                <button type="submit" class="btn btn-primary">Lưu hồ sơ</button>
                 <a href="${pageContext.request.contextPath}/AdminDashboard?filterRole=DOCTOR" class="btn btn-light">Quay lại danh sách</a>
                 <p class="hint">Quản trị viên có thể xem và thay thế ảnh hộ bác sĩ nếu cần. Chỉ chấp nhận ảnh JPG, PNG hoặc WEBP, tối đa 5MB mỗi ảnh.</p>
             </form>

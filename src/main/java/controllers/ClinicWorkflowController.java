@@ -13,6 +13,7 @@ import java.sql.Date;
 import java.util.Set;
 import models.User;
 import vn.diabetes.service.ClinicWorkflowService;
+import vn.diabetes.validation.AppointmentRules;
 
 /**
  * Coordinates the outpatient workflow screens.
@@ -98,6 +99,8 @@ public class ClinicWorkflowController extends HttpServlet {
                     ControllerSupport.appointmentDateOptions(true));
             request.setAttribute("appointmentTimeSlots",
                     ControllerSupport.appointmentTimeOptions());
+            request.setAttribute("appointmentToday",
+                    AppointmentRules.nowInVietnam().toLocalDate().toString());
         }
 
         if ("DOCTOR".equals(user.getRole())) {

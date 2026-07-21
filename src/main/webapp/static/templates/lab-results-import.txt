@@ -1,0 +1,10 @@
+# File mẫu import kết quả xét nghiệm DiaCare.
+# Mỗi file tương ứng một bệnh án. Thay phần trong ngoặc bằng giá trị thật.
+# Đơn vị: đường huyết/cholesterol/triglyceride/HDL-C/LDL-C = mmol/L; HbA1c = %.
+record_id = (nhập mã bệnh án)
+blood_glucose = (nhập)
+hba1c = (nhập)
+cholesterol = (nhập)
+triglyceride = (nhập)
+hdl_c = (nhập)
+ldl_c = (nhập)

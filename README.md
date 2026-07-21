@@ -56,6 +56,12 @@ Hệ thống gửi thông tin đăng nhập khi Quản trị viên hoặc Nhân 
 
 Không dùng mật khẩu Gmail thông thường. Thông báo trên giao diện chỉ xác nhận thư đã được đưa vào hàng đợi; kết quả gửi thực tế được ghi trong nhật ký máy chủ.
 
+## Import kết quả xét nghiệm
+
+File mẫu dạng dễ đọc nằm tại `src/main/webapp/static/templates/lab-results-import.txt`. Nhân viên có thể sửa từng dòng theo dạng `hba1c = (nhập)` bằng VS Code, điền `record_id` đang hiển thị tại màn Xét nghiệm và các chỉ số: đường huyết, HbA1c, cholesterol, triglyceride, HDL-C, LDL-C. Sau đó bấm **Import file trong project** tại màn Xét nghiệm; nếu nhận file khác từ máy xét nghiệm thì chọn **Import file đã chọn**. File `.csv` cũ vẫn được hỗ trợ.
+
+Hệ thống kiểm tra định dạng, phạm vi chỉ số, mã bệnh án và chỉ định của bác sĩ trước khi lưu. Toàn bộ file được xử lý trong một giao dịch; nếu một dòng sai thì không dòng nào được ghi vào database.
+
 ## Deploy Render
 
 Kho mã đã có `Dockerfile` và `render.yaml`. Trên Render cấu hình `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `BOOTSTRAP_ADMIN_PASSWORD`, `MAIL_USERNAME` và `MAIL_PASSWORD`.

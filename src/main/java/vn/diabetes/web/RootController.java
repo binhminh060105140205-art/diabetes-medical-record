@@ -1,7 +1,7 @@
 package vn.diabetes.web;
 
 import org.springframework.stereotype.Controller;
-import org.springframework.dao.DataAccessException;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,10 +9,10 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
 public class RootController {
-    private final JdbcClient jdbc;
+    private final ObjectProvider<JdbcClient> jdbcProvider;
 
-    public RootController(JdbcClient jdbc) {
-        this.jdbc = jdbc;
+    public RootController(ObjectProvider<JdbcClient> jdbcProvider) {
+        this.jdbcProvider = jdbcProvider;
     }
 
     @GetMapping("/")
@@ -33,11 +33,11 @@ public class RootController {
     @ResponseBody
     public ResponseEntity<String> ready() {
         try {
-            Integer result = jdbc.sql("SELECT 1").query(Integer.class).single();
+            Integer result = jdbcProvider.getObject().sql("SELECT 1").query(Integer.class).single();
             return result != null && result == 1
                     ? ResponseEntity.ok("READY")
                     : ResponseEntity.status(503).body("NOT_READY");
-        } catch (DataAccessException error) {
+        } catch (Exception error) {
             return ResponseEntity.status(503).body("DATABASE_NOT_READY");
         }
     }

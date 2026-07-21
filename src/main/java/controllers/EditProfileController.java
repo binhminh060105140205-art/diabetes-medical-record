@@ -76,11 +76,7 @@ public class EditProfileController extends HttpServlet {
 
     private void updateProfile(HttpServletRequest request, UserDAO users, User user)
             throws Exception {
-        String username = ControllerSupport.clean(request.getParameter("username"));
-        if (!username.matches("^[A-Za-z0-9._-]{4,50}$")) {
-            throw new IllegalArgumentException(
-                    "Tên đăng nhập phải có 4–50 ký tự và không chứa khoảng trắng.");
-        }
+        String username = Validators.username(request.getParameter("username"));
         if (!username.equalsIgnoreCase(user.getUsername()) && users.usernameExists(username)) {
             throw new IllegalArgumentException("Tên đăng nhập đã được sử dụng.");
         }

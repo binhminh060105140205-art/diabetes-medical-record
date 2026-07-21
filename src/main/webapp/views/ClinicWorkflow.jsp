@@ -7,7 +7,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Điều hành khám — DiaCare</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260721-typeflow1">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260721-lab-import1">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
@@ -153,18 +153,23 @@
                                                 <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="danger-form" onsubmit="return confirm('Hủy yêu cầu đặt lịch này?')">
                                                     <input type="hidden" name="action" value="appointmentStatus">
                                                     <input type="hidden" name="appointmentId" value="${a.appointment_id}">
-                                                    <button class="btn btn-danger btn-sm" name="status" value="CANCELLED">Hủy yêu cầu</button>
+                                                    <button type="submit" class="btn btn-danger btn-sm" name="status" value="CANCELLED">Hủy yêu cầu</button>
                                                 </form>
                                             </div>
                                         </details>
                                     </c:when>
                                     <c:when test="${a.status=='BOOKED'||a.status=='CONFIRMED'}">
                                         <div class="table-actions">
-                                            <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="inline-form">
-                                                <input type="hidden" name="action" value="checkIn">
-                                                <input type="hidden" name="appointmentId" value="${a.appointment_id}">
-                                                <button class="btn btn-success btn-sm" type="submit">Ghi nhận đến khám</button>
-                                            </form>
+                                            <c:choose>
+                                                <c:when test="${fn:substring(a.appointment_at,0,10)==appointmentToday}">
+                                                    <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="inline-form">
+                                                        <input type="hidden" name="action" value="checkIn">
+                                                        <input type="hidden" name="appointmentId" value="${a.appointment_id}">
+                                                        <button type="submit" class="btn btn-success btn-sm">Ghi nhận đến khám</button>
+                                                    </form>
+                                                </c:when>
+                                                <c:otherwise><span class="text-muted">Tiếp nhận đúng ngày hẹn</span></c:otherwise>
+                                            </c:choose>
                                             <details class="row-disclosure align-right">
                                                 <summary class="btn btn-light btn-sm">Tùy chọn</summary>
                                                 <div class="row-disclosure-panel">
@@ -187,8 +192,8 @@
                                                     <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="danger-zone" onsubmit="return confirm('Xác nhận cập nhật trạng thái lịch?')">
                                                         <input type="hidden" name="action" value="appointmentStatus">
                                                         <input type="hidden" name="appointmentId" value="${a.appointment_id}">
-                                                        <button class="btn btn-warning btn-sm" name="status" value="NO_SHOW">Vắng hẹn</button>
-                                                        <button class="btn btn-danger btn-sm" name="status" value="CANCELLED">Hủy lịch</button>
+                                                        <button type="submit" class="btn btn-warning btn-sm" name="status" value="NO_SHOW">Vắng hẹn</button>
+                                                        <button type="submit" class="btn btn-danger btn-sm" name="status" value="CANCELLED">Hủy lịch</button>
                                                     </form>
                                                 </div>
                                             </details>
@@ -314,13 +319,32 @@
         <section class="card">
             <div class="section-header"><div><h2>Chỉ định và kết quả xét nghiệm</h2><p>${sessionScope.user.role=='DOCTOR'?'Theo dõi kết quả để tiếp tục kết luận.':'Ưu tiên chỉ định chưa có kết quả và mức khẩn.'}</p></div><span class="data-count">${fn:length(labOrders)} chỉ định</span></div>
             <div class="operations-toolbar"><label class="table-filter"><span class="sr-only">Tìm xét nghiệm</span><input type="search" data-table-filter="labTable" placeholder="Tìm bệnh nhân, mã xét nghiệm, ưu tiên hoặc trạng thái"></label></div>
+            <c:if test="${sessionScope.user.role=='STAFF'||sessionScope.user.role=='ADMIN'}">
+                <div class="lab-import-panel">
+                    <div>
+                        <strong>Import kết quả từ file xét nghiệm</strong>
+                        <small>File TXT/CSV gồm mã bệnh án, đường huyết, HbA1c và các chỉ số mỡ máu. Hệ thống sẽ kiểm tra phạm vi và chỉ định trước khi lưu.</small>
+                    </div>
+                    <div class="lab-import-actions">
+                        <form method="post" action="${pageContext.request.contextPath}/LabResultImport" class="lab-import-form">
+                            <input type="hidden" name="source" value="template">
+                            <button class="btn btn-primary" type="submit">Import file trong project</button>
+                        </form>
+                        <form method="post" action="${pageContext.request.contextPath}/LabResultImport" enctype="multipart/form-data" class="lab-import-form">
+                            <input type="file" name="labFile" class="form-control" accept=".txt,.csv,text/plain,text/csv" required>
+                            <button class="btn btn-light" type="submit">Import file đã chọn</button>
+                        </form>
+                        <a class="btn btn-light" href="${pageContext.request.contextPath}/static/templates/lab-results-import.txt" download>Tải file mẫu</a>
+                    </div>
+                </div>
+            </c:if>
             <div class="table-scroll">
                 <table id="labTable">
                     <thead><tr><th>Bệnh nhân</th><th>Xét nghiệm</th><th>Ưu tiên</th><th>Kết quả</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
                     <tbody>
                     <c:forEach var="l" items="${labOrders}">
                         <tr data-search-row>
-                            <td><strong><c:out value="${l.patient_name}"/></strong><small class="table-sub">${l.diabetes_type=='TYPE_1'?'Típ 1':l.diabetes_type=='TYPE_2'?'Típ 2':'Chưa phân loại'}</small></td>
+                            <td><strong><c:out value="${l.patient_name}"/></strong><small class="table-sub">${l.diabetes_type=='TYPE_1'?'Típ 1':l.diabetes_type=='TYPE_2'?'Típ 2':'Chưa phân loại'}<c:if test="${not empty l.record_id}"> · Bệnh án #${l.record_id}</c:if></small></td>
                             <td><strong><c:out value="${l.test_code}"/></strong><small class="table-sub"><c:out value="${l.test_name}"/></small></td>
                             <td><span class="status-pill ${l.priority=='URGENT'?'status-CRITICAL':''}">${l.priority=='URGENT'?'Khẩn':'Thông thường'}</span></td>
                             <td><c:choose><c:when test="${not empty l.result_value}"><strong><c:out value="${l.result_value}"/> <c:out value="${l.result_unit}"/></strong><small class="table-sub"><c:out value="${l.reference_range}"/> · <c:out value="${l.result_flag}"/></small></c:when><c:otherwise><span class="text-muted">Chưa có kết quả</span></c:otherwise></c:choose></td>
@@ -394,6 +418,6 @@
 </main>
 
 <jsp:include page="footer.jsp"/>
-<script src="${pageContext.request.contextPath}/static/js/diabetes-routing.js?v=20260721-1" defer></script>
+<script src="${pageContext.request.contextPath}/static/js/diabetes-routing.js?v=20260721-web-audit1" defer></script>
 </body>
 </html>

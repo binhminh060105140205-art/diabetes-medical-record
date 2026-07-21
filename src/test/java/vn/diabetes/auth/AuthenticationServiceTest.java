@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 class AuthenticationServiceTest {
 
     @Test
-    void authenticatesEncodedPasswordAndClearsPreviousFailures() {
+    void authenticatesPasswordAndClearsPreviousFailures() {
         UserRepository repository = mock(UserRepository.class);
         User user = userWithPassword(1, Passwords.encode("Staff@123"));
         when(repository.findActiveByUsername("staff01")).thenReturn(Optional.of(user));
@@ -32,6 +32,22 @@ class AuthenticationServiceTest {
         assertTrue(result.successful());
         assertEquals(user, result.user());
         verify(repository).clearLoginFailures(1);
+        verify(repository, never()).updatePassword(eq(1), any());
+    }
+
+    @Test
+    void upgradesLegacyPlainTextPasswordAfterSuccessfulLogin() {
+        UserRepository repository = mock(UserRepository.class);
+        User user = userWithPassword(2, "Legacy@123");
+        when(repository.findActiveByUsername("legacy02")).thenReturn(Optional.of(user));
+        when(repository.getLoginSecurityState(2))
+                .thenReturn(new UserRepository.LoginSecurityState(0, null));
+
+        AuthenticationService.LoginResult result =
+                new AuthenticationService(repository).login("legacy02", "Legacy@123");
+
+        assertTrue(result.successful());
+        verify(repository).updatePassword(eq(2), any());
     }
 
     @Test

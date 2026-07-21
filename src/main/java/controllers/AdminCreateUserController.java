@@ -76,13 +76,6 @@ public class AdminCreateUserController extends HttpServlet {
             request.setAttribute("err",ex.getMessage()); request.getRequestDispatcher("views/AdminCreateUser.jsp").forward(request,response); return;
         }
 
-        UserDAO userDAO = new UserDAO();
-        if (userDAO.usernameExists(username)) {
-            request.setAttribute("err", "Tên đăng nhập đã tồn tại.");
-            request.getRequestDispatcher("views/AdminCreateUser.jsp").forward(request, response);
-            return;
-        }
-
         User newUser = new User();
         newUser.setUsername(username);
         newUser.setPassword(password);
@@ -97,17 +90,34 @@ public class AdminCreateUserController extends HttpServlet {
         try { LocalDate dob=Validators.dateOfBirth(dobString,false); if(dob!=null)newUser.setDob(java.sql.Date.valueOf(dob)); }
         catch(IllegalArgumentException ex){request.setAttribute("err",ex.getMessage());request.getRequestDispatcher("views/AdminCreateUser.jsp").forward(request,response);return;}
 
-        newUser = userDAO.create(newUser);
-
-        if ("DOCTOR".equals(role) && newUser.getUserId() > 0) {
-            DoctorDAO docDAO = new DoctorDAO();
-            Doctor doc = new Doctor();
-            doc.setUserId(newUser.getUserId());
+        Doctor doc = null;
+        if ("DOCTOR".equals(role)) {
+            doc = new Doctor();
             doc.setSpecialty(specialty);
             doc.setLicenseNo(licenseNo);
             doc.setDegree(degree);
             doc.setDiabetesFocus(diabetesFocus);
-            docDAO.create(doc);
+        }
+
+        try {
+            AdminDAO.CreatedAccount created = new AdminDAO()
+                    .createManagedAccount(newUser, doc, admin.getUserId());
+            newUser = created.user();
+            doc = created.doctor();
+        } catch (IllegalArgumentException error) {
+            request.setAttribute("err", error.getMessage());
+            request.getRequestDispatcher("views/AdminCreateUser.jsp").forward(request, response);
+            return;
+        } catch (IllegalStateException error) {
+            LOGGER.log(Level.SEVERE, "Không thể tạo tài khoản quản lý", error);
+            response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+            request.setAttribute("err", "Không thể tạo tài khoản lúc này. Vui lòng thử lại sau.");
+            request.getRequestDispatcher("views/AdminCreateUser.jsp").forward(request, response);
+            return;
+        }
+
+        if (doc != null) {
+            DoctorDAO docDAO = new DoctorDAO();
 
             try {
                 Part facePart    = request.getPart("faceImage");
@@ -134,7 +144,7 @@ public class AdminCreateUserController extends HttpServlet {
                 : "Đã tạo tài khoản " + roleLabel + ". Chưa thể gửi email vì máy chủ chưa cấu hình dịch vụ email.");
         currentSession.setAttribute("toastType", "success");
 
-        if ("DOCTOR".equals(role) && newUser.getUserId() > 0) {
+        if (doc != null) {
             // Đẩy admin sang thẳng trang hồ sơ bác sĩ vừa tạo để xem lại thông tin/ảnh vừa upload
             response.sendRedirect(request.getContextPath() + "/AdminDoctorDetail?userId=" + newUser.getUserId());
         } else {

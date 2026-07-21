@@ -1,6 +1,6 @@
 package controllers;
 
-import dal.UserDAO;
+import dal.AdminDAO;
 import models.User;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -30,11 +30,12 @@ public class AdminToggleStatusController extends HttpServlet {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Mã tài khoản không hợp lệ");
             return;
         }
-        UserDAO dao = new UserDAO();
-        User target = dao.getById(uid);
-        if (target != null && uid != admin.getUserId() && !target.getUsername().equals("admin")) {
-            target.setStatus("ACTIVE".equals(target.getStatus()) ? "INACTIVE" : "ACTIVE");
-            dao.update(target);
+        try {
+            String status = new AdminDAO().toggleUserStatus(uid, admin.getUserId());
+            request.getSession().setAttribute("adminDashboardMessage",
+                    "ACTIVE".equals(status) ? "Đã mở khóa tài khoản." : "Đã khóa tài khoản.");
+        } catch (IllegalArgumentException error) {
+            request.getSession().setAttribute("adminDashboardMessage", error.getMessage());
         }
         // Giữ lại page + filterRole + keyword khi redirect về
         String page       = request.getParameter("page");

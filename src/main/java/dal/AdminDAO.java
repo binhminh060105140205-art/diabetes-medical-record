@@ -1,16 +1,103 @@
 package dal;
 
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import models.Doctor;
+import models.User;
+import vn.diabetes.auth.Passwords;
 
 /** Database operations used only by administrator tools. */
 public class AdminDAO extends DBContext {
+    /** Creates the user and doctor profile atomically so a failed doctor insert leaves no orphan account. */
+    public CreatedAccount createManagedAccount(User user, Doctor doctor, int adminId) {
+        boolean originalAutoCommit;
+        try {
+            originalAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+        } catch (SQLException error) {
+            throw databaseError("start account creation", error);
+        }
+
+        try {
+            String userSql = """
+                    INSERT INTO users(username,password,full_name,phone,role,status,email,dob,gender,address,cccd)
+                    VALUES(?,?,?,?,?,'ACTIVE',?,?,?,?,?)
+                    """;
+            try (PreparedStatement statement = connection.prepareStatement(
+                    userSql, Statement.RETURN_GENERATED_KEYS)) {
+                statement.setString(1, user.getUsername());
+                statement.setString(2, Passwords.encode(user.getPassword()));
+                statement.setString(3, user.getFullName());
+                statement.setString(4, user.getPhone());
+                statement.setString(5, user.getRole());
+                statement.setString(6, user.getEmail());
+                statement.setDate(7, user.getDob() == null
+                        ? null : new Date(user.getDob().getTime()));
+                statement.setString(8, user.getGender());
+                statement.setString(9, user.getAddress());
+                statement.setString(10, user.getCccd());
+                statement.executeUpdate();
+                try (ResultSet keys = statement.getGeneratedKeys()) {
+                    if (!keys.next()) throw new SQLException("User ID was not returned");
+                    user.setUserId(keys.getInt(1));
+                }
+            }
+
+            if (doctor != null) {
+                doctor.setUserId(user.getUserId());
+                String doctorSql = """
+                        INSERT INTO doctors(user_id,specialty,license_no,degree,diabetes_focus)
+                        VALUES(?,?,?,?,?)
+                        """;
+                try (PreparedStatement statement = connection.prepareStatement(
+                        doctorSql, Statement.RETURN_GENERATED_KEYS)) {
+                    statement.setInt(1, doctor.getUserId());
+                    statement.setString(2, Doctor.DIABETES_SPECIALTY);
+                    statement.setString(3, doctor.getLicenseNo());
+                    statement.setString(4, doctor.getDegree());
+                    statement.setString(5, doctor.getDiabetesFocus());
+                    statement.executeUpdate();
+                    try (ResultSet keys = statement.getGeneratedKeys()) {
+                        if (!keys.next()) throw new SQLException("Doctor ID was not returned");
+                        doctor.setDoctorId(keys.getInt(1));
+                    }
+                }
+            }
+
+            audit(adminId, "CREATE", doctor == null ? "STAFF_ACCOUNT" : "DOCTOR_ACCOUNT",
+                    String.valueOf(user.getUserId()), user.getUsername());
+            connection.commit();
+            return new CreatedAccount(user, doctor);
+        } catch (SQLException error) {
+            try { connection.rollback(); } catch (SQLException ignored) { }
+            if ("23505".equals(error.getSQLState())) {
+                throw new IllegalArgumentException(duplicateAccountMessage(error), error);
+            }
+            throw databaseError("create managed account", error);
+        } finally {
+            try { connection.setAutoCommit(originalAutoCommit); } catch (SQLException ignored) { }
+        }
+    }
+
+    public record CreatedAccount(User user, Doctor doctor) {}
+
+    private String duplicateAccountMessage(SQLException error) {
+        String detail = String.valueOf(error.getMessage()).toLowerCase(Locale.ROOT);
+        if (detail.contains("username")) return "Tên đăng nhập đã tồn tại.";
+        if (detail.contains("license_no")) return "Số chứng chỉ hành nghề đã tồn tại.";
+        if (detail.contains("cccd")) return "Số CCCD đã được sử dụng.";
+        return "Thông tin tài khoản bị trùng với dữ liệu hiện có.";
+    }
+
     public List<Map<String, Object>> exportUsers() {
         return query("""
                 SELECT user_id,full_name,email,role,status,created_at
@@ -83,6 +170,42 @@ public class AdminDAO extends DBContext {
     /** Safe account deletion entry point used by the Admin dashboard. */
     public void deleteUser(int userId, int adminId) {
         softDeleteUser(userId, adminId);
+    }
+
+    /** Changes availability without disabling an account that still owns active work. */
+    public String toggleUserStatus(int userId, int adminId) {
+        final String[] result = new String[1];
+        inTransaction("Không thể cập nhật trạng thái tài khoản.", () -> {
+            Map<String, Object> user = one("""
+                    SELECT user_id,username,full_name,role,status
+                    FROM users WHERE user_id=? FOR UPDATE""", userId);
+            if (user == null) throw new IllegalArgumentException("Không tìm thấy tài khoản.");
+            if (userId == adminId || "ADMIN".equals(user.get("role"))) {
+                throw new IllegalArgumentException("Không thể khóa tài khoản quản trị viên.");
+            }
+            String currentStatus = String.valueOf(user.get("status"));
+            if ("DELETED".equals(currentStatus)) {
+                throw new IllegalArgumentException("Tài khoản đã ở trong thùng rác.");
+            }
+            String nextStatus = "ACTIVE".equals(currentStatus) ? "INACTIVE" : "ACTIVE";
+            if ("INACTIVE".equals(nextStatus)) {
+                try {
+                    ensureUserCanBeDeleted(user);
+                } catch (IllegalArgumentException error) {
+                    String message = error.getMessage();
+                    if (message != null) {
+                        message = message.replace("Không thể xóa tài khoản này vì",
+                                "Không thể khóa tài khoản này vì");
+                    }
+                    throw new IllegalArgumentException(message, error);
+                }
+            }
+            update("UPDATE users SET status=? WHERE user_id=?", nextStatus, userId);
+            audit(adminId, "ACTIVE".equals(nextStatus) ? "ACTIVATE" : "DEACTIVATE",
+                    "USER", String.valueOf(userId), value(user, "username"));
+            result[0] = nextStatus;
+        });
+        return result[0];
     }
 
     /** Prevents removing an account that still owns active clinical work. */

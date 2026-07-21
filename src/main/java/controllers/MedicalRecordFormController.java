@@ -8,6 +8,7 @@ import jakarta.servlet.http.*;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import vn.diabetes.validation.Validators;
 
 /**
  * Staff handles intake; the assigned doctor maintains the diabetes profile
@@ -108,17 +109,36 @@ public class MedicalRecordFormController extends HttpServlet {
 
         String recordId = request.getParameter("recordId");
         MedicalRecordDAO records = new MedicalRecordDAO();
-        switch (ControllerSupport.clean(request.getParameter("action"))) {
-            case "saveBasic" -> saveBasic(request, response, user, records);
-            case "saveClinical" -> saveClinical(request, response, user, records, recordId);
-            case "saveLabResults" -> saveLabResults(request, response, user, records, recordId);
-            case "reviewLab" -> reviewLabResults(request, response, user, records, session, recordId);
-            case "saveDiabetesProfile" ->
-                    saveDiabetesProfile(request, response, user, records, session, recordId);
-            case "saveConclusion" ->
-                    saveConclusion(request, response, user, records, session, recordId);
-            default -> response.sendError(HttpServletResponse.SC_BAD_REQUEST,
-                    "Thao tác bệnh án không hợp lệ");
+        try {
+            switch (ControllerSupport.clean(request.getParameter("action"))) {
+                case "saveBasic" -> saveBasic(request, response, user, records);
+                case "saveClinical" -> saveClinical(request, response, user, records, recordId);
+                case "saveLabResults" -> saveLabResults(request, response, user, records, recordId);
+                case "reviewLab" -> reviewLabResults(request, response, user, records, session, recordId);
+                case "saveDiabetesProfile" ->
+                        saveDiabetesProfile(request, response, user, records, session, recordId);
+                case "saveConclusion" ->
+                        saveConclusion(request, response, user, records, session, recordId);
+                default -> response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+                        "Thao tác bệnh án không hợp lệ");
+            }
+        } catch (IllegalArgumentException error) {
+            ControllerSupport.flash(request, "recordFlash", error.getMessage());
+            int parsedRecordId = ControllerSupport.positiveIdOrZero(recordId);
+            if (parsedRecordId > 0) {
+                redirectToRecordTab(request, response, parsedRecordId, 1);
+                return;
+            }
+            int patientId = ControllerSupport.positiveIdOrZero(request.getParameter("patientId"));
+            if (patientId == 0) {
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+                        "Mã bệnh nhân không hợp lệ");
+                return;
+            }
+            int encounterId = ControllerSupport.positiveIdOrZero(request.getParameter("encounterId"));
+            String target = request.getContextPath() + "/MedicalRecordForm?patientId=" + patientId;
+            if (encounterId > 0) target += "&encounterId=" + encounterId;
+            response.sendRedirect(target);
         }
     }
 
@@ -144,11 +164,15 @@ public class MedicalRecordFormController extends HttpServlet {
             record.setDoctorId(assignment[1]);
         }
 
-        record.setReasonForVisit(request.getParameter("reasonForVisit"));
-        record.setSymptoms(request.getParameter("symptoms"));
-        record.setMedicalHistory(request.getParameter("medicalHistory"));
-        record.setLifestyleHabits(request.getParameter("lifestyleHabits"));
-        record.setClinicalExam(request.getParameter("clinicalExam"));
+        record.setReasonForVisit(Validators.max(Validators.required(
+                request.getParameter("reasonForVisit"), "Lý do đến khám"), 255, "Lý do đến khám"));
+        record.setSymptoms(Validators.max(request.getParameter("symptoms"), 2000, "Triệu chứng"));
+        record.setMedicalHistory(Validators.max(
+                request.getParameter("medicalHistory"), 2000, "Tiền sử bệnh"));
+        record.setLifestyleHabits(Validators.max(
+                request.getParameter("lifestyleHabits"), 2000, "Thói quen sinh hoạt"));
+        record.setClinicalExam(Validators.max(
+                request.getParameter("clinicalExam"), 2000, "Ghi chú lâm sàng"));
         records.create(record);
         response.sendRedirect(request.getContextPath()
                 + "/MedicalRecordForm?recordId=" + record.getRecordId() + "&tab=2");
@@ -384,14 +408,16 @@ public class MedicalRecordFormController extends HttpServlet {
         }
 
         String finalDiagnosis = ControllerSupport.clean(request.getParameter("finalDiagnosis"));
-        if (finalDiagnosis.isEmpty() || finalDiagnosis.length() > 2000) {
+        if (finalDiagnosis.isEmpty() || finalDiagnosis.length() > 255) {
             redirectRecordError(request, response, recordId,
-                    "Chẩn đoán là bắt buộc và tối đa 2000 ký tự.");
+                    "Chẩn đoán là bắt buộc và tối đa 255 ký tự.");
             return;
         }
         if (tooLong(request.getParameter("treatmentPlan"), 3000)
                 || tooLong(request.getParameter("advice"), 2000)
-                || tooLong(request.getParameter("complicationNote"), 2000)) {
+                || tooLong(request.getParameter("complicationNote"), 2000)
+                || tooLong(request.getParameter("prescriptionNote"), 500)
+                || tooLong(request.getParameter("doctorNote"), 1000)) {
             redirectRecordError(request, response, recordId,
                     "Nội dung kết luận vượt quá độ dài cho phép.");
             return;
@@ -433,9 +459,9 @@ public class MedicalRecordFormController extends HttpServlet {
                         "Ngày tái khám không hợp lệ.");
                 return;
             }
-            if (followUp.isBefore(java.time.LocalDate.now())) {
+            if (!followUp.isAfter(java.time.LocalDate.now())) {
                 redirectRecordError(request, response, recordId,
-                        "Ngày tái khám không được ở quá khứ.");
+                        "Ngày tái khám phải bắt đầu từ ngày mai.");
                 return;
             }
             record.setFollowUpDate(followUp);

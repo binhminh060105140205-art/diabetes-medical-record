@@ -16,6 +16,7 @@ public class MedicalRecordDAO extends DBContext {
         MedicalRecord r = new MedicalRecord();
         r.setRecordId(rs.getInt("record_id"));
         r.setPatientId(rs.getInt("patient_id"));
+        try { r.setPatientName(rs.getString("patient_name")); } catch (SQLException ignored) { }
         r.setDoctorId(rs.getInt("doctor_id"));
         r.setCreatedByStaff(rs.getInt("created_by_staff"));
         r.setEncounterId(rs.getInt("encounter_id"));
@@ -346,12 +347,16 @@ public class MedicalRecordDAO extends DBContext {
               GROUP BY s.doctor_id
             ), items AS (
               SELECT recent.*, 'RECENT' bucket FROM (
-                SELECT r.* FROM medicalrecords r JOIN selected s ON s.doctor_id=r.doctor_id
+                SELECT r.*,p.full_name patient_name
+                FROM medicalrecords r JOIN selected s ON s.doctor_id=r.doctor_id
+                JOIN patients p ON p.patient_id=r.patient_id
                 ORDER BY r.visit_date DESC LIMIT 5
               ) recent
               UNION ALL
               SELECT pending.*, 'PENDING' bucket FROM (
-                SELECT r.* FROM medicalrecords r JOIN selected s ON s.doctor_id=r.doctor_id
+                SELECT r.*,p.full_name patient_name
+                FROM medicalrecords r JOIN selected s ON s.doctor_id=r.doctor_id
+                JOIN patients p ON p.patient_id=r.patient_id
                 WHERE r.status='DRAFT' ORDER BY r.visit_date DESC LIMIT 20
               ) pending
             )
@@ -404,9 +409,10 @@ public class MedicalRecordDAO extends DBContext {
     public MedicalRecord create(MedicalRecord rec) {
         String sql = "INSERT INTO MedicalRecords(patient_id,doctor_id,created_by_staff,encounter_id,"
                    + "reason_for_visit,symptoms,medical_history,lifestyle_habits,clinical_exam,status) "
-                   + "VALUES(?,?,?,?,?,?,?,?,?,'DRAFT')";
-        try (PreparedStatement statement = connection.prepareStatement(
-                sql, Statement.RETURN_GENERATED_KEYS)) {
+                   + "VALUES(?,?,?,?,?,?,?,?,?,'DRAFT') "
+                   + "ON CONFLICT(encounter_id) DO UPDATE SET encounter_id=EXCLUDED.encounter_id "
+                   + "RETURNING record_id";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, rec.getPatientId());
             setPositiveOrNull(statement, 2, rec.getDoctorId());
             setPositiveOrNull(statement, 3, rec.getCreatedByStaff());
@@ -416,9 +422,8 @@ public class MedicalRecordDAO extends DBContext {
             statement.setString(7, rec.getMedicalHistory());
             statement.setString(8, rec.getLifestyleHabits());
             statement.setString(9, rec.getClinicalExam());
-            statement.executeUpdate();
-            try (ResultSet keys = statement.getGeneratedKeys()) {
-                if (keys.next()) rec.setRecordId(keys.getInt(1));
+            try (ResultSet keys = statement.executeQuery()) {
+                if (keys.next()) rec.setRecordId(keys.getInt("record_id"));
             }
         } catch (SQLException e) { throw databaseError("create medical record", e); }
         return rec;
@@ -455,12 +460,22 @@ public class MedicalRecordDAO extends DBContext {
             for (int i = 0; i < names.length; i++) {
                 String name = names[i] == null ? "" : names[i].trim();
                 if (name.isEmpty()) continue;
+                if (name.length() > 150) {
+                    throw new IllegalArgumentException("Tên thuốc tối đa 150 ký tự.");
+                }
                 String dosage = valueAt(dosages, i);
                 if (dosage.isBlank()) throw new IllegalArgumentException("Thuốc phải có liều dùng.");
+                if (dosage.length() > 100) {
+                    throw new IllegalArgumentException("Liều dùng tối đa 100 ký tự.");
+                }
+                String frequency = valueAt(frequencies, i);
+                if (frequency.length() > 100) {
+                    throw new IllegalArgumentException("Tần suất dùng thuốc tối đa 100 ký tự.");
+                }
                 add.setInt(1, recordId);
                 add.setString(2, name);
                 add.setString(3, dosage);
-                add.setString(4, valueAt(frequencies, i));
+                add.setString(4, frequency);
                 String duration = valueAt(durations, i);
                 if (duration.isBlank()) add.setNull(5, Types.INTEGER);
                 else {

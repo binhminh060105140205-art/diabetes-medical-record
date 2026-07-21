@@ -8,7 +8,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Quản trị hệ thống — DiaCare</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui7">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260721-web-audit1">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
@@ -22,11 +22,9 @@
             <p>Tra cứu người dùng, kiểm soát trạng thái tài khoản và đi nhanh đến các khu vực vận hành phòng khám.</p>
         </div>
         <div class="heading-actions">
-            <a class="btn btn-light" href="${pageContext.request.contextPath}/ClinicWorkflow?view=appointments">Điều hành khám</a>
             <a class="btn btn-light" href="${pageContext.request.contextPath}/AdminExport">Xuất Excel</a>
             <a class="btn btn-light" href="${pageContext.request.contextPath}/AdminLoginHistory">Lịch sử đăng nhập</a>
             <a class="btn btn-light" href="${pageContext.request.contextPath}/AdminTrash">Thùng rác</a>
-            <a class="btn btn-primary" href="${pageContext.request.contextPath}/AdminCreateUser">Tạo tài khoản</a>
         </div>
     </div>
 

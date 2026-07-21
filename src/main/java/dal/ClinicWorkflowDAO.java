@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import models.Doctor;
+import models.LabResultImportRow;
 import models.Patient;
 import vn.diabetes.validation.AppointmentRules;
 
@@ -422,7 +423,7 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
 
     private Map<String, Object> lockAppointment(int appointmentId) {
         List<Map<String, Object>> rows = query(
-                "SELECT patient_id,doctor_id,status FROM appointments WHERE appointment_id=? FOR UPDATE",
+                "SELECT patient_id,doctor_id,appointment_at,status FROM appointments WHERE appointment_id=? FOR UPDATE",
                 appointmentId);
         if (rows.isEmpty()) {
             throw new IllegalArgumentException("Lịch hẹn không tồn tại.");
@@ -436,6 +437,11 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
             throw new IllegalArgumentException(
                     "Lịch phải được phân bác sĩ và xác nhận trước khi ghi nhận người bệnh đến khám.");
         }
+        Object rawAppointmentAt = appointment.get("appointment_at");
+        LocalDateTime appointmentAt = rawAppointmentAt instanceof Timestamp timestamp
+                ? timestamp.toLocalDateTime() : (LocalDateTime) rawAppointmentAt;
+        AppointmentRules.validateCheckInDate(
+                appointmentAt, AppointmentRules.nowInVietnam().toLocalDate());
     }
 
     private int insertEncounter(
@@ -710,35 +716,130 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
     /** Maps the structured result form to the doctor's existing orders for the visit. */
     public void resultStructuredLabs(int recordId, int actor, Double bloodGlucose, Double hba1c,
             Double cholesterol, Double triglyceride, Double hdlC, Double ldlC) {
+        int encounterId = openEncounterForRecord(recordId);
+        inTransaction("Không thể lưu kết quả xét nghiệm.", () -> {
+            saveStructuredResults(recordId, encounterId, actor, bloodGlucose, hba1c,
+                    cholesterol, triglyceride, hdlC, ldlC);
+        });
+    }
+
+    /** Imports all rows in one transaction so a bad database mapping cannot leave a half-imported file. */
+    public int importStructuredLabResults(List<LabResultImportRow> rows, int actor) {
+        if (rows == null || rows.isEmpty()) {
+            throw new IllegalArgumentException("File chưa có dòng kết quả để import.");
+        }
+        inTransaction("Không thể import kết quả xét nghiệm.", () -> {
+            for (LabResultImportRow row : rows) {
+                int encounterId;
+                try {
+                    encounterId = openEncounterForRecord(row.recordId());
+                    validateImportOrders(row, encounterId);
+                    saveImportedHealthIndicators(row, actor);
+                    saveStructuredResults(row.recordId(), encounterId, actor,
+                            row.bloodGlucose(), row.hba1c(), row.cholesterol(),
+                            row.triglyceride(), row.hdlC(), row.ldlC());
+                } catch (IllegalArgumentException error) {
+                    throw new IllegalArgumentException(
+                            "Dòng " + row.lineNumber() + ": " + error.getMessage(), error);
+                }
+            }
+            audit(actor, "IMPORT", "LAB_RESULT_FILE", null,
+                    "Import " + rows.size() + " dòng kết quả xét nghiệm");
+        });
+        return rows.size();
+    }
+
+    private int openEncounterForRecord(int recordId) {
         List<Map<String, Object>> records = query("""
                 SELECT r.encounter_id FROM medicalrecords r
                 WHERE r.record_id=? AND EXISTS (
                     SELECT 1 FROM lab_orders l WHERE l.encounter_id=r.encounter_id
                       AND l.status NOT IN ('REVIEWED','CANCELLED'))""", recordId);
         if (records.isEmpty() || records.get(0).get("encounter_id") == null) {
-            throw new IllegalArgumentException("Bác sĩ chưa tạo chỉ định xét nghiệm cho lượt khám này");
+            throw new IllegalArgumentException(
+                    "Bác sĩ chưa tạo chỉ định xét nghiệm hoặc chỉ định đã được xác nhận.");
         }
-        int encounterId = ((Number) records.get(0).get("encounter_id")).intValue();
-        inTransaction("Không thể lưu kết quả xét nghiệm.", () -> {
-            saveStructuredOrder(encounterId, actor, bloodGlucose, "mmol/L", "3.9-7.0",
-                    flag(bloodGlucose, 3.9, 7.0), "GLU", "GLU_FASTING");
-            saveStructuredOrder(encounterId, actor, hba1c, "%", "4.0-6.5",
-                    flag(hba1c, 4.0, 6.5), "HBA1C");
+        return ((Number) records.get(0).get("encounter_id")).intValue();
+    }
 
-            String lipidValue = lipidSummary(cholesterol, triglyceride, hdlC, ldlC);
-            if (lipidValue != null) {
-                String lipidFlag = lipidFlag(cholesterol, triglyceride, hdlC, ldlC);
-                update("""
-                        UPDATE lab_orders SET result_value=?,result_unit='mmol/L',
-                            reference_range='Theo từng chỉ số',result_flag=?,resulted_by=?,
-                            resulted_at=CURRENT_TIMESTAMP,status='RESULTED'
-                        WHERE encounter_id=? AND test_code='LIPID'
-                          AND status NOT IN ('REVIEWED','CANCELLED')""",
-                        lipidValue, lipidFlag, actor, encounterId);
-            }
-            audit(actor, "RESULT", "LAB_ORDER", String.valueOf(encounterId),
-                    "Nhập bộ kết quả xét nghiệm từ bệnh án #" + recordId);
-        });
+    private void validateImportOrders(LabResultImportRow row, int encounterId) {
+        Set<String> codes = new HashSet<>();
+        for (Map<String, Object> order : query("""
+                SELECT test_code FROM lab_orders
+                WHERE encounter_id=? AND status NOT IN ('REVIEWED','CANCELLED')""", encounterId)) {
+            codes.add(String.valueOf(order.get("test_code")).toUpperCase(Locale.ROOT));
+        }
+        if (row.bloodGlucose() != null && !hasAny(codes, "GLU", "GLU_FASTING")) {
+            throw new IllegalArgumentException("Chưa có chỉ định Đường huyết cho bệnh án này.");
+        }
+        if (row.hba1c() != null && !codes.contains("HBA1C")) {
+            throw new IllegalArgumentException("Chưa có chỉ định HbA1c cho bệnh án này.");
+        }
+        if ((row.cholesterol() != null || row.triglyceride() != null
+                || row.hdlC() != null || row.ldlC() != null) && !codes.contains("LIPID")) {
+            throw new IllegalArgumentException("Chưa có chỉ định bộ mỡ máu cho bệnh án này.");
+        }
+    }
+
+    private boolean hasAny(Set<String> values, String... expected) {
+        for (String value : expected) if (values.contains(value)) return true;
+        return false;
+    }
+
+    private void saveImportedHealthIndicators(LabResultImportRow row, int actor)
+            throws SQLException {
+        String sql = """
+                INSERT INTO healthindicators(
+                    record_id,entered_by_staff,blood_glucose,hba1c,cholesterol,triglyceride,hdl_c,ldl_c)
+                VALUES(?,?,?,?,?,?,?,?)
+                ON CONFLICT(record_id) DO UPDATE SET
+                    entered_by_staff=EXCLUDED.entered_by_staff,
+                    blood_glucose=COALESCE(EXCLUDED.blood_glucose,healthindicators.blood_glucose),
+                    hba1c=COALESCE(EXCLUDED.hba1c,healthindicators.hba1c),
+                    cholesterol=COALESCE(EXCLUDED.cholesterol,healthindicators.cholesterol),
+                    triglyceride=COALESCE(EXCLUDED.triglyceride,healthindicators.triglyceride),
+                    hdl_c=COALESCE(EXCLUDED.hdl_c,healthindicators.hdl_c),
+                    ldl_c=COALESCE(EXCLUDED.ldl_c,healthindicators.ldl_c),
+                    measured_at=CURRENT_TIMESTAMP""";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, row.recordId());
+            statement.setInt(2, actor);
+            setImportNumber(statement, 3, row.bloodGlucose());
+            setImportNumber(statement, 4, row.hba1c());
+            setImportNumber(statement, 5, row.cholesterol());
+            setImportNumber(statement, 6, row.triglyceride());
+            setImportNumber(statement, 7, row.hdlC());
+            setImportNumber(statement, 8, row.ldlC());
+            statement.executeUpdate();
+        }
+    }
+
+    private void setImportNumber(PreparedStatement statement, int index, Double value)
+            throws SQLException {
+        if (value == null) statement.setNull(index, Types.NUMERIC);
+        else statement.setDouble(index, value);
+    }
+
+    private void saveStructuredResults(int recordId, int encounterId, int actor,
+            Double bloodGlucose, Double hba1c, Double cholesterol, Double triglyceride,
+            Double hdlC, Double ldlC) throws SQLException {
+        saveStructuredOrder(encounterId, actor, bloodGlucose, "mmol/L", "3.9-7.0",
+                flag(bloodGlucose, 3.9, 7.0), "GLU", "GLU_FASTING");
+        saveStructuredOrder(encounterId, actor, hba1c, "%", "4.0-6.5",
+                flag(hba1c, 4.0, 6.5), "HBA1C");
+
+        String lipidValue = lipidSummary(cholesterol, triglyceride, hdlC, ldlC);
+        if (lipidValue != null) {
+            update("""
+                    UPDATE lab_orders SET result_value=?,result_unit='mmol/L',
+                        reference_range='Theo từng chỉ số',result_flag=?,resulted_by=?,
+                        resulted_at=CURRENT_TIMESTAMP,status='RESULTED'
+                    WHERE encounter_id=? AND test_code='LIPID'
+                      AND status NOT IN ('REVIEWED','CANCELLED')""",
+                    lipidValue, lipidFlag(cholesterol, triglyceride, hdlC, ldlC), actor, encounterId);
+        }
+        audit(actor, "RESULT", "LAB_ORDER", String.valueOf(encounterId),
+                "Nhập bộ kết quả xét nghiệm từ bệnh án #" + recordId);
     }
 
     /** The encounter only becomes lab-complete after its assigned doctor reviews every result. */

@@ -1,12 +1,13 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@taglib prefix="c" uri="jakarta.tags.core"%>
+<%@taglib prefix="fn" uri="jakarta.tags.functions"%>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <title>Hồ Sơ Bệnh Nhân</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui7">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260721-web-audit1">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
@@ -15,10 +16,10 @@
     <div class="page-heading"><div><div class="eyebrow">HỒ SƠ BỆNH NHÂN</div><h1 class="page-title">Cập nhật thông tin bệnh nhân</h1><p class="text-muted">Kiểm tra số điện thoại và thông tin nhận diện trước khi lưu.</p></div><a class="btn btn-light" href="${pageContext.request.contextPath}/StaffDashboard#patients">Quay lại danh sách</a></div>
 
     <c:if test="${not empty err}">
-        <div class="alert alert-danger">${err}</div>
+        <div class="alert alert-danger"><c:out value="${err}"/></div>
     </c:if>
     <c:if test="${not empty success}">
-        <div class="alert alert-success">${success}</div>
+        <div class="alert alert-success"><c:out value="${success}"/></div>
     </c:if>
 
     <div class="card">
@@ -30,22 +31,24 @@
                 <div class="form-group">
                     <label class="required">Họ và tên</label>
                     <input type="text" name="fullName" id="fullName" class="form-control"
-                           value="${not empty param.fullName ? param.fullName : patient.fullName}"
-                           placeholder="Nguyễn Văn A" required>
+                           value="${fn:escapeXml(not empty param.fullName ? param.fullName : patient.fullName)}"
+                           minlength="2" maxlength="100" placeholder="Nguyễn Văn A" required>
                     <span class="err-msg" id="err_fullName"></span>
                 </div>
                 <div class="form-group">
                     <label>Ngày sinh</label>
                     <input type="date" name="dateOfBirth" class="form-control"
-                           value="${patient.dateOfBirth}" max="${maxDOB}">
+                           value="${fn:escapeXml(not empty param.dateOfBirth ? param.dateOfBirth : patient.dateOfBirth)}"
+                           min="1900-01-01" max="${maxDOB}">
                     <span class="err-msg" id="err_dob"></span>
                 </div>
                 <div class="form-group">
                     <label>Giới tính</label>
+                    <c:set var="selectedGender" value="${not empty param.gender ? param.gender : patient.genderLabel}"/>
                     <select name="gender" class="form-control">
-                        <option value="Nam"  <c:if test="${patient.genderLabel=='Nam' || empty patient.gender}">selected</c:if>>Nam</option>
-                        <option value="Nữ"   <c:if test="${patient.genderLabel=='Nữ'}">selected</c:if>>Nữ</option>
-                        <option value="Khác" <c:if test="${patient.genderLabel=='Khác'}">selected</c:if>>Khác</option>
+                        <option value="Nam" ${empty selectedGender||selectedGender=='Nam'?'selected':''}>Nam</option>
+                        <option value="Nữ" ${selectedGender=='Nữ'?'selected':''}>Nữ</option>
+                        <option value="Khác" ${selectedGender=='Khác'?'selected':''}>Khác</option>
                     </select>
                 </div>
             </div>
@@ -53,16 +56,16 @@
             <div class="form-row">
                 <div class="form-group">
                     <label class="required">Số điện thoại</label>
-                    <input type="text" name="phone" id="phone" class="form-control"
-                           value="${not empty param.phone ? param.phone : patient.phone}"
-                           placeholder="0912345678" required>
+                    <input type="tel" name="phone" id="phone" class="form-control"
+                           value="${fn:escapeXml(not empty param.phone ? param.phone : patient.phone)}"
+                           pattern="(0|\+84)[0-9]{9}" maxlength="12" placeholder="0912345678" required>
                     <span class="err-msg" id="err_phone"></span>
                 </div>
                 <div class="form-group">
                     <label>Số BHYT</label>
                     <input type="text" name="healthInsuranceNo" class="form-control"
-                           value="${patient.healthInsuranceNo}"
-                           placeholder="HC4012345678">
+                           value="${fn:escapeXml(not empty param.healthInsuranceNo ? param.healthInsuranceNo : patient.healthInsuranceNo)}"
+                           pattern="[A-Za-z0-9]{10,20}" maxlength="20" placeholder="HC4012345678">
                     <span class="err-msg" id="err_bhyt"></span>
                 </div>
             </div>
@@ -70,11 +73,11 @@
             <div class="form-group">
                 <label>Địa chỉ</label>
                 <textarea name="address" class="form-control"
-                          placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố">${patient.address}</textarea>
+                          maxlength="255" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố"><c:out value="${not empty param.address ? param.address : patient.address}"/></textarea>
             </div>
 
             <c:if test="${not editMode}">
-            <div class="account-section"><div class="card-title">Tài khoản đăng nhập</div><p class="text-muted">Có Email/Gmail: hệ thống đưa thông tin vào hàng đợi gửi tự động. Không có email: cấp trực tiếp cho bệnh nhân.</p><div class="form-row"><div class="form-group"><label class="required">Tên đăng nhập</label><input class="form-control" name="username" minlength="4" maxlength="30" pattern="[A-Za-z0-9_]+" value="${param.username}" placeholder="Ví dụ: nguyenvana" required></div><div class="form-group"><label class="required">Mật khẩu tạm thời</label><input class="form-control" type="password" name="password" minlength="8" maxlength="72" autocomplete="new-password" required></div><div class="form-group"><label>Email/Gmail nhận tài khoản</label><input class="form-control" type="email" name="email" maxlength="100" value="${param.email}" placeholder="benhnhan@gmail.com"></div></div></div>
+            <div class="account-section"><div class="card-title">Tài khoản đăng nhập</div><p class="text-muted">Có Email/Gmail: hệ thống đưa thông tin vào hàng đợi gửi tự động. Không có email: cấp trực tiếp cho bệnh nhân.</p><div class="form-row"><div class="form-group"><label class="required">Tên đăng nhập</label><input class="form-control" name="username" minlength="4" maxlength="30" pattern="[A-Za-z0-9_]+" value="${fn:escapeXml(param.username)}" placeholder="Ví dụ: nguyenvana" required></div><div class="form-group"><label class="required">Mật khẩu tạm thời</label><input class="form-control" type="password" name="password" minlength="8" maxlength="72" autocomplete="new-password" required></div><div class="form-group"><label>Email/Gmail nhận tài khoản</label><input class="form-control" type="email" name="email" maxlength="100" value="${fn:escapeXml(param.email)}" placeholder="benhnhan@gmail.com"></div></div></div>
             </c:if>
 
             <div class="form-actions">
@@ -90,7 +93,7 @@
     </div>
 </div>
 
-<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260720-ui4"></script>
+<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260721-web-audit1"></script>
 <jsp:include page="footer.jsp"/>
 </body>
 </html>

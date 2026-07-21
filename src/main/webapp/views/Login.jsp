@@ -7,7 +7,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Đăng nhập — DiaCare</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui7">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260721-web-audit1">
 </head>
 <body class="auth-body">
 <main class="auth-shell">
@@ -78,8 +78,8 @@
         <footer>© 2026 DiaCare</footer>
     </section>
 </main>
-<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260720-ui7"></script>
-<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260720-ui7"></script>
+<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260721-web-audit1"></script>
+<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260721-web-audit1"></script>
 <c:if test="${not empty requestScope.lockUntil}">
     <script>
         (function () {

@@ -1,12 +1,13 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@taglib prefix="c" uri="jakarta.tags.core"%>
+<%@taglib prefix="fn" uri="jakarta.tags.functions"%>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <title>Hồ Sơ Bệnh Án</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260721-typeflow1">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260721-web-audit1">
     <style>
         .role-bar{padding:10px 16px;border-radius:8px;margin-bottom:16px;font-size:14px;font-weight:600;}
         .role-staff {background:#cff4fc;color:#055160;border-left:4px solid #0dcaf0;}
@@ -71,20 +72,20 @@
     <div class="alert alert-danger">
         <strong>⚠ Dữ liệu không hợp lệ:</strong>
         <ul class="error-list">
-            <c:forEach var="e" items="${serverErrors}"><li>${e}</li></c:forEach>
+            <c:forEach var="e" items="${serverErrors}"><li><c:out value="${e}"/></li></c:forEach>
         </ul>
     </div>
     </c:if>
 
     <%-- Thanh chuyển bước --%>
     <div class="tab-bar">
-        <button class="tab-btn ${sessionScope.user.role!='STAFF'?'locked':''} ${not empty record?'done':''}"
+        <button type="button" class="tab-btn ${sessionScope.user.role!='STAFF'?'locked':''} ${not empty record?'done':''}"
                 onclick="showTab(1)" id="btn1">1. Thông tin khám</button>
-        <button class="tab-btn ${sessionScope.user.role!='STAFF'?'locked':''} ${clinicalDone?'done':''}"
+        <button type="button" class="tab-btn ${sessionScope.user.role!='STAFF'?'locked':''} ${clinicalDone?'done':''}"
                 onclick="showTab(2)" id="btn2">2. Sinh hiệu <small>(Nhân viên)</small></button>
-        <button class="tab-btn ${labReviewed?'done':''}"
+        <button type="button" class="tab-btn ${labReviewed?'done':''}"
                 onclick="showTab(3)" id="btn3">3. Xét nghiệm</button>
-        <button class="tab-btn ${sessionScope.user.role!='DOCTOR'?'locked':''}"
+        <button type="button" class="tab-btn ${sessionScope.user.role!='DOCTOR'?'locked':''}"
                 onclick="showTab(4)" id="btn4">4. Kết luận <small>(Bác sĩ)</small></button>
     </div>
 
@@ -105,14 +106,14 @@
                     <c:choose>
                         <c:when test="${not empty encounterId && not empty assignedDoctor}">
                             <input type="hidden" name="doctorId" value="${assignedDoctor.doctorId}">
-                            <input class="form-control ind-readonly" value="${assignedDoctor.fullName} — ${assignedDoctor.specialty}" readonly>
+                            <input class="form-control ind-readonly" value="${fn:escapeXml(assignedDoctor.fullName)} — ${fn:escapeXml(assignedDoctor.specialty)}" readonly>
                         </c:when>
                         <c:otherwise>
                             <select name="doctorId" class="form-control" required>
                                 <option value="">-- Chọn bác sĩ --</option>
                                 <c:forEach var="doc" items="${doctors}">
                                     <option value="${doc.doctorId}" <c:if test="${record.doctorId==doc.doctorId}">selected</c:if>>
-                                        ${doc.fullName} — ${doc.specialty}
+                                        <c:out value="${doc.fullName}"/> — <c:out value="${doc.specialty}"/>
                                     </option>
                                 </c:forEach>
                             </select>
@@ -121,28 +122,28 @@
                 </div>
                 <div class="form-group">
                     <label class="required">Lý do đến khám</label>
-                    <textarea name="reasonForVisit" class="form-control" required
-                        placeholder="Bệnh nhân đến khám vì...">${record.reasonForVisit}</textarea>
+                    <textarea name="reasonForVisit" class="form-control" maxlength="255" required
+                        placeholder="Bệnh nhân đến khám vì..."><c:out value="${record.reasonForVisit}"/></textarea>
                 </div>
                 <div class="form-group">
                     <label>Triệu chứng hiện tại</label>
-                    <textarea name="symptoms" class="form-control"
-                        placeholder="Khát nhiều, tiểu nhiều, mệt mỏi, sụt cân, nhìn mờ, tê chân tay...">${record.symptoms}</textarea>
+                    <textarea name="symptoms" class="form-control" maxlength="2000"
+                        placeholder="Khát nhiều, tiểu nhiều, mệt mỏi, sụt cân, nhìn mờ, tê chân tay..."><c:out value="${record.symptoms}"/></textarea>
                 </div>
                 <div class="form-group">
                     <label>Tiền sử bệnh</label>
-                    <textarea name="medicalHistory" class="form-control"
-                        placeholder="Tiểu đường, cao huyết áp, tim mạch, rối loạn mỡ máu...">${record.medicalHistory}</textarea>
+                    <textarea name="medicalHistory" class="form-control" maxlength="2000"
+                        placeholder="Tiểu đường, cao huyết áp, tim mạch, rối loạn mỡ máu..."><c:out value="${record.medicalHistory}"/></textarea>
                 </div>
                 <div class="form-group">
                     <label>Thói quen sinh hoạt</label>
-                    <textarea name="lifestyleHabits" class="form-control"
-                        placeholder="Ăn nhiều đồ ngọt, ít vận động, hút thuốc, uống rượu...">${record.lifestyleHabits}</textarea>
+                    <textarea name="lifestyleHabits" class="form-control" maxlength="2000"
+                        placeholder="Ăn nhiều đồ ngọt, ít vận động, hút thuốc, uống rượu..."><c:out value="${record.lifestyleHabits}"/></textarea>
                 </div>
                 <div class="form-group">
                     <label>Ghi chú lâm sàng ban đầu</label>
-                    <textarea name="clinicalExam" class="form-control"
-                        placeholder="Quan sát tổng quát, thần sắc...">${record.clinicalExam}</textarea>
+                    <textarea name="clinicalExam" class="form-control" maxlength="2000"
+                        placeholder="Quan sát tổng quát, thần sắc..."><c:out value="${record.clinicalExam}"/></textarea>
                 </div>
                 <div class="form-actions"><button type="submit" class="btn btn-primary">Lưu và chuyển sang nhập sinh hiệu</button></div>
             </form>
@@ -154,11 +155,11 @@
             <c:choose>
             <c:when test="${not empty record}">
                 <table class="detail-table">
-                    <tr><th class="label-cell">Lý do khám</th><td>${record.reasonForVisit}</td></tr>
-                    <tr><th>Triệu chứng</th><td>${record.symptoms}</td></tr>
-                    <tr><th>Tiền sử</th><td>${record.medicalHistory}</td></tr>
-                    <tr><th>Thói quen</th><td>${record.lifestyleHabits}</td></tr>
-                    <tr><th>Lâm sàng</th><td>${record.clinicalExam}</td></tr>
+                    <tr><th class="label-cell">Lý do khám</th><td><c:out value="${record.reasonForVisit}"/></td></tr>
+                    <tr><th>Triệu chứng</th><td><c:out value="${record.symptoms}"/></td></tr>
+                    <tr><th>Tiền sử</th><td><c:out value="${record.medicalHistory}"/></td></tr>
+                    <tr><th>Thói quen</th><td><c:out value="${record.lifestyleHabits}"/></td></tr>
+                    <tr><th>Lâm sàng</th><td><c:out value="${record.clinicalExam}"/></td></tr>
                 </table>
             </c:when>
             <c:otherwise>
@@ -369,18 +370,18 @@
                 <input type="hidden" name="recordId" value="${record.recordId}">
                 <div class="form-group">
                     <label>Ghi chú biến chứng</label>
-                    <textarea name="complicationNote" class="form-control"
-                        placeholder="Hạ đường huyết, biến chứng thận, mắt, thần kinh...">${record.complicationNote}</textarea>
+                    <textarea name="complicationNote" class="form-control" maxlength="2000"
+                        placeholder="Hạ đường huyết, biến chứng thận, mắt, thần kinh..."><c:out value="${record.complicationNote}"/></textarea>
                 </div>
                 <div class="form-group">
                     <label class="required">Chẩn đoán cuối cùng</label>
-                    <textarea name="finalDiagnosis" class="form-control" required
-                        placeholder="Ví dụ: Đái tháo đường típ 2 kiểm soát chưa đạt, kèm rối loạn mỡ máu...">${record.finalDiagnosis}</textarea>
+                    <textarea name="finalDiagnosis" class="form-control" maxlength="255" required
+                        placeholder="Ví dụ: Đái tháo đường típ 2 kiểm soát chưa đạt, kèm rối loạn mỡ máu..."><c:out value="${record.finalDiagnosis}"/></textarea>
                 </div>
                 <div class="form-group">
                     <label>Hướng điều trị</label>
-                    <textarea name="treatmentPlan" class="form-control"
-                        placeholder="Điều chỉnh lối sống, thuốc uống, insulin...">${record.treatmentPlan}</textarea>
+                    <textarea name="treatmentPlan" class="form-control" maxlength="3000"
+                        placeholder="Điều chỉnh lối sống, thuốc uống, insulin..."><c:out value="${record.treatmentPlan}"/></textarea>
                 </div>
                 <div class="form-group">
                     <div class="field-heading"><label>Đơn thuốc</label><button type="button" class="btn btn-light btn-sm" onclick="addMedicineRow()">+ Thêm thuốc</button></div>
@@ -389,9 +390,9 @@
                         <tbody id="medicineRows">
                         <c:forEach var="item" items="${prescriptionItems}">
                             <tr>
-                                <td><input name="medicineName" class="form-control" maxlength="150" value="${item.medicineName}" placeholder="Metformin 500mg"></td>
-                                <td><input name="dosage" class="form-control" maxlength="100" value="${item.dosage}" placeholder="1 viên/lần"></td>
-                                <td><input name="frequency" class="form-control" maxlength="100" value="${item.frequency}" placeholder="2 lần/ngày"></td>
+                                <td><input name="medicineName" class="form-control" maxlength="150" value="${fn:escapeXml(item.medicineName)}" placeholder="Metformin 500mg"></td>
+                                <td><input name="dosage" class="form-control" maxlength="100" value="${fn:escapeXml(item.dosage)}" placeholder="1 viên/lần"></td>
+                                <td><input name="frequency" class="form-control" maxlength="100" value="${fn:escapeXml(item.frequency)}" placeholder="2 lần/ngày"></td>
                                 <td><input name="durationDays" type="number" min="1" max="365" class="form-control" value="${item.durationDays}" placeholder="30"></td>
                                 <td><button class="icon-button danger" type="button" onclick="removeMedicineRow(this)" aria-label="Xóa thuốc">×</button></td>
                             </tr>
@@ -409,12 +410,12 @@
                     </table>
                     <label class="top-gap">Ghi chú chung</label>
                     <textarea name="prescriptionNote" class="form-control" maxlength="500"
-                        placeholder="Ví dụ: uống sau ăn">${record.prescriptionNote}</textarea>
+                        placeholder="Ví dụ: uống sau ăn"><c:out value="${record.prescriptionNote}"/></textarea>
                 </div>
                 <div class="form-group">
                     <label>Lời dặn bệnh nhân</label>
-                    <textarea name="advice" class="form-control"
-                        placeholder="Uống thuốc đúng giờ, kiểm tra đường huyết định kỳ...">${record.advice}</textarea>
+                    <textarea name="advice" class="form-control" maxlength="2000"
+                        placeholder="Uống thuốc đúng giờ, kiểm tra đường huyết định kỳ..."><c:out value="${record.advice}"/></textarea>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -425,8 +426,8 @@
                     </div>
                     <div class="form-group">
                         <label>Ghi chú thêm</label>
-                        <input type="text" name="doctorNote" class="form-control"
-                               value="${record.doctorNote}">
+                        <input type="text" name="doctorNote" class="form-control" maxlength="1000"
+                               value="${fn:escapeXml(record.doctorNote)}">
                     </div>
                 </div>
                 <div class="form-actions conclusion-actions"><button type="submit" class="btn btn-success btn-lg">Hoàn tất hồ sơ bệnh án</button></div>
@@ -440,10 +441,10 @@
             <c:choose>
             <c:when test="${record.status == 'COMPLETED'}">
                 <table class="detail-table">
-                    <tr><th class="label-cell">Chẩn đoán</th><td><strong>${record.finalDiagnosis}</strong></td></tr>
-                    <tr><th>Hướng điều trị</th><td>${record.treatmentPlan}</td></tr>
-                    <tr><th>Đơn thuốc</th><td>${record.prescriptionNote}</td></tr>
-                    <tr><th>Lời dặn</th><td>${record.advice}</td></tr>
+                    <tr><th class="label-cell">Chẩn đoán</th><td><strong><c:out value="${record.finalDiagnosis}"/></strong></td></tr>
+                    <tr><th>Hướng điều trị</th><td><c:out value="${record.treatmentPlan}"/></td></tr>
+                    <tr><th>Đơn thuốc</th><td><c:out value="${record.prescriptionNote}"/></td></tr>
+                    <tr><th>Lời dặn</th><td><c:out value="${record.advice}"/></td></tr>
                     <tr><th>Tái khám</th><td><strong>${record.followUpDate}</strong></td></tr>
                 </table>
             </c:when>

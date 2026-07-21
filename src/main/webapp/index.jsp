@@ -7,9 +7,9 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>DiaCare — Chăm sóc tiểu đường toàn diện</title>
     <meta name="description" content="Nền tảng quản lý khám ngoại trú và theo dõi bệnh tiểu đường dành cho phòng khám, bác sĩ và người bệnh.">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/home.css?v=20260720-clean1">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/home.css?v=20260721-web-audit1">
     <link rel="prefetch" href="${pageContext.request.contextPath}/Login">
-    <link rel="prefetch" href="${pageContext.request.contextPath}/static/css/style.css?v=20260720-ui7" as="style">
+    <link rel="prefetch" href="${pageContext.request.contextPath}/static/css/style.css?v=20260721-web-audit1" as="style">
 </head>
 <body class="home-body">
 <div class="hosp-topbar">

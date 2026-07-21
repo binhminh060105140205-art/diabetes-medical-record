@@ -9,6 +9,7 @@ public class MedicalRecord {
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private int recordId;
     private int patientId;
+    private String patientName;
     private int doctorId;
     private int createdByStaff;
     private int encounterId;
@@ -36,6 +37,8 @@ public class MedicalRecord {
 
     public int getPatientId()                   { return patientId; }
     public void setPatientId(int v)             { this.patientId = v; }
+    public String getPatientName()              { return patientName; }
+    public void setPatientName(String v)         { this.patientName = v; }
 
     public int getDoctorId()                    { return doctorId; }
     public void setDoctorId(int v)              { this.doctorId = v; }

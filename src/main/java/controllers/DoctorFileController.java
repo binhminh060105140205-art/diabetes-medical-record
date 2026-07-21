@@ -76,9 +76,30 @@ public class DoctorFileController extends HttpServlet {
             return;
         }
 
+        long lastModified = imageFile.lastModified();
+        long fileLength = imageFile.length();
+        String etag = "\"" + fileLength + "-" + lastModified + "\"";
+        response.setHeader("ETag", etag);
+        response.setDateHeader("Last-Modified", lastModified);
+        response.setHeader("Cache-Control", "private, max-age=3600, must-revalidate");
+        String ifNoneMatch = request.getHeader("If-None-Match");
+        long ifModifiedSince = -1;
+        try {
+            ifModifiedSince = request.getDateHeader("If-Modified-Since");
+        } catch (IllegalArgumentException ignored) {
+            // Ignore malformed conditional headers and return the current file.
+        }
+        boolean notModified = etag.equals(ifNoneMatch)
+                || (ifNoneMatch == null && ifModifiedSince >= 0
+                && (lastModified / 1000) <= (ifModifiedSince / 1000));
+        if (notModified) {
+            response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+            return;
+        }
+
         String contentType = Files.probeContentType(imageFile.toPath());
         response.setContentType(contentType != null ? contentType : "application/octet-stream");
-        response.setContentLengthLong(imageFile.length());
+        response.setContentLengthLong(fileLength);
         Files.copy(imageFile.toPath(), response.getOutputStream());
     }
 }
