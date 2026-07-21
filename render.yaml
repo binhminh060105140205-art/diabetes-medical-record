@@ -3,7 +3,7 @@ services:
     name: diabetes-medical-record
     runtime: docker
     dockerfilePath: ./Dockerfile
-    healthCheckPath: /ready
+    healthCheckPath: /health
     autoDeploy: true
     disk:
       name: doctor-uploads
@@ -29,6 +29,8 @@ services:
       - key: TLD_SKIP_PATTERNS
         value: "*.jar"
       - key: SPRING_LAZY_INITIALIZATION
+        value: "true"
+      - key: SESSION_COOKIE_SECURE
         value: "true"
       - key: BOOTSTRAP_ADMIN_USERNAME
         value: admin

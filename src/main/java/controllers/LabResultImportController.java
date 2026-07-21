@@ -1,23 +1,28 @@
 package controllers;
 
 import dal.ClinicWorkflowDAO;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Part;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Locale;
 import models.LabResultImportRow;
 import models.User;
 import util.LabResultCsvImporter;
 
-/** Imports editable CSV results into existing laboratory orders for staff review. */
+/** Imports an uploaded result file into the medical record selected by staff. */
 @WebServlet("/LabResultImport")
+@MultipartConfig(maxFileSize = 1024 * 1024, maxRequestSize = 2 * 1024 * 1024)
 public class LabResultImportController extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws IOException {
+            throws IOException, ServletException {
         request.setCharacterEncoding("UTF-8");
         User user = ControllerSupport.currentUser(request);
         if (!ControllerSupport.hasRole(user, "ADMIN", "STAFF")) {
@@ -26,20 +31,19 @@ public class LabResultImportController extends HttpServlet {
         }
 
         try {
-            InputStream input = request.getServletContext().getResourceAsStream(
-                    "/static/templates/lab-results-import.txt");
-            if (input == null) {
-                throw new IllegalArgumentException("Không tìm thấy file xét nghiệm trong project.");
-            }
+            int recordId = ControllerSupport.positiveId(
+                    request.getParameter("recordId"), "Mã bệnh án");
+            Part resultFile = request.getPart("resultFile");
+            validateFile(resultFile);
             List<LabResultImportRow> rows;
-            try (input) {
-                rows = LabResultCsvImporter.parse(input);
+            try (InputStream input = resultFile.getInputStream()) {
+                rows = LabResultCsvImporter.parseForRecord(input, recordId);
             }
             int imported = new ClinicWorkflowDAO()
                     .importStructuredLabResults(rows, user.getUserId());
             ControllerSupport.flash(request, "workflowFlash",
-                    "Đã import " + imported
-                    + " bệnh án. Kết quả đang chờ bác sĩ xác nhận.");
+                    "Đã import " + imported + " dòng kết quả cho bệnh án #" + recordId
+                    + ". Kết quả đang chờ bác sĩ xác nhận.");
         } catch (IllegalArgumentException error) {
             ControllerSupport.flash(request, "workflowFlash",
                     "Không thể import: " + error.getMessage());
@@ -48,6 +52,17 @@ public class LabResultImportController extends HttpServlet {
                     "Không thể import dữ liệu lúc này. Vui lòng kiểm tra file và thử lại.");
         }
         response.sendRedirect(request.getContextPath() + "/ClinicWorkflow?view=labs");
+    }
+
+    private void validateFile(Part resultFile) {
+        if (resultFile == null || resultFile.getSize() == 0) {
+            throw new IllegalArgumentException("Chưa chọn file kết quả xét nghiệm.");
+        }
+        String fileName = resultFile.getSubmittedFileName();
+        String normalized = fileName == null ? "" : fileName.toLowerCase(Locale.ROOT);
+        if (!normalized.endsWith(".txt") && !normalized.endsWith(".csv")) {
+            throw new IllegalArgumentException("File kết quả phải có định dạng .txt hoặc .csv.");
+        }
     }
 
     @Override

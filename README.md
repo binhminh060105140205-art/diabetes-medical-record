@@ -58,7 +58,7 @@ Không dùng mật khẩu Gmail thông thường. Thông báo trên giao diện 
 
 ## Import kết quả xét nghiệm
 
-File mẫu dạng dễ đọc nằm tại `src/main/webapp/static/templates/lab-results-import.txt`. Nhân viên có thể sửa từng dòng theo dạng `hba1c = (nhập)` bằng VS Code, điền `record_id` đang hiển thị tại màn Xét nghiệm và các chỉ số: đường huyết, HbA1c, cholesterol, triglyceride, HDL-C, LDL-C. Sau đó bấm **Import file trong project** tại màn Xét nghiệm; nếu nhận file khác từ máy xét nghiệm thì chọn **Import file đã chọn**. File `.csv` cũ vẫn được hỗ trợ.
+File mẫu dạng dễ đọc nằm tại `src/main/webapp/static/templates/lab-results-import.txt`. Nhân viên chọn bệnh nhân/bệnh án đang chờ kết quả trên màn Xét nghiệm, sửa các dòng theo dạng `hba1c = (nhập)`, chọn file `.txt` hoặc `.csv`, rồi bấm **Import kết quả**. File không cần chứa `record_id` vì hệ thống lấy đúng bệnh án đã chọn trên giao diện.
 
 Hệ thống kiểm tra định dạng, phạm vi chỉ số, mã bệnh án và chỉ định của bác sĩ trước khi lưu. Toàn bộ file được xử lý trong một giao dịch; nếu một dòng sai thì không dòng nào được ghi vào database.
 

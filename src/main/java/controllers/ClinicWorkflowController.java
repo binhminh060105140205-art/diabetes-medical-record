@@ -46,7 +46,7 @@ public class ClinicWorkflowController extends HttpServlet {
         if (response.isCommitted()) return;
 
         if ("clinical".equals(view)) {
-            loadSelectedPatient(request, response, workflow);
+            loadSelectedPatient(request, response, user, workflow);
             if (response.isCommitted()) return;
         }
 
@@ -74,6 +74,9 @@ public class ClinicWorkflowController extends HttpServlet {
         } catch (IllegalArgumentException | SecurityException error) {
             ControllerSupport.flash(request, "workflowFlash",
                     "Không thể cập nhật: " + error.getMessage());
+        } catch (IllegalStateException error) {
+            ControllerSupport.flash(request, "workflowFlash",
+                    "Không thể cập nhật dữ liệu lúc này. Vui lòng tải lại trang và thử lại.");
         } catch (Exception error) {
             throw new ServletException("Lỗi cập nhật quy trình khám", error);
         }
@@ -87,7 +90,9 @@ public class ClinicWorkflowController extends HttpServlet {
             request.setAttribute("labTests", ClinicWorkflowService.labTests());
         }
         if ("clinical".equals(view)) {
-            request.setAttribute("patients", new PatientDAO().listForSelection());
+            request.setAttribute("patients", "DOCTOR".equals(user.getRole())
+                    ? new PatientDAO().listForDoctorSelection(user.getUserId())
+                    : new PatientDAO().listForSelection());
         }
         if ("appointments".equals(view)) {
             ClinicWorkflowDAO.AppointmentOperationsPageData page =
@@ -109,6 +114,7 @@ public class ClinicWorkflowController extends HttpServlet {
             request.setAttribute("encounters", workflow.encounters());
         } else if ("labs".equals(view)) {
             request.setAttribute("labOrders", workflow.labOrders());
+            request.setAttribute("labImportRecords", workflow.labImportRecords());
         }
     }
 
@@ -130,7 +136,7 @@ public class ClinicWorkflowController extends HttpServlet {
     }
 
     private void loadSelectedPatient(HttpServletRequest request, HttpServletResponse response,
-            ClinicWorkflowDAO workflow) throws IOException {
+            User user, ClinicWorkflowDAO workflow) throws IOException {
         String patientIdValue = request.getParameter("patientId");
         if (patientIdValue == null || patientIdValue.isBlank()) return;
 
@@ -139,6 +145,15 @@ public class ClinicWorkflowController extends HttpServlet {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST,
                     "Mã bệnh nhân không hợp lệ");
             return;
+        }
+
+        if ("DOCTOR".equals(user.getRole())) {
+            Integer doctorId = doctorIdForSession(request, user, workflow);
+            if (doctorId == null || !workflow.doctorHasPatient(doctorId, patientId)) {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                        "Bệnh nhân không thuộc phạm vi phụ trách của bác sĩ");
+                return;
+            }
         }
 
         ClinicWorkflowDAO.ClinicalPatientData data = workflow.loadClinicalPatient(patientId);
@@ -165,8 +180,8 @@ public class ClinicWorkflowController extends HttpServlet {
             case "appointmentStatus" -> updateAppointmentStatus(request, user, service);
             case "checkIn" -> checkIn(request, user, service);
             case "status" -> updateEncounterStatus(request, user, workflow, service);
-            case "allergy" -> addAllergy(request, user, service);
-            case "history" -> addMedicalHistory(request, user, service);
+            case "allergy" -> addAllergy(request, user, workflow, service);
+            case "history" -> addMedicalHistory(request, user, workflow, service);
             case "labOrder" -> createLabOrder(request, user, workflow, service);
             case "labResult" -> addLabResult(request, user, service);
             default -> throw forbiddenAction();
@@ -238,10 +253,11 @@ public class ClinicWorkflowController extends HttpServlet {
     }
 
     private String addAllergy(HttpServletRequest request, User user,
-            ClinicWorkflowService service) {
+            ClinicWorkflowDAO workflow, ClinicWorkflowService service) {
         requireDoctor(user);
+        int patientId = requireAssignedPatient(request, user, workflow);
         service.addAllergy(
-                positiveParameter(request, "patientId"),
+                patientId,
                 ControllerSupport.requiredParameter(request, "allergen"),
                 request.getParameter("reaction"),
                 request.getParameter("severity"),
@@ -250,11 +266,12 @@ public class ClinicWorkflowController extends HttpServlet {
     }
 
     private String addMedicalHistory(HttpServletRequest request, User user,
-            ClinicWorkflowService service) {
+            ClinicWorkflowDAO workflow, ClinicWorkflowService service) {
         requireDoctor(user);
+        int patientId = requireAssignedPatient(request, user, workflow);
         String diagnosedDate = request.getParameter("diagnosedDate");
         service.addHistory(
-                positiveParameter(request, "patientId"),
+                patientId,
                 request.getParameter("historyType"),
                 ControllerSupport.requiredParameter(request, "conditionName"),
                 diagnosedDate == null || diagnosedDate.isBlank()
@@ -304,6 +321,16 @@ public class ClinicWorkflowController extends HttpServlet {
         return doctorId;
     }
 
+    private int requireAssignedPatient(HttpServletRequest request, User user,
+            ClinicWorkflowDAO workflow) {
+        int patientId = positiveParameter(request, "patientId");
+        Integer doctorId = doctorIdForSession(request, user, workflow);
+        if (doctorId == null || !workflow.doctorHasPatient(doctorId, patientId)) {
+            throw new SecurityException("Bệnh nhân không thuộc phạm vi phụ trách của bác sĩ");
+        }
+        return patientId;
+    }
+
     private Integer doctorIdForSession(HttpServletRequest request, User user,
             ClinicWorkflowDAO workflow) {
         HttpSession session = request.getSession();
@@ -328,7 +355,8 @@ public class ClinicWorkflowController extends HttpServlet {
     private void redirectToWorkflow(HttpServletRequest request, HttpServletResponse response,
             String view) throws IOException {
         String patientId = request.getParameter("patientId");
-        String patientQuery = patientId == null ? "" : "&patientId=" + patientId;
+        int parsedPatientId = ControllerSupport.positiveIdOrZero(patientId);
+        String patientQuery = parsedPatientId == 0 ? "" : "&patientId=" + parsedPatientId;
         response.sendRedirect(request.getContextPath()
                 + "/ClinicWorkflow?view=" + view + patientQuery);
     }

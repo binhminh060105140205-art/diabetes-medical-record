@@ -57,37 +57,44 @@ public class MedicalRecordFormController extends HttpServlet {
 
             if (assignedDoctor != null) request.setAttribute("assignedDoctor", assignedDoctor);
 
-            boolean clinicalDone = indicator != null && (indicator.getHeight() > 0 || indicator.getSystolicBp() > 0);
-            boolean labDone = indicator != null
-                    && (positive(indicator.getBloodGlucose()) || positive(indicator.getHba1c())
-                    || positive(indicator.getCholesterol()) || positive(indicator.getTriglyceride())
-                    || positive(indicator.getHdlC()) || positive(indicator.getLdlC()));
+            boolean clinicalDone = indicator != null
+                    && indicator.getHeight() > 0 && indicator.getWeight() > 0
+                    && indicator.getSystolicBp() > 0 && indicator.getDiastolicBp() > 0
+                    && indicator.getHeartRate() > 0 && indicator.getTemperature() > 0;
             request.setAttribute("clinicalDone", clinicalDone);
-            request.setAttribute("labDone",      labDone);
             setLabState(request, formData.labOrders());
         } else if (pidParam != null) {
+            if (!"STAFF".equals(user.getRole())) {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                return;
+            }
             int patientId = ControllerSupport.positiveIdOrZero(pidParam);
             if (patientId == 0) { response.sendError(400, "Mã bệnh nhân không hợp lệ"); return; }
+            int encounterId = ControllerSupport.positiveIdOrZero(encounterParam);
+            if (encounterId == 0) {
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+                        "Cần chọn lượt khám trước khi tạo bệnh án");
+                return;
+            }
+            ClinicWorkflowDAO workflow = new ClinicWorkflowDAO();
+            int[] assignment;
+            try {
+                assignment = workflow.intakeAssignmentForEncounter(encounterId);
+            } catch (IllegalArgumentException error) {
+                response.sendError(HttpServletResponse.SC_CONFLICT, error.getMessage());
+                return;
+            }
+            if (assignment[0] != patientId) {
+                response.sendError(400, "Bệnh nhân không thuộc lượt khám này");
+                return;
+            }
             Patient patient = new PatientDAO().getById(patientId);
             if (patient == null) { response.sendError(404, "Không tìm thấy bệnh nhân"); return; }
             request.setAttribute("patient", patient);
             request.setAttribute("diabetesProfile", new DiabetesProfileDAO().getByPatientId(patientId));
-            request.setAttribute("encounterId", encounterParam);
-            if (encounterParam != null && !encounterParam.isBlank()) {
-                int encounterId = ControllerSupport.positiveIdOrZero(encounterParam);
-                if (encounterId == 0) {
-                    response.sendError(400, "Mã lượt khám không hợp lệ");
-                    return;
-                }
-                ClinicWorkflowDAO workflow = new ClinicWorkflowDAO();
-                int[] assignment = workflow.assignmentForEncounter(encounterId);
-                if (assignment[0] != patientId) {
-                    response.sendError(400, "Bệnh nhân không thuộc lượt khám này");
-                    return;
-                }
-                request.setAttribute("assignedDoctor", new DoctorDAO().getById(assignment[1]));
-                request.setAttribute("appointmentTime", workflow.appointmentTimeForEncounter(encounterId));
-            }
+            request.setAttribute("encounterId", encounterId);
+            request.setAttribute("assignedDoctor", new DoctorDAO().getById(assignment[1]));
+            request.setAttribute("appointmentTime", workflow.appointmentTimeForEncounter(encounterId));
         }
 
         if ("STAFF".equals(user.getRole())) {
@@ -101,16 +108,17 @@ public class MedicalRecordFormController extends HttpServlet {
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
         User user = ControllerSupport.currentUser(request);
-        if (user == null) {
-            ControllerSupport.redirectToLogin(request, response);
+        if (!ControllerSupport.hasRole(user, "ADMIN", "STAFF", "DOCTOR")) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
             return;
         }
         HttpSession session = request.getSession();
 
         String recordId = request.getParameter("recordId");
+        String action = ControllerSupport.clean(request.getParameter("action"));
         MedicalRecordDAO records = new MedicalRecordDAO();
         try {
-            switch (ControllerSupport.clean(request.getParameter("action"))) {
+            switch (action) {
                 case "saveBasic" -> saveBasic(request, response, user, records);
                 case "saveClinical" -> saveClinical(request, response, user, records, recordId);
                 case "saveLabResults" -> saveLabResults(request, response, user, records, recordId);
@@ -122,11 +130,14 @@ public class MedicalRecordFormController extends HttpServlet {
                 default -> response.sendError(HttpServletResponse.SC_BAD_REQUEST,
                         "Thao tác bệnh án không hợp lệ");
             }
-        } catch (IllegalArgumentException error) {
-            ControllerSupport.flash(request, "recordFlash", error.getMessage());
+        } catch (IllegalArgumentException | IllegalStateException error) {
+            String message = error instanceof IllegalStateException
+                    ? "Không thể lưu dữ liệu lúc này. Vui lòng tải lại trang và thử lại."
+                    : error.getMessage();
+            ControllerSupport.flash(request, "recordFlash", message);
             int parsedRecordId = ControllerSupport.positiveIdOrZero(recordId);
             if (parsedRecordId > 0) {
-                redirectToRecordTab(request, response, parsedRecordId, 1);
+                redirectToRecordTab(request, response, parsedRecordId, tabForAction(action));
                 return;
             }
             int patientId = ControllerSupport.positiveIdOrZero(request.getParameter("patientId"));
@@ -149,17 +160,22 @@ public class MedicalRecordFormController extends HttpServlet {
         MedicalRecord record = new MedicalRecord();
         record.setPatientId(ControllerSupport.positiveId(
                 request.getParameter("patientId"), "Mã bệnh nhân"));
-        String doctorId = ControllerSupport.clean(request.getParameter("doctorId"));
-        if (!doctorId.isEmpty()) {
-            record.setDoctorId(ControllerSupport.positiveId(doctorId, "Mã bác sĩ"));
-        }
+        int existingRecordId = ControllerSupport.positiveIdOrZero(
+                request.getParameter("recordId"));
         record.setCreatedByStaff(user.getUserId());
 
-        String encounterId = ControllerSupport.clean(request.getParameter("encounterId"));
-        if (!encounterId.isEmpty()) {
+        if (existingRecordId > 0) {
+            MedicalRecord existing = records.getById(existingRecordId);
+            ensureDraftRecord(existing);
+            record.setRecordId(existing.getRecordId());
+            record.setPatientId(existing.getPatientId());
+            record.setDoctorId(existing.getDoctorId());
+            record.setEncounterId(existing.getEncounterId());
+        } else {
+            String encounterId = ControllerSupport.clean(request.getParameter("encounterId"));
             record.setEncounterId(ControllerSupport.positiveId(encounterId, "Mã lượt khám"));
             int[] assignment = new ClinicWorkflowDAO()
-                    .assignmentForEncounter(record.getEncounterId());
+                    .intakeAssignmentForEncounter(record.getEncounterId());
             record.setPatientId(assignment[0]);
             record.setDoctorId(assignment[1]);
         }
@@ -173,7 +189,7 @@ public class MedicalRecordFormController extends HttpServlet {
                 request.getParameter("lifestyleHabits"), 2000, "Thói quen sinh hoạt"));
         record.setClinicalExam(Validators.max(
                 request.getParameter("clinicalExam"), 2000, "Ghi chú lâm sàng"));
-        records.create(record);
+        records.saveBasic(record);
         response.sendRedirect(request.getContextPath()
                 + "/MedicalRecordForm?recordId=" + record.getRecordId() + "&tab=2");
     }
@@ -184,6 +200,7 @@ public class MedicalRecordFormController extends HttpServlet {
         if (!requireRole(request, response, user, "STAFF")) return;
 
         int recordId = ControllerSupport.positiveId(recordIdValue, "Mã bệnh án");
+        ensureDraftRecord(records.getById(recordId));
         HealthIndicator indicator = clinicalIndicator(request, recordId, user.getUserId());
         List<String> errors = validateClinical(indicator);
         if (!errors.isEmpty()) {
@@ -203,16 +220,16 @@ public class MedicalRecordFormController extends HttpServlet {
         HealthIndicator indicator = new HealthIndicator();
         indicator.setRecordId(recordId);
         indicator.setEnteredByStaff(staffId);
-        indicator.setHeight(parseDouble(request.getParameter("height")));
-        indicator.setWeight(parseDouble(request.getParameter("weight")));
+        indicator.setHeight(parseDouble(request.getParameter("height"), "Chiều cao"));
+        indicator.setWeight(parseDouble(request.getParameter("weight"), "Cân nặng"));
         double height = indicator.getHeight();
         double weight = indicator.getWeight();
         indicator.setBmi(height > 0 && weight > 0
                 ? Math.round(weight / Math.pow(height / 100, 2) * 10.0) / 10.0 : 0);
-        indicator.setSystolicBp(parseInt(request.getParameter("systolicBp")));
-        indicator.setDiastolicBp(parseInt(request.getParameter("diastolicBp")));
-        indicator.setHeartRate(parseInt(request.getParameter("heartRate")));
-        indicator.setTemperature(parseDouble(request.getParameter("temperature")));
+        indicator.setSystolicBp(parseInt(request.getParameter("systolicBp"), "Huyết áp tâm thu"));
+        indicator.setDiastolicBp(parseInt(request.getParameter("diastolicBp"), "Huyết áp tâm trương"));
+        indicator.setHeartRate(parseInt(request.getParameter("heartRate"), "Nhịp tim"));
+        indicator.setTemperature(parseDouble(request.getParameter("temperature"), "Nhiệt độ"));
         return indicator;
     }
 
@@ -248,6 +265,7 @@ public class MedicalRecordFormController extends HttpServlet {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "Không tìm thấy bệnh án");
             return;
         }
+        ensureDraftRecord(record);
 
         try {
             Double bloodGlucose = labValue(request, "bloodGlucose", "Đường huyết lúc đói", 1, 40);
@@ -266,8 +284,6 @@ public class MedicalRecordFormController extends HttpServlet {
                 throw new IllegalArgumentException(
                         "Bác sĩ chưa tạo chỉ định xét nghiệm cho lượt khám này.");
             }
-            new HealthIndicatorDAO().saveLabResults(recordId, user.getUserId(), bloodGlucose,
-                    hba1c, cholesterol, triglyceride, hdlC, ldlC);
             workflow.resultStructuredLabs(recordId, user.getUserId(), bloodGlucose,
                     hba1c, cholesterol, triglyceride, hdlC, ldlC);
             ControllerSupport.flash(request, "recordSuccess",
@@ -314,6 +330,7 @@ public class MedicalRecordFormController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/DoctorDashboard");
             return;
         }
+        ensureDraftRecord(record);
         Integer doctorId = doctorIdForSession(session, user);
         if (doctorId == null || doctorId != record.getDoctorId()) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN);
@@ -386,6 +403,7 @@ public class MedicalRecordFormController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/DoctorDashboard");
             return;
         }
+        ensureDraftRecord(record);
         Integer doctorId = doctorIdForSession(session, user);
         if (doctorId == null || doctorId != record.getDoctorId()) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN);
@@ -489,7 +507,7 @@ public class MedicalRecordFormController extends HttpServlet {
     private boolean requireRole(HttpServletRequest request, HttpServletResponse response,
             User user, String role) throws IOException {
         if (ControllerSupport.hasRole(user, role)) return true;
-        ControllerSupport.redirectToLogin(request, response);
+        response.sendError(HttpServletResponse.SC_FORBIDDEN);
         return false;
     }
 
@@ -507,6 +525,12 @@ public class MedicalRecordFormController extends HttpServlet {
 
     private List<String> validateClinical(HealthIndicator h) {
         List<String> errors = new ArrayList<>();
+        if (h.getHeight() == 0) errors.add("Chiều cao là bắt buộc");
+        if (h.getWeight() == 0) errors.add("Cân nặng là bắt buộc");
+        if (h.getSystolicBp() == 0) errors.add("Huyết áp tâm thu là bắt buộc");
+        if (h.getDiastolicBp() == 0) errors.add("Huyết áp tâm trương là bắt buộc");
+        if (h.getHeartRate() == 0) errors.add("Nhịp tim là bắt buộc");
+        if (h.getTemperature() == 0) errors.add("Nhiệt độ là bắt buộc");
         if (h.getHeight() != 0 && (h.getHeight() < 50 || h.getHeight() > 250))
             errors.add("Chiều cao bất thường: " + h.getHeight() + " cm (hợp lệ: 50–250 cm)");
         if (h.getWeight() != 0 && (h.getWeight() < 10 || h.getWeight() > 300))
@@ -534,7 +558,11 @@ public class MedicalRecordFormController extends HttpServlet {
 
     private Double optionalDouble(String value) {
         if (value == null || value.isBlank()) return null;
-        try { return Double.valueOf(value); }
+        try {
+            double parsed = Double.parseDouble(value);
+            if (!Double.isFinite(parsed)) throw new NumberFormatException();
+            return parsed;
+        }
         catch (NumberFormatException error) {
             throw new IllegalArgumentException("Mục tiêu HbA1c không hợp lệ.");
         }
@@ -555,18 +583,23 @@ public class MedicalRecordFormController extends HttpServlet {
         }
     }
 
-    private boolean positive(Double value) {
-        return value != null && value > 0;
-    }
-
     private void setLabState(HttpServletRequest request,
             List<java.util.Map<String, Object>> labOrders) {
         boolean hasOrders = labOrders != null && !labOrders.isEmpty();
         boolean allReady = hasOrders;
         boolean allReviewed = hasOrders;
+        boolean orderedGlucose = false;
+        boolean orderedHba1c = false;
+        boolean orderedLipid = false;
         if (hasOrders) {
             for (java.util.Map<String, Object> order : labOrders) {
                 String status = String.valueOf(order.get("status"));
+                String code = String.valueOf(order.get("test_code"));
+                if (java.util.Set.of("ORDERED", "COLLECTED").contains(status)) {
+                    orderedGlucose |= java.util.Set.of("GLU", "GLU_FASTING").contains(code);
+                    orderedHba1c |= "HBA1C".equals(code);
+                    orderedLipid |= "LIPID".equals(code);
+                }
                 if (!java.util.Set.of("RESULTED", "REVIEWED", "CANCELLED").contains(status)) {
                     allReady = false;
                 }
@@ -578,23 +611,46 @@ public class MedicalRecordFormController extends HttpServlet {
         request.setAttribute("hasLabOrders", hasOrders);
         request.setAttribute("labResultsReady", allReady);
         request.setAttribute("labReviewed", allReviewed);
+        request.setAttribute("orderedGlucose", orderedGlucose);
+        request.setAttribute("orderedHba1c", orderedHba1c);
+        request.setAttribute("orderedLipid", orderedLipid);
     }
 
     private boolean tooLong(String value, int max) { return value != null && value.length() > max; }
 
-    private double parseDouble(String value) {
+    private double parseDouble(String value, String label) {
         try {
-            return value == null || value.isEmpty() ? 0 : Double.parseDouble(value);
+            if (value == null || value.isBlank()) return 0;
+            double parsed = Double.parseDouble(value);
+            if (!Double.isFinite(parsed)) throw new NumberFormatException();
+            return parsed;
         } catch (NumberFormatException error) {
-            return 0;
+            throw new IllegalArgumentException(label + " không hợp lệ.");
         }
     }
 
-    private int parseInt(String value) {
+    private int parseInt(String value, String label) {
         try {
-            return value == null || value.isEmpty() ? 0 : Integer.parseInt(value);
+            return value == null || value.isBlank() ? 0 : Integer.parseInt(value);
         } catch (NumberFormatException error) {
-            return 0;
+            throw new IllegalArgumentException(label + " không hợp lệ.");
+        }
+    }
+
+    private int tabForAction(String action) {
+        return switch (action) {
+            case "saveClinical" -> 2;
+            case "saveLabResults", "reviewLab" -> 3;
+            case "saveDiabetesProfile", "saveConclusion" -> 4;
+            default -> 1;
+        };
+    }
+
+    private void ensureDraftRecord(MedicalRecord record) {
+        if (record == null) throw new IllegalArgumentException("Không tìm thấy bệnh án.");
+        if (!"DRAFT".equals(record.getStatus())) {
+            throw new IllegalArgumentException(
+                    "Bệnh án đã hoàn tất nên chỉ được xem, không thể chỉnh sửa.");
         }
     }
 

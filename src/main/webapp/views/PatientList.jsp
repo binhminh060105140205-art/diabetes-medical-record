@@ -7,7 +7,7 @@
         <meta charset="UTF-8">
         <title>Danh Sách Bệnh Nhân</title>
         <meta name="viewport" content="width=device-width,initial-scale=1">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260721-web-audit1">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260722-web-audit2">
     </head>
     <body>
         <jsp:include page="header.jsp"/>

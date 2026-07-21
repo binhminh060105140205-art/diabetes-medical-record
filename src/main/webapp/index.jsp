@@ -9,7 +9,7 @@
     <meta name="description" content="Nền tảng quản lý khám ngoại trú và theo dõi bệnh tiểu đường dành cho phòng khám, bác sĩ và người bệnh.">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/home.css?v=20260721-web-audit1">
     <link rel="prefetch" href="${pageContext.request.contextPath}/Login">
-    <link rel="prefetch" href="${pageContext.request.contextPath}/static/css/style.css?v=20260721-web-audit1" as="style">
+    <link rel="prefetch" href="${pageContext.request.contextPath}/static/css/style.css?v=20260722-web-audit2" as="style">
 </head>
 <body class="home-body">
 <div class="hosp-topbar">

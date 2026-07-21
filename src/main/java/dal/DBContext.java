@@ -1,5 +1,6 @@
 package dal;
 
+import com.zaxxer.hikari.HikariDataSource;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -64,13 +65,32 @@ public class DBContext {
 
     private Connection openConnection() throws SQLException {
         DataSource configured = dataSource;
-        if (configured != null) return configured.getConnection();
+        long startedAt = System.nanoTime();
+        try {
+            if (configured != null) return configured.getConnection();
 
-        return DriverManager.getConnection(
-                value("DB_URL", "spring.datasource.url",
-                        "jdbc:postgresql://localhost:5432/diabetes_medical_record"),
-                value("DB_USERNAME", "spring.datasource.username", "postgres"),
-                value("DB_PASSWORD", "spring.datasource.password", ""));
+            return DriverManager.getConnection(
+                    value("DB_URL", "spring.datasource.url",
+                            "jdbc:postgresql://localhost:5432/diabetes_medical_record"),
+                    value("DB_USERNAME", "spring.datasource.username", "postgres"),
+                    value("DB_PASSWORD", "spring.datasource.password", ""));
+        } finally {
+            long elapsedMs = (System.nanoTime() - startedAt) / 1_000_000;
+            if (elapsedMs >= 250) {
+                String poolState = "";
+                if (configured instanceof HikariDataSource hikari
+                        && hikari.getHikariPoolMXBean() != null) {
+                    var pool = hikari.getHikariPoolMXBean();
+                    poolState = " (active=" + pool.getActiveConnections()
+                            + ", idle=" + pool.getIdleConnections()
+                            + ", total=" + pool.getTotalConnections()
+                            + ", waiting=" + pool.getThreadsAwaitingConnection() + ")";
+                }
+                LOGGER.warning("Slow database connection acquisition: " + elapsedMs
+                        + " ms via " + (configured == null
+                                ? "DriverManager" : configured.getClass().getName()) + poolState);
+            }
+        }
     }
 
     private static String value(String environmentName, String propertyName, String defaultValue) {

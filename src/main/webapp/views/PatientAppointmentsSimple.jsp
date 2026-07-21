@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Lịch khám — DiaCare</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260721-web-audit1">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260722-web-audit2">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
@@ -29,7 +29,7 @@
                 <div><span class="panel-eyebrow">ĐẶT LỊCH NHANH</span><h2>Gửi yêu cầu khám</h2><p>Chọn ngày và buổi phù hợp. Nhân viên sẽ xác nhận bác sĩ và giờ cụ thể.</p></div>
                 <span class="booking-step-count">3 bước</span>
             </div>
-            <form method="post" action="${pageContext.request.contextPath}/PatientAppointments" class="compact-form">
+            <form method="post" action="${pageContext.request.contextPath}/PatientAppointments" class="compact-form" data-gated-submit>
                 <div class="booking-step">
                     <div class="booking-step-title"><span>01</span><div><strong>Ngày dự kiến</strong><small>Chọn ngày muốn đến khám</small></div></div>
                     <div class="form-group">

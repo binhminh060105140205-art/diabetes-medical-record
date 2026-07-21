@@ -350,7 +350,14 @@ public class MedicalRecordDAO extends DBContext {
               SELECT s.doctor_id,
                      COUNT(r.record_id) total_records,
                      COUNT(r.record_id) FILTER (WHERE r.status='DRAFT') pending_records,
-                     (SELECT COUNT(*) FROM patients) total_patients
+                     (SELECT COUNT(*) FROM (
+                        SELECT e.patient_id FROM encounters e
+                        WHERE e.doctor_id=s.doctor_id
+                        UNION
+                        SELECT a.patient_id FROM appointments a
+                        WHERE a.doctor_id=s.doctor_id
+                          AND a.status IN ('BOOKED','CONFIRMED','CHECKED_IN')
+                      ) assigned_patients) total_patients
               FROM selected s LEFT JOIN medicalrecords r ON r.doctor_id=s.doctor_id
               GROUP BY s.doctor_id
             ), items AS (
@@ -422,7 +429,11 @@ public class MedicalRecordDAO extends DBContext {
         String sql = "INSERT INTO MedicalRecords(patient_id,doctor_id,created_by_staff,encounter_id,"
                    + "reason_for_visit,symptoms,medical_history,lifestyle_habits,clinical_exam,status) "
                    + "VALUES(?,?,?,?,?,?,?,?,?,'DRAFT') "
-                   + "ON CONFLICT(encounter_id) DO UPDATE SET encounter_id=EXCLUDED.encounter_id "
+                   + "ON CONFLICT(encounter_id) DO UPDATE SET "
+                   + "reason_for_visit=EXCLUDED.reason_for_visit,symptoms=EXCLUDED.symptoms,"
+                   + "medical_history=EXCLUDED.medical_history,lifestyle_habits=EXCLUDED.lifestyle_habits,"
+                   + "clinical_exam=EXCLUDED.clinical_exam,created_by_staff=EXCLUDED.created_by_staff "
+                   + "WHERE MedicalRecords.status='DRAFT' "
                    + "RETURNING record_id";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, rec.getPatientId());
@@ -435,16 +446,45 @@ public class MedicalRecordDAO extends DBContext {
             statement.setString(8, rec.getLifestyleHabits());
             statement.setString(9, rec.getClinicalExam());
             try (ResultSet keys = statement.executeQuery()) {
-                if (keys.next()) rec.setRecordId(keys.getInt("record_id"));
+                if (!keys.next()) {
+                    throw new IllegalArgumentException(
+                            "Bệnh án của lượt khám này đã hoàn tất hoặc không thể chỉnh sửa.");
+                }
+                rec.setRecordId(keys.getInt("record_id"));
             }
         } catch (SQLException e) { throw databaseError("create medical record", e); }
         return rec;
     }
 
+    /** Creates the intake record once, then updates the same draft on later edits. */
+    public MedicalRecord saveBasic(MedicalRecord record) {
+        if (record.getRecordId() <= 0) return create(record);
+        String sql = """
+                UPDATE medicalrecords
+                SET reason_for_visit=?,symptoms=?,medical_history=?,lifestyle_habits=?,clinical_exam=?
+                WHERE record_id=? AND status='DRAFT'
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, record.getReasonForVisit());
+            statement.setString(2, record.getSymptoms());
+            statement.setString(3, record.getMedicalHistory());
+            statement.setString(4, record.getLifestyleHabits());
+            statement.setString(5, record.getClinicalExam());
+            statement.setInt(6, record.getRecordId());
+            if (statement.executeUpdate() != 1) {
+                throw new IllegalArgumentException(
+                        "Bệnh án không tồn tại hoặc đã hoàn tất nên không thể chỉnh sửa.");
+            }
+            return record;
+        } catch (SQLException error) {
+            throw databaseError("save basic medical record", error);
+        }
+    }
+
     public void updateConclusion(MedicalRecord rec) {
         String sql = "UPDATE MedicalRecords SET complication_note=?,final_diagnosis=?,"
                    + "treatment_plan=?,prescription_note=?,advice=?,follow_up_date=?,"
-                   + "doctor_note=?,status='COMPLETED' WHERE record_id=?";
+                   + "doctor_note=?,status='COMPLETED' WHERE record_id=? AND status='DRAFT'";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, rec.getComplicationNote());
             statement.setString(2, rec.getFinalDiagnosis());
@@ -455,7 +495,10 @@ public class MedicalRecordDAO extends DBContext {
                     ? Date.valueOf(rec.getFollowUpDate()) : null);
             statement.setString(7, rec.getDoctorNote());
             statement.setInt(8, rec.getRecordId());
-            statement.executeUpdate();
+            if (statement.executeUpdate() != 1) {
+                throw new IllegalArgumentException(
+                        "Bệnh án đã hoàn tất hoặc không còn có thể chỉnh sửa.");
+            }
         } catch (SQLException e) { throw databaseError("complete medical record", e); }
     }
 

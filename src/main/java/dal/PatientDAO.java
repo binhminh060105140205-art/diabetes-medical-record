@@ -49,12 +49,51 @@ public class PatientDAO extends DBContext {
         return list;
     }
 
+    /** Only exposes patients who have been assigned to the signed-in doctor. */
+    public List<Patient> listForDoctorSelection(int doctorUserId) {
+        List<Patient> list = new ArrayList<>();
+        String sql = """
+                SELECT DISTINCT p.patient_id,p.full_name,p.phone,
+                       COALESCE(dp.diabetes_type,'UNKNOWN') diabetes_type
+                FROM patients p
+                LEFT JOIN users u ON u.user_id=p.user_id
+                LEFT JOIN diabetes_profiles dp ON dp.patient_id=p.patient_id
+                JOIN doctors d ON d.user_id=?
+                WHERE COALESCE(u.status,'ACTIVE') <> 'DELETED'
+                  AND (
+                    EXISTS (SELECT 1 FROM encounters e
+                            WHERE e.doctor_id=d.doctor_id AND e.patient_id=p.patient_id)
+                    OR EXISTS (SELECT 1 FROM appointments a
+                               WHERE a.doctor_id=d.doctor_id AND a.patient_id=p.patient_id
+                                 AND a.status IN ('BOOKED','CONFIRMED','CHECKED_IN'))
+                  )
+                ORDER BY p.full_name
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, doctorUserId);
+            try (ResultSet rows = statement.executeQuery()) {
+                while (rows.next()) {
+                    Patient patient = new Patient();
+                    patient.setPatientId(rows.getInt("patient_id"));
+                    patient.setFullName(rows.getString("full_name"));
+                    patient.setPhone(rows.getString("phone"));
+                    patient.setDiabetesType(rows.getString("diabetes_type"));
+                    list.add(patient);
+                }
+            }
+        } catch (SQLException error) {
+            throw databaseError("load assigned patients", error);
+        }
+        return list;
+    }
+
     /** Loads total patient count and the dashboard list in one database round-trip. */
     public StaffDashboardData loadStaffDashboard(String keyword, int limit) {
         boolean searching = keyword != null && !keyword.isBlank();
         String where = searching
                 ? " WHERE COALESCE(u.status,'ACTIVE') <> 'DELETED' AND "
-                  + "(p.full_name ILIKE ? OR p.phone ILIKE ? OR p.health_insurance_no ILIKE ? OR p.national_id ILIKE ?)"
+                  + "(" + SearchSupport.contains("p.full_name")
+                  + " OR p.phone ILIKE ? OR p.health_insurance_no ILIKE ? OR p.national_id ILIKE ?)"
                 : " WHERE COALESCE(u.status,'ACTIVE') <> 'DELETED'";
         String order = searching ? " ORDER BY p.full_name" : " ORDER BY p.created_at DESC";
         String sql = "WITH total AS (SELECT COUNT(*) value FROM patients p LEFT JOIN users u ON u.user_id=p.user_id"
@@ -87,7 +126,8 @@ public class PatientDAO extends DBContext {
         boolean searching = keyword != null && !keyword.isBlank();
         String where = searching
                 ? " WHERE COALESCE(u.status,'ACTIVE') <> 'DELETED' AND "
-                  + "(p.full_name ILIKE ? OR p.phone ILIKE ? OR p.health_insurance_no ILIKE ? OR p.national_id ILIKE ?)"
+                  + "(" + SearchSupport.contains("p.full_name")
+                  + " OR p.phone ILIKE ? OR p.health_insurance_no ILIKE ? OR p.national_id ILIKE ?)"
                 : " WHERE COALESCE(u.status,'ACTIVE') <> 'DELETED'";
         // The outer CTE query exposes patient columns without the original p alias.
         String order = searching ? " ORDER BY full_name" : " ORDER BY created_at DESC";
@@ -115,6 +155,58 @@ public class PatientDAO extends DBContext {
     }
 
     public record PatientListData(int total, List<Patient> patients) {}
+
+    /** Paginated patient list scoped to one doctor, including past encounters. */
+    public PatientListData loadPatientListForDoctor(int doctorUserId, String keyword,
+            int page, int pageSize) {
+        boolean searching = keyword != null && !keyword.isBlank();
+        String search = searching
+                ? " AND (" + SearchSupport.contains("p.full_name") + " OR p.phone ILIKE ? OR "
+                  + "p.health_insurance_no ILIKE ? OR p.national_id ILIKE ?)"
+                : "";
+        String order = searching ? " ORDER BY full_name" : " ORDER BY created_at DESC";
+        String sql = """
+                WITH doctor_scope AS (
+                  SELECT doctor_id FROM doctors WHERE user_id=?
+                ), filtered AS (
+                  SELECT p.* FROM patients p
+                  LEFT JOIN users u ON u.user_id=p.user_id
+                  JOIN doctor_scope d ON TRUE
+                  WHERE COALESCE(u.status,'ACTIVE') <> 'DELETED'
+                    AND (
+                      EXISTS (SELECT 1 FROM encounters e
+                              WHERE e.doctor_id=d.doctor_id AND e.patient_id=p.patient_id)
+                      OR EXISTS (SELECT 1 FROM appointments a
+                                 WHERE a.doctor_id=d.doctor_id AND a.patient_id=p.patient_id
+                                   AND a.status IN ('BOOKED','CONFIRMED','CHECKED_IN'))
+                    )
+                """ + search + """
+                ), total AS (SELECT COUNT(*) value FROM filtered),
+                data AS (SELECT * FROM filtered
+                """ + order + " LIMIT ? OFFSET ?) "
+                + "SELECT d.*,t.value total FROM total t LEFT JOIN data d ON TRUE";
+        List<Patient> patients = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            int index = 1;
+            statement.setInt(index++, doctorUserId);
+            if (searching) {
+                String value = "%" + keyword.trim() + "%";
+                for (int i = 0; i < 4; i++) statement.setString(index++, value);
+            }
+            statement.setInt(index++, pageSize);
+            statement.setInt(index, (page - 1) * pageSize);
+            try (ResultSet rows = statement.executeQuery()) {
+                int total = 0;
+                while (rows.next()) {
+                    total = rows.getInt("total");
+                    if (rows.getObject("patient_id") != null) patients.add(mapRow(rows));
+                }
+                return new PatientListData(total, patients);
+            }
+        } catch (SQLException error) {
+            throw databaseError("load doctor patient list", error);
+        }
+    }
 
     public Patient getById(int id) {
         try (PreparedStatement statement = connection.prepareStatement(

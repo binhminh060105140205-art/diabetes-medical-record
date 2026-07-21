@@ -14,6 +14,16 @@ import vn.diabetes.validation.Validators;
 /** Business boundary for all write operations in the outpatient workflow. */
 public class ClinicWorkflowService {
     private static final Map<String,String> LAB_TESTS = createLabTests();
+    private static final Set<String> APPOINTMENT_STATUSES =
+            Set.of("CONFIRMED", "CANCELLED", "NO_SHOW");
+    private static final Set<String> ENCOUNTER_STATUSES = Set.of(
+            "WAITING_TRIAGE", "WAITING_DOCTOR", "IN_CONSULTATION", "WAITING_LAB",
+            "LAB_COMPLETED", "COMPLETED", "CANCELLED");
+    private static final Set<String> ALLERGY_SEVERITIES =
+            Set.of("MILD", "MODERATE", "SEVERE", "UNKNOWN");
+    private static final Set<String> HISTORY_TYPES =
+            Set.of("PERSONAL", "FAMILY", "SURGICAL", "LIFESTYLE");
+    private static final Set<String> HISTORY_STATUSES = Set.of("ACTIVE", "RESOLVED");
     private final ClinicWorkflowGateway gateway;
     private final Supplier<LocalDateTime> clock;
 
@@ -66,7 +76,11 @@ public class ClinicWorkflowService {
 
     public void setAppointmentStatus(int id, String status, int actor) {
         positive(id, "Lịch hẹn");
-        gateway.setAppointmentStatus(id, Validators.required(status, "Trạng thái"), actor);
+        status = Validators.required(status, "Trạng thái").toUpperCase();
+        if (!APPOINTMENT_STATUSES.contains(status)) {
+            throw new IllegalArgumentException("Trạng thái lịch hẹn không hợp lệ.");
+        }
+        gateway.setAppointmentStatus(id, status, actor);
     }
 
     public void checkIn(int id, int actor) {
@@ -82,20 +96,41 @@ public class ClinicWorkflowService {
 
     public void setEncounterStatus(int id, String status, int actor) {
         positive(id, "Lượt khám");
+        status = Validators.required(status, "Trạng thái").toUpperCase();
+        if (!ENCOUNTER_STATUSES.contains(status)) {
+            throw new IllegalArgumentException("Trạng thái lượt khám không hợp lệ.");
+        }
         gateway.setEncounterStatus(id, status, actor);
     }
 
     public void addAllergy(int patientId, String allergen, String reaction,
             String severity, int actor) {
         positive(patientId, "Bệnh nhân");
-        gateway.addAllergy(patientId, Validators.required(allergen, "Dị nguyên"),
+        severity = severity == null ? "UNKNOWN" : severity.trim().toUpperCase();
+        if (!ALLERGY_SEVERITIES.contains(severity)) {
+            throw new IllegalArgumentException("Mức độ dị ứng không hợp lệ.");
+        }
+        gateway.addAllergy(patientId,
+                Validators.max(Validators.required(allergen, "Dị nguyên"), 150, "Dị nguyên"),
                 Validators.max(reaction, 255, "Phản ứng"), severity, actor);
     }
 
     public void addHistory(int patientId, String type, String name, Date date,
             String status, String note, int actor) {
         positive(patientId, "Bệnh nhân");
-        gateway.addHistory(patientId, type, Validators.required(name, "Tên bệnh"),
+        type = type == null ? "" : type.trim().toUpperCase();
+        status = status == null ? "ACTIVE" : status.trim().toUpperCase();
+        if (!HISTORY_TYPES.contains(type)) {
+            throw new IllegalArgumentException("Loại tiền sử không hợp lệ.");
+        }
+        if (!HISTORY_STATUSES.contains(status)) {
+            throw new IllegalArgumentException("Trạng thái tiền sử không hợp lệ.");
+        }
+        if (date != null && date.toLocalDate().isAfter(clock.get().toLocalDate())) {
+            throw new IllegalArgumentException("Ngày phát hiện không được ở tương lai.");
+        }
+        gateway.addHistory(patientId, type,
+                Validators.max(Validators.required(name, "Tên bệnh"), 150, "Tên bệnh"),
                 date, status, Validators.max(note, 500, "Ghi chú"), actor);
     }
 

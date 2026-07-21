@@ -10,13 +10,22 @@
     </welcome-file-list>
     <session-config>
         <session-timeout>30</session-timeout>
+        <tracking-mode>COOKIE</tracking-mode>
     </session-config>
+    <error-page>
+        <error-code>400</error-code>
+        <location>/error.jsp</location>
+    </error-page>
     <error-page>
         <error-code>403</error-code>
         <location>/error.jsp</location>
     </error-page>
     <error-page>
         <error-code>404</error-code>
+        <location>/error.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>409</error-code>
         <location>/error.jsp</location>
     </error-page>
     <error-page>

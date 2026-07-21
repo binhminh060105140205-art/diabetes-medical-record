@@ -46,6 +46,41 @@ class LabResultCsvImporterTest {
     }
 
     @Test
+    void importsUploadedHappyCaseForSelectedRecord() throws Exception {
+        String text = "# happy case\n"
+                + "blood_glucose = 6.2\n"
+                + "hba1c = 6.8\n"
+                + "cholesterol = (để trống)\n"
+                + "triglyceride = (để trống)\n"
+                + "hdl_c = (để trống)\n"
+                + "ldl_c = (để trống)\n";
+
+        var rows = parseForRecord(text, 41);
+        assertEquals(41, rows.get(0).recordId());
+        assertEquals(6.2, rows.get(0).bloodGlucose());
+        assertEquals(6.8, rows.get(0).hba1c());
+    }
+
+    @Test
+    void importsSixColumnCsvForSelectedRecord() throws Exception {
+        String csv = "blood_glucose,hba1c,cholesterol,triglyceride,hdl_c,ldl_c\n"
+                + "5.9,6.4,,,,\n";
+
+        var rows = parseForRecord(csv, 42);
+        assertEquals(42, rows.get(0).recordId());
+        assertEquals(5.9, rows.get(0).bloodGlucose());
+        assertEquals(6.4, rows.get(0).hba1c());
+    }
+
+    @Test
+    void rejectsFileRecordThatDoesNotMatchSelectedRecord() {
+        String text = "record_id = 99\nblood_glucose = 5.6\n";
+
+        assertThrows(IllegalArgumentException.class,
+                () -> parseForRecord(text, 43));
+    }
+
+    @Test
     void rejectsOutOfRangeValues() {
         assertThrows(IllegalArgumentException.class,
                 () -> parse(HEADER + "25,900,6.5,,,,\n"));
@@ -66,5 +101,11 @@ class LabResultCsvImporterTest {
     private java.util.List<models.LabResultImportRow> parse(String csv) throws Exception {
         return LabResultCsvImporter.parse(new ByteArrayInputStream(
                 csv.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    private java.util.List<models.LabResultImportRow> parseForRecord(
+            String content, int recordId) throws Exception {
+        return LabResultCsvImporter.parseForRecord(new ByteArrayInputStream(
+                content.getBytes(StandardCharsets.UTF_8)), recordId);
     }
 }

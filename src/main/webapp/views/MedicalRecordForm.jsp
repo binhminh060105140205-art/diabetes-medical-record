@@ -7,7 +7,7 @@
     <meta charset="UTF-8">
     <title>Hồ Sơ Bệnh Án</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260721-web-audit1">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260722-web-audit2">
     <style>
         .role-bar{padding:10px 16px;border-radius:8px;margin-bottom:16px;font-size:14px;font-weight:600;}
         .role-staff {background:#cff4fc;color:#055160;border-left:4px solid #0dcaf0;}
@@ -60,9 +60,9 @@
             <div class="indicator-item"><div class="ind-label">Đường huyết gần nhất</div>
                 <div class="ind-value">${not empty latestIndicator.bloodGlucose?latestIndicator.bloodGlucose:'—'}</div><div class="ind-unit"><c:if test="${not empty latestIndicator.bloodGlucose}">mmol/L</c:if></div></div>
             <div class="indicator-item"><div class="ind-label">Huyết áp gần nhất</div>
-                <div class="ind-value">${latestIndicator.systolicBp}/${latestIndicator.diastolicBp}</div><div class="ind-unit">mmHg</div></div>
-                <div class="indicator-item"><div class="ind-label">BMI gần nhất <span>(chỉ số khối cơ thể)</span></div>
-                <div class="ind-value">${latestIndicator.bmi}</div></div>
+                <div class="ind-value"><c:choose><c:when test="${not empty latestIndicator && latestIndicator.systolicBp>0 && latestIndicator.diastolicBp>0}">${latestIndicator.systolicBp}/${latestIndicator.diastolicBp}</c:when><c:otherwise>—</c:otherwise></c:choose></div><div class="ind-unit"><c:if test="${not empty latestIndicator && latestIndicator.systolicBp>0 && latestIndicator.diastolicBp>0}">mmHg</c:if></div></div>
+            <div class="indicator-item"><div class="ind-label">BMI gần nhất <span>(chỉ số khối cơ thể)</span></div>
+                <div class="ind-value">${not empty latestIndicator && latestIndicator.bmi>0?latestIndicator.bmi:'—'}</div></div>
         </div>
     </div>
     </c:if>
@@ -92,19 +92,20 @@
     <%-- ══ TAB 1: THÔNG TIN KHÁM (STAFF) ══════════════════════════════ --%>
     <div class="tab-panel" id="tab1">
     <c:choose>
-    <c:when test="${sessionScope.user.role == 'STAFF'}">
+    <c:when test="${sessionScope.user.role == 'STAFF' && (empty record || record.status!='COMPLETED')}">
         <div class="card">
             <div class="card-title">I. Thông tin khám ban đầu</div>
-            <form action="${pageContext.request.contextPath}/MedicalRecordForm" method="post">
+            <form action="${pageContext.request.contextPath}/MedicalRecordForm" method="post" data-gated-submit>
                 <input type="hidden" name="action" value="saveBasic">
                 <input type="hidden" name="patientId" value="${patient.patientId}">
-                <input type="hidden" name="encounterId" value="${encounterId}">
+                <input type="hidden" name="recordId" value="${record.recordId}">
+                <input type="hidden" name="encounterId" value="${not empty encounterId?encounterId:record.encounterId}">
                 <div class="form-group"><label>Ngày giờ khám</label><input class="form-control" value="${not empty appointmentTime?appointmentTime:record.visitDate}" readonly></div>
 
                 <div class="form-group">
                     <label class="required">Bác sĩ phụ trách</label>
                     <c:choose>
-                        <c:when test="${not empty encounterId && not empty assignedDoctor}">
+                        <c:when test="${(not empty encounterId || record.encounterId>0) && not empty assignedDoctor}">
                             <input type="hidden" name="doctorId" value="${assignedDoctor.doctorId}">
                             <input class="form-control ind-readonly" value="${fn:escapeXml(assignedDoctor.fullName)} — ${fn:escapeXml(assignedDoctor.specialty)}" readonly>
                         </c:when>
@@ -174,25 +175,25 @@
     <%-- ══ TAB 2: LÂM SÀNG (STAFF) ════════════════════════════════════ --%>
     <div class="tab-panel" id="tab2">
     <c:choose>
-    <c:when test="${sessionScope.user.role == 'STAFF'}">
+    <c:when test="${sessionScope.user.role == 'STAFF' && record.status!='COMPLETED'}">
         <div class="card">
             <div class="card-title">II. Chỉ số lâm sàng <span class="role-inline-note">Nhân viên nhập</span></div>
-            <form action="${pageContext.request.contextPath}/MedicalRecordForm" method="post">
+            <form action="${pageContext.request.contextPath}/MedicalRecordForm" method="post" data-gated-submit>
                 <input type="hidden" name="action" value="saveClinical">
                 <input type="hidden" name="recordId" value="${record.recordId}">
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Chiều cao (cm) <span class="range-hint">50–250</span></label>
+                        <label class="required">Chiều cao (cm) <span class="range-hint">50–250</span></label>
                         <input type="number" step="0.1" name="height" id="heightInput"
                                class="form-control" value="${indicator.height}"
-                               oninput="calcBMI()" placeholder="165" min="50" max="250">
+                               oninput="calcBMI()" placeholder="165" min="50" max="250" required>
                     </div>
                     <div class="form-group">
-                        <label>Cân nặng (kg) <span class="range-hint">10–300</span></label>
+                        <label class="required">Cân nặng (kg) <span class="range-hint">10–300</span></label>
                         <input type="number" step="0.1" name="weight" id="weightInput"
                                class="form-control" value="${indicator.weight}"
-                               oninput="calcBMI()" placeholder="65" min="10" max="300">
+                               oninput="calcBMI()" placeholder="65" min="10" max="300" required>
                     </div>
                     <div class="form-group">
                         <label>BMI (chỉ số khối cơ thể, tự tính)</label>
@@ -202,24 +203,24 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Huyết áp tâm thu (mmHg) <span class="range-hint">60–250</span></label>
+                        <label class="required">Huyết áp tâm thu (mmHg) <span class="range-hint">60–250</span></label>
                         <input type="number" name="systolicBp" class="form-control"
-                               value="${indicator.systolicBp}" placeholder="120" min="60" max="250">
+                               value="${indicator.systolicBp}" placeholder="120" min="60" max="250" required>
                     </div>
                     <div class="form-group">
-                        <label>Huyết áp tâm trương (mmHg) <span class="range-hint">40–150</span></label>
+                        <label class="required">Huyết áp tâm trương (mmHg) <span class="range-hint">40–150</span></label>
                         <input type="number" name="diastolicBp" class="form-control"
-                               value="${indicator.diastolicBp}" placeholder="80" min="40" max="150">
+                               value="${indicator.diastolicBp}" placeholder="80" min="40" max="150" required>
                     </div>
                     <div class="form-group">
-                        <label>Nhịp tim (lần/phút) <span class="range-hint">30–250</span></label>
+                        <label class="required">Nhịp tim (lần/phút) <span class="range-hint">30–250</span></label>
                         <input type="number" name="heartRate" class="form-control"
-                               value="${indicator.heartRate}" placeholder="75" min="30" max="250">
+                               value="${indicator.heartRate}" placeholder="75" min="30" max="250" required>
                     </div>
                     <div class="form-group">
-                        <label>Nhiệt độ (°C) <span class="range-hint">34–42</span></label>
+                        <label class="required">Nhiệt độ (°C) <span class="range-hint">34–42</span></label>
                         <input type="number" step="0.1" name="temperature" class="form-control"
-                               value="${indicator.temperature}" placeholder="36.5" min="34" max="42">
+                               value="${indicator.temperature}" placeholder="36.5" min="34" max="42" required>
                     </div>
                 </div>
                 <div class="form-actions"><button type="submit" class="btn btn-primary">Lưu sinh hiệu và chuyển chờ bác sĩ</button></div>
@@ -273,19 +274,21 @@
                         </table>
                     </div>
 
-                    <c:if test="${sessionScope.user.role=='STAFF' && !labReviewed}">
-                        <form action="${pageContext.request.contextPath}/MedicalRecordForm" method="post" class="lab-values-form">
+                    <c:if test="${sessionScope.user.role=='STAFF' && record.status!='COMPLETED' && !labReviewed && (orderedGlucose||orderedHba1c||orderedLipid)}">
+                        <form action="${pageContext.request.contextPath}/MedicalRecordForm" method="post"
+                              class="lab-values-form" data-require-any>
                             <input type="hidden" name="action" value="saveLabResults">
                             <input type="hidden" name="recordId" value="${record.recordId}">
                             <div class="lab-values-grid">
-                                <div class="form-group"><label>Đường huyết lúc đói (mmol/L)</label><input type="number" step="0.01" min="1" max="40" name="bloodGlucose" class="form-control" value="${indicator.bloodGlucose}" placeholder="5.6"></div>
-                                <div class="form-group"><label>HbA1c (%)</label><input type="number" step="0.01" min="2" max="20" name="hba1c" class="form-control" value="${indicator.hba1c}" placeholder="6.5"></div>
-                                <div class="form-group"><label>Cholesterol (mmol/L)</label><input type="number" step="0.01" min="0.1" max="30" name="cholesterol" class="form-control" value="${indicator.cholesterol}" placeholder="5.0"></div>
-                                <div class="form-group"><label>Triglyceride (mmol/L)</label><input type="number" step="0.01" min="0.1" max="30" name="triglyceride" class="form-control" value="${indicator.triglyceride}" placeholder="1.7"></div>
-                                <div class="form-group"><label>HDL-C (mmol/L)</label><input type="number" step="0.01" min="0.1" max="15" name="hdlC" class="form-control" value="${indicator.hdlC}" placeholder="1.3"></div>
-                                <div class="form-group"><label>LDL-C (mmol/L)</label><input type="number" step="0.01" min="0.1" max="20" name="ldlC" class="form-control" value="${indicator.ldlC}" placeholder="2.6"></div>
+                                <c:if test="${orderedGlucose}"><div class="form-group"><label>Đường huyết lúc đói (mmol/L)</label><input type="number" step="0.01" min="1" max="40" name="bloodGlucose" class="form-control" value="${indicator.bloodGlucose}" placeholder="5.6" data-any-value></div></c:if>
+                                <c:if test="${orderedHba1c}"><div class="form-group"><label>HbA1c (%)</label><input type="number" step="0.01" min="2" max="20" name="hba1c" class="form-control" value="${indicator.hba1c}" placeholder="6.5" data-any-value></div></c:if>
+                                <c:if test="${orderedLipid}"><div class="form-group"><label>Cholesterol (mmol/L)</label><input type="number" step="0.01" min="0.1" max="30" name="cholesterol" class="form-control" value="${indicator.cholesterol}" placeholder="5.0" data-any-value></div>
+                                <div class="form-group"><label>Triglyceride (mmol/L)</label><input type="number" step="0.01" min="0.1" max="30" name="triglyceride" class="form-control" value="${indicator.triglyceride}" placeholder="1.7" data-any-value></div>
+                                <div class="form-group"><label>HDL-C (mmol/L)</label><input type="number" step="0.01" min="0.1" max="15" name="hdlC" class="form-control" value="${indicator.hdlC}" placeholder="1.3" data-any-value></div>
+                                <div class="form-group"><label>LDL-C (mmol/L)</label><input type="number" step="0.01" min="0.1" max="20" name="ldlC" class="form-control" value="${indicator.ldlC}" placeholder="2.6" data-any-value></div></c:if>
                             </div>
-                            <div class="form-actions"><button type="submit" class="btn btn-primary">Lưu kết quả xét nghiệm</button></div>
+                            <div class="form-actions"><button type="submit" class="btn btn-primary" disabled data-require-any-submit>Lưu kết quả xét nghiệm</button></div>
+                            <small class="form-hint">Nhập ít nhất một chỉ số đúng theo chỉ định để bật nút lưu.</small>
                         </form>
                     </c:if>
 
@@ -317,7 +320,7 @@
     <%-- ══ TAB 4: KẾT LUẬN (DOCTOR) ══════════════════════════════════ --%>
     <div class="tab-panel" id="tab4">
     <c:choose>
-    <c:when test="${sessionScope.user.role == 'DOCTOR'}">
+    <c:when test="${sessionScope.user.role == 'DOCTOR' && record.status!='COMPLETED'}">
         <div class="card">
             <div class="card-title">IV. Hồ sơ tiểu đường <span class="text-muted">(Bác sĩ xác nhận/cập nhật)</span></div>
             <form action="${pageContext.request.contextPath}/MedicalRecordForm" method="post">
@@ -531,7 +534,7 @@ var defaultTab = serverErrTab ? parseInt(serverErrTab)
 showTab(defaultTab);
 syncDiabetesTreatmentOptions();
 </script>
-<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260721-prescription1"></script>
+<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260722-validation1"></script>
 <jsp:include page="footer.jsp"/>
 </body>
 </html>

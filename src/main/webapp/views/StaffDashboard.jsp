@@ -7,7 +7,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Tiếp nhận bệnh nhân — DiaCare</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260721-web-audit1">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260722-web-audit2">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
@@ -226,7 +226,7 @@ if (${showIntakeForm == true}) {
     });
 }
 </script>
-<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260721-web-audit2"></script>
+<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260722-validation1"></script>
 <jsp:include page="footer.jsp"/>
 </body>
 </html>

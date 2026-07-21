@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -101,5 +102,27 @@ public class FileStorageUtil {
         if (storedFileName == null || storedFileName.isBlank()) return null;
         File f = new File(getDoctorDir(doctorId), storedFileName);
         return f.exists() ? f : null;
+    }
+
+    /** Removes files created for an account whose database creation must be rolled back. */
+    public static void deleteDoctorImages(int doctorId) {
+        File directory = getDoctorDir(doctorId);
+        for (String type : List.of(TYPE_FACE, TYPE_CCCD, TYPE_CCCD_BACK, TYPE_LICENSE)) {
+            for (String extension : ALLOWED_EXT) {
+                try {
+                    Files.deleteIfExists(new File(directory, type + "." + extension).toPath());
+                } catch (IOException ignored) {
+                    // Best-effort cleanup; the database account is rolled back separately.
+                }
+            }
+        }
+        File[] remaining = directory.listFiles();
+        if (remaining != null && remaining.length == 0) {
+            try {
+                Files.deleteIfExists(directory.toPath());
+            } catch (IOException ignored) {
+                // An empty directory is harmless and can be reused by a later upload.
+            }
+        }
     }
 }

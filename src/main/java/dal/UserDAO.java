@@ -65,7 +65,10 @@ public class UserDAO extends DBContext {
         StringBuilder where = new StringBuilder(" WHERE COALESCE(status,'ACTIVE') <> 'DELETED'");
         if (hasRole) where.append(" AND role=?");
         if (hasStatus) where.append(" AND status=?");
-        if (hasKeyword) where.append(" AND (full_name ILIKE ? OR username ILIKE ? OR phone ILIKE ?)");
+        if (hasKeyword) {
+            where.append(" AND (").append(SearchSupport.contains("full_name"))
+                    .append(" OR username ILIKE ? OR phone ILIKE ?)");
+        }
         String ordering = "OLDEST".equals(sortOrder)
                 ? "created_at ASC, user_id ASC" : "created_at DESC, user_id DESC";
         String sql = """

@@ -73,6 +73,7 @@ public class AdminDoctorDetailController extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8");
         HttpSession session = request.getSession(false);
         User admin = (session != null) ? (User) session.getAttribute("user") : null;
         if (admin == null || !"ADMIN".equals(admin.getRole())) {
@@ -97,10 +98,18 @@ public class AdminDoctorDetailController extends HttpServlet {
             if (!java.util.Set.of("TYPE_1", "TYPE_2", "BOTH").contains(focus)) {
                 throw new IllegalArgumentException("Nhóm tiểu đường không hợp lệ.");
             }
-            new DoctorDAO().updateDiabetesFocus(doctor.getDoctorId(), focus);
             Part cccdFrontPart = request.getPart("cccdFrontImage");
             Part cccdBackPart  = request.getPart("cccdBackImage");
             Part licensePart = request.getPart("licenseImage");
+
+            // Validate every selected file before changing either the profile or the filesystem.
+            FileStorageUtil.validateDoctorImage(
+                    cccdFrontPart, "Ảnh CCCD mặt trước", false);
+            FileStorageUtil.validateDoctorImage(
+                    cccdBackPart, "Ảnh CCCD mặt sau", false);
+            FileStorageUtil.validateDoctorImage(
+                    licensePart, "Ảnh chứng chỉ hành nghề", false);
+            new DoctorDAO().updateDiabetesFocus(doctor.getDoctorId(), focus);
 
             String cccdFrontFile = FileStorageUtil.saveDoctorImage(cccdFrontPart, doctor.getDoctorId(), FileStorageUtil.TYPE_CCCD);
             String cccdBackFile  = FileStorageUtil.saveDoctorImage(cccdBackPart, doctor.getDoctorId(), FileStorageUtil.TYPE_CCCD_BACK);
@@ -112,7 +121,7 @@ public class AdminDoctorDetailController extends HttpServlet {
 
             session.setAttribute("toastMessage", "Cập nhật ảnh hồ sơ bác sĩ thành công!");
             session.setAttribute("toastType", "success");
-        } catch (IOException | IllegalArgumentException e) {
+        } catch (IOException | ServletException | IllegalStateException | IllegalArgumentException e) {
             session.setAttribute("toastMessage", "Lỗi upload ảnh: " + e.getMessage());
             session.setAttribute("toastType", "danger");
         }

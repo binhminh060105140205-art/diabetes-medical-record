@@ -93,7 +93,8 @@ public class PatientAppointmentsController extends HttpServlet {
             ControllerSupport.flash(request, "appointmentFlash",
                     "Không thể đặt lịch: " + error.getMessage());
         } catch (IllegalStateException error) {
-            throw new ServletException("Không thể xử lý lịch hẹn", error);
+            ControllerSupport.flash(request, "appointmentFlash",
+                    "Không thể xử lý lịch hẹn lúc này. Vui lòng tải lại trang và thử lại.");
         }
         redirectToPage(request, response);
     }

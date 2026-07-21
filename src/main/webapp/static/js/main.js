@@ -121,6 +121,30 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 
+// Keep staged workflow actions unavailable until every required prerequisite is valid.
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('form[data-gated-submit]').forEach(function (form) {
+        const submits = Array.from(form.querySelectorAll('button[type=submit],input[type=submit]'));
+        const refresh = function () {
+            const required = Array.from(form.querySelectorAll('[required]'));
+            const complete = required.every(function (control) {
+                if (control.type === 'radio' || control.type === 'checkbox') {
+                    const group = form.elements[control.name];
+                    if (group && typeof group.length === 'number') {
+                        return Array.from(group).some(function (item) { return item.checked; });
+                    }
+                    return control.checked;
+                }
+                return control.value.trim() !== '' && control.validity.valid;
+            });
+            submits.forEach(function (submit) { submit.disabled = !complete; });
+        };
+        form.addEventListener('input', refresh);
+        form.addEventListener('change', refresh);
+        refresh();
+    });
+});
+
 // Accessible sidebar on tablet/mobile.
 document.addEventListener('DOMContentLoaded', function () {
     const toggle = document.querySelector('.sidebar-toggle');
@@ -151,11 +175,15 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!table) return;
         const rows = Array.from(table.querySelectorAll('tbody tr[data-search-row]'));
         const empty = document.querySelector('[data-filter-empty="' + input.dataset.tableFilter + '"]');
+        const searchText = function (value) {
+            return String(value || '').toLocaleLowerCase('vi').normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
+        };
         const filter = function () {
-            const query = input.value.trim().toLocaleLowerCase('vi');
+            const query = searchText(input.value.trim());
             let visible = 0;
             rows.forEach(function (row) {
-                const match = !query || row.textContent.toLocaleLowerCase('vi').includes(query);
+                const match = !query || searchText(row.textContent).includes(query);
                 row.hidden = !match;
                 if (match) visible += 1;
             });

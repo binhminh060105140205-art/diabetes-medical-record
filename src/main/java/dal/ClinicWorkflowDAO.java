@@ -542,9 +542,19 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
             throw new IllegalArgumentException("Trạng thái không hợp lệ");
         }
         inTransaction("Không thể cập nhật trạng thái lượt khám.", () -> {
+            List<Map<String, Object>> rows = query(
+                    "SELECT status FROM encounters WHERE encounter_id=? FOR UPDATE", encounterId);
+            if (rows.isEmpty()) throw new IllegalArgumentException("Lượt khám không tồn tại.");
+            String current = String.valueOf(rows.get(0).get("status"));
+            if (!validEncounterTransition(current, status)) {
+                throw new IllegalArgumentException(
+                        "Không thể chuyển lượt khám từ " + current + " sang " + status + ".");
+            }
             String timestampUpdate = encounterTimestampUpdate(status);
-            update("UPDATE encounters SET status=?" + timestampUpdate + " WHERE encounter_id=?",
-                    status, encounterId);
+            if (update("UPDATE encounters SET status=?" + timestampUpdate
+                    + " WHERE encounter_id=?", status, encounterId) != 1) {
+                throw new IllegalArgumentException("Lượt khám không tồn tại.");
+            }
 
             if ("COMPLETED".equals(status) || "CANCELLED".equals(status)) {
                 update("""
@@ -563,6 +573,20 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
             }
             audit(actor, "STATUS", "ENCOUNTER", String.valueOf(encounterId), status);
         });
+    }
+
+    private boolean validEncounterTransition(String current, String target) {
+        if (current.equals(target)) return true;
+        return switch (target) {
+            case "WAITING_DOCTOR" -> "WAITING_TRIAGE".equals(current);
+            case "IN_CONSULTATION" -> Set.of("WAITING_DOCTOR", "LAB_COMPLETED").contains(current);
+            case "WAITING_LAB" -> "IN_CONSULTATION".equals(current);
+            case "LAB_COMPLETED" -> "WAITING_LAB".equals(current);
+            case "COMPLETED" -> Set.of(
+                    "WAITING_DOCTOR", "IN_CONSULTATION", "LAB_COMPLETED").contains(current);
+            case "CANCELLED" -> !Set.of("COMPLETED", "CANCELLED").contains(current);
+            default -> false;
+        };
     }
 
     private String encounterTimestampUpdate(String status) {
@@ -679,6 +703,7 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
                 JOIN doctors d ON d.doctor_id=l.doctor_id
                 JOIN users u ON u.user_id=d.user_id
                 LEFT JOIN medicalrecords m ON m.encounter_id=l.encounter_id
+                WHERE l.status<>'CANCELLED'
                 ORDER BY l.ordered_at DESC LIMIT 50""");
     }
 
@@ -691,29 +716,57 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
                 JOIN doctors d ON d.doctor_id=l.doctor_id
                 JOIN users u ON u.user_id=d.user_id
                 LEFT JOIN medicalrecords m ON m.encounter_id=l.encounter_id
-                WHERE l.doctor_id=? ORDER BY l.ordered_at DESC LIMIT 50""", doctorId);
+                WHERE l.doctor_id=? AND l.status<>'CANCELLED'
+                ORDER BY l.ordered_at DESC LIMIT 50""", doctorId);
+    }
+
+    /** Lists one option per active medical record that still has structured tests to result. */
+    public List<Map<String, Object>> labImportRecords() {
+        return query("""
+                SELECT m.record_id,p.full_name patient_name,
+                       COALESCE(dp.diabetes_type,'UNKNOWN') diabetes_type,
+                       STRING_AGG(DISTINCT l.test_code, ', ' ORDER BY l.test_code) pending_tests
+                FROM lab_orders l
+                JOIN encounters e ON e.encounter_id=l.encounter_id
+                JOIN medicalrecords m ON m.encounter_id=e.encounter_id
+                JOIN patients p ON p.patient_id=e.patient_id
+                LEFT JOIN diabetes_profiles dp ON dp.patient_id=p.patient_id
+                WHERE l.status IN ('ORDERED','COLLECTED')
+                  AND l.test_code IN ('GLU','GLU_FASTING','HBA1C','LIPID')
+                  AND e.status NOT IN ('COMPLETED','CANCELLED')
+                GROUP BY m.record_id,p.full_name,dp.diabetes_type
+                ORDER BY m.record_id DESC LIMIT 50""");
     }
 
     public void createLabOrder(
             int encounterId, int doctorId, String code, String name,
             String priority, String note, int actor) {
-        try {
-            int changed = update("""
+        inTransaction("Không thể tạo chỉ định xét nghiệm.", () -> {
+            List<Map<String, Object>> encounters = query("""
+                    SELECT patient_id,status FROM encounters
+                    WHERE encounter_id=? AND doctor_id=? FOR UPDATE""", encounterId, doctorId);
+            if (encounters.isEmpty() || !Set.of("IN_CONSULTATION", "WAITING_LAB")
+                    .contains(String.valueOf(encounters.get(0).get("status")))) {
+                throw new IllegalArgumentException(
+                        "Bác sĩ cần bắt đầu khám trước khi tạo chỉ định xét nghiệm.");
+            }
+            if (!query("""
+                    SELECT 1 ok FROM lab_orders
+                    WHERE encounter_id=? AND test_code=? AND status<>'CANCELLED' LIMIT 1""",
+                    encounterId, code).isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Xét nghiệm này đã được chỉ định cho lượt khám.");
+            }
+            update("""
                     INSERT INTO lab_orders(
                         encounter_id,patient_id,doctor_id,test_code,test_name,priority,clinical_note)
-                    SELECT encounter_id,patient_id,doctor_id,?,?,?,? FROM encounters
-                    WHERE encounter_id=? AND doctor_id=?
-                      AND status NOT IN ('COMPLETED','CANCELLED')""",
-                    code, name, priority, note, encounterId, doctorId);
-            if (changed != 1) {
-                throw new IllegalArgumentException("Lượt khám không hợp lệ hoặc đã kết thúc");
-            }
+                    VALUES(?,?,?,?,?,?,?)""",
+                    encounterId, encounters.get(0).get("patient_id"), doctorId,
+                    code, name, priority, note);
             update("UPDATE encounters SET status='WAITING_LAB' WHERE encounter_id=? AND doctor_id=?",
                     encounterId, doctorId);
             audit(actor, "CREATE", "LAB_ORDER", null, code);
-        } catch (SQLException error) {
-            throw new IllegalStateException("Không thể tạo chỉ định xét nghiệm.", error);
-        }
+        });
     }
 
     public void resultLab(
@@ -723,7 +776,7 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
                     UPDATE lab_orders
                     SET result_value=?,result_unit=?,reference_range=?,result_flag=?,resulted_by=?,
                         resulted_at=CURRENT_TIMESTAMP,status='RESULTED'
-                    WHERE lab_order_id=? AND status NOT IN ('REVIEWED','CANCELLED')""",
+                    WHERE lab_order_id=? AND status IN ('ORDERED','COLLECTED')""",
                     value, unit, range, flag, actor, orderId);
             if (changed != 1) {
                 throw new IllegalArgumentException("Chỉ định không tồn tại hoặc không thể trả kết quả");
@@ -738,7 +791,11 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
     public void resultStructuredLabs(int recordId, int actor, Double bloodGlucose, Double hba1c,
             Double cholesterol, Double triglyceride, Double hdlC, Double ldlC) {
         int encounterId = openEncounterForRecord(recordId);
+        LabResultImportRow row = new LabResultImportRow(1, recordId, bloodGlucose, hba1c,
+                cholesterol, triglyceride, hdlC, ldlC);
         inTransaction("Không thể lưu kết quả xét nghiệm.", () -> {
+            validateImportOrders(row, encounterId);
+            saveImportedHealthIndicators(row, actor);
             saveStructuredResults(recordId, encounterId, actor, bloodGlucose, hba1c,
                     cholesterol, triglyceride, hdlC, ldlC);
         });
@@ -773,9 +830,10 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
     private int openEncounterForRecord(int recordId) {
         List<Map<String, Object>> records = query("""
                 SELECT r.encounter_id FROM medicalrecords r
-                WHERE r.record_id=? AND EXISTS (
+                JOIN encounters e ON e.encounter_id=r.encounter_id
+                WHERE r.record_id=? AND e.status='WAITING_LAB' AND EXISTS (
                     SELECT 1 FROM lab_orders l WHERE l.encounter_id=r.encounter_id
-                      AND l.status NOT IN ('REVIEWED','CANCELLED'))""", recordId);
+                      AND l.status IN ('ORDERED','COLLECTED'))""", recordId);
         if (records.isEmpty() || records.get(0).get("encounter_id") == null) {
             throw new IllegalArgumentException(
                     "Bác sĩ chưa tạo chỉ định xét nghiệm hoặc chỉ định đã được xác nhận.");
@@ -787,7 +845,7 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
         Set<String> codes = new HashSet<>();
         for (Map<String, Object> order : query("""
                 SELECT test_code FROM lab_orders
-                WHERE encounter_id=? AND status NOT IN ('REVIEWED','CANCELLED')""", encounterId)) {
+                WHERE encounter_id=? AND status IN ('ORDERED','COLLECTED')""", encounterId)) {
             codes.add(String.valueOf(order.get("test_code")).toUpperCase(Locale.ROOT));
         }
         if (row.bloodGlucose() != null && !hasAny(codes, "GLU", "GLU_FASTING")) {
@@ -856,7 +914,7 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
                         reference_range='Theo từng chỉ số',result_flag=?,resulted_by=?,
                         resulted_at=CURRENT_TIMESTAMP,status='RESULTED'
                     WHERE encounter_id=? AND test_code='LIPID'
-                      AND status NOT IN ('REVIEWED','CANCELLED')""",
+                      AND status IN ('ORDERED','COLLECTED')""",
                     lipidValue, lipidFlag(cholesterol, triglyceride, hdlC, ldlC), actor, encounterId);
         }
         audit(actor, "RESULT", "LAB_ORDER", String.valueOf(encounterId),
@@ -902,7 +960,7 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
     public boolean hasOpenLabOrdersForRecord(int recordId) {
         return !query("""
                 SELECT 1 ok FROM medicalrecords r JOIN lab_orders l ON l.encounter_id=r.encounter_id
-                WHERE r.record_id=? AND l.status NOT IN ('REVIEWED','CANCELLED') LIMIT 1""",
+                WHERE r.record_id=? AND l.status IN ('ORDERED','COLLECTED') LIMIT 1""",
                 recordId).isEmpty();
     }
 
@@ -921,7 +979,7 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
         String sql = "UPDATE lab_orders SET result_value=?,result_unit=?,reference_range=?,"
                 + "result_flag=?,resulted_by=?,resulted_at=CURRENT_TIMESTAMP,status='RESULTED' "
                 + "WHERE encounter_id=? AND test_code IN (" + placeholders + ") "
-                + "AND status NOT IN ('REVIEWED','CANCELLED')";
+                + "AND status IN ('ORDERED','COLLECTED')";
         update(sql, parameters.toArray());
     }
 
@@ -954,13 +1012,17 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
         return rows.isEmpty() ? null : ((Number) rows.get(0).get("doctor_id")).intValue();
     }
 
-    public int[] assignmentForEncounter(int encounterId) {
+    public int[] intakeAssignmentForEncounter(int encounterId) {
         List<Map<String, Object>> rows = query(
-                "SELECT patient_id,doctor_id FROM encounters WHERE encounter_id=?", encounterId);
+                "SELECT patient_id,doctor_id,status FROM encounters WHERE encounter_id=?", encounterId);
         if (rows.isEmpty()) {
             throw new IllegalArgumentException("Lượt khám không tồn tại");
         }
         Map<String, Object> assignment = rows.get(0);
+        if (!"WAITING_TRIAGE".equals(String.valueOf(assignment.get("status")))) {
+            throw new IllegalArgumentException(
+                    "Lượt khám không còn ở bước tiếp nhận ban đầu");
+        }
         return new int[] {
                 ((Number) assignment.get("patient_id")).intValue(),
                 ((Number) assignment.get("doctor_id")).intValue()

@@ -7,7 +7,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Điều hành khám — DiaCare</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260721-lab-import1">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260722-lab-compact1">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
@@ -41,7 +41,7 @@
                     <span><strong>Tạo lịch trực tiếp tại quầy</strong><small>Dùng khi bệnh nhân liên hệ trực tiếp và đã thống nhất bác sĩ, giờ khám.</small></span>
                     <span class="btn btn-light btn-sm">Mở biểu mẫu</span>
                 </summary>
-                <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="appointment-booking-form disclosure-content" data-appointment-form>
+                <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="appointment-booking-form disclosure-content" data-appointment-form data-gated-submit>
                     <input type="hidden" name="action" value="createAppointment">
                     <div class="appointment-form-grid">
                         <div class="form-group">
@@ -135,7 +135,7 @@
                                         <details class="row-disclosure">
                                             <summary class="btn btn-primary btn-sm">Phân công lịch</summary>
                                             <div class="row-disclosure-panel">
-                                                <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="request-assignment-form" data-appointment-form data-diabetes-type="${a.diabetes_type}">
+                                                <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="request-assignment-form" data-appointment-form data-gated-submit data-diabetes-type="${a.diabetes_type}">
                                                     <input type="hidden" name="action" value="assignAppointmentRequest">
                                                     <input type="hidden" name="appointmentId" value="${a.appointment_id}">
                                                     <input type="hidden" name="appointmentDate" value="${a.preferred_date}">
@@ -237,7 +237,7 @@
                                     <c:when test="${empty e.record_id}"><c:if test="${sessionScope.user.role=='STAFF'}"><a class="btn btn-primary btn-sm" href="${pageContext.request.contextPath}/MedicalRecordForm?patientId=${e.patient_id}&encounterId=${e.encounter_id}">Nhập thông tin & sinh hiệu</a></c:if></c:when>
                                     <c:otherwise><a class="btn btn-light btn-sm" href="${pageContext.request.contextPath}/MedicalRecordForm?recordId=${e.record_id}&tab=4">${sessionScope.user.role=='ADMIN'?'Xem bệnh án':'Mở bệnh án'}</a></c:otherwise>
                                 </c:choose>
-                                <c:if test="${sessionScope.user.role=='DOCTOR' && e.status!='IN_CONSULTATION' && e.status!='WAITING_LAB'}">
+                                <c:if test="${sessionScope.user.role=='DOCTOR' && (e.status=='WAITING_DOCTOR'||e.status=='LAB_COMPLETED')}">
                                     <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="inline-form">
                                         <input type="hidden" name="action" value="status"><input type="hidden" name="encounterId" value="${e.encounter_id}"><input type="hidden" name="status" value="IN_CONSULTATION">
                                         <button class="btn btn-primary btn-sm" type="submit">${e.status=='LAB_COMPLETED'?'Xem kết quả & kết luận':'Bắt đầu khám'}</button>
@@ -257,7 +257,7 @@
     <c:if test="${view=='clinical'}">
         <section class="card">
             <div class="section-header"><div><h2>Mở hồ sơ lâm sàng bệnh nhân</h2><p>Tra cứu dị ứng và tiền sử trước khi đưa ra chỉ định điều trị.</p></div></div>
-            <form method="get" class="search-bar">
+            <form method="get" class="search-bar" data-gated-submit>
                 <input type="hidden" name="view" value="clinical">
                 <select class="form-control" name="patientId" required>
                     <option value="">Chọn bệnh nhân</option>
@@ -304,9 +304,9 @@
         <c:if test="${sessionScope.user.role=='DOCTOR'}">
             <section class="card">
                 <div class="section-header"><div><h2>Tạo chỉ định xét nghiệm</h2><p>Chỉ định được gắn với đúng lượt khám đang phụ trách.</p></div></div>
-                <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="form-grid">
+                <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="form-grid" data-gated-submit>
                     <input type="hidden" name="action" value="labOrder">
-                    <div class="form-group"><label class="required">Lượt khám</label><select class="form-control" name="encounterId" required><option value="">Chọn lượt khám đang phụ trách</option><c:forEach var="e" items="${encounters}"><c:if test="${e.status!='COMPLETED'&&e.status!='CANCELLED'}"><option value="${e.encounter_id}">#${e.queue_number} — <c:out value="${e.patient_name}"/> — ${e.diabetes_type=='TYPE_1'?'Típ 1':e.diabetes_type=='TYPE_2'?'Típ 2':'Chưa phân loại'}</option></c:if></c:forEach></select></div>
+                    <div class="form-group"><label class="required">Lượt khám</label><select class="form-control" name="encounterId" required><option value="">Chọn lượt đang khám</option><c:forEach var="e" items="${encounters}"><c:if test="${e.status=='IN_CONSULTATION'||e.status=='WAITING_LAB'}"><option value="${e.encounter_id}">#${e.queue_number} — <c:out value="${e.patient_name}"/> — ${e.diabetes_type=='TYPE_1'?'Típ 1':e.diabetes_type=='TYPE_2'?'Típ 2':'Chưa phân loại'}</option></c:if></c:forEach></select></div>
                     <div class="form-group"><label class="required">Xét nghiệm</label><select class="form-control" name="testCode" required><option value="GLU">Đường huyết</option><option value="HBA1C">Đường huyết trung bình HbA1c</option><option value="KETONE">Ketone máu/nước tiểu (ưu tiên típ 1 khi có nguy cơ)</option><option value="LIPID">Bộ xét nghiệm mỡ máu (ưu tiên típ 2)</option><option value="CRE">Creatinin đánh giá chức năng thận</option><option value="UACR">Tỷ lệ albumin và creatinin niệu</option></select></div>
                     <input type="hidden" name="testName" value="catalog">
                     <div class="form-group"><label>Ưu tiên</label><select class="form-control" name="priority"><option value="ROUTINE">Thông thường</option><option value="URGENT">Khẩn</option></select></div>
@@ -321,15 +321,26 @@
             <div class="operations-toolbar"><label class="table-filter"><span class="sr-only">Tìm xét nghiệm</span><input type="search" data-table-filter="labTable" placeholder="Tìm bệnh nhân, mã xét nghiệm, ưu tiên hoặc trạng thái"></label></div>
             <c:if test="${sessionScope.user.role=='STAFF'||sessionScope.user.role=='ADMIN'}">
                 <div class="lab-import-panel">
-                    <div>
-                        <strong>Nhận kết quả từ máy xét nghiệm</strong>
-                        <small>Sửa dữ liệu trong <code>src/main/webapp/static/templates/lab-results-import.txt</code>, sau đó bấm nút import.</small>
-                    </div>
-                    <div class="lab-import-actions">
-                        <form method="post" action="${pageContext.request.contextPath}/LabResultImport" class="lab-import-form">
-                            <button class="btn btn-primary" type="submit">Import kết quả từ máy xét nghiệm</button>
-                        </form>
-                    </div>
+                    <form method="post" enctype="multipart/form-data"
+                          action="${pageContext.request.contextPath}/LabResultImport"
+                          class="lab-import-form" data-lab-import-form>
+                        <label class="lab-import-field" for="labImportRecord">
+                            <span>Bệnh nhân / bệnh án</span>
+                            <select class="form-control" id="labImportRecord" name="recordId" required data-lab-import-record>
+                                <option value="">Chọn bệnh án đang chờ kết quả</option>
+                                <c:forEach var="record" items="${labImportRecords}">
+                                    <option value="${record.record_id}"><c:out value="${record.patient_name}"/> — Bệnh án #${record.record_id} — <c:out value="${record.pending_tests}"/></option>
+                                </c:forEach>
+                            </select>
+                        </label>
+                        <label class="lab-import-field" for="labImportFile">
+                            <span>File kết quả</span>
+                            <input class="form-control" id="labImportFile" type="file" name="resultFile"
+                                   accept=".txt,.csv,text/plain,text/csv" required data-lab-import-file>
+                        </label>
+                        <a class="btn btn-light" href="${pageContext.request.contextPath}/static/templates/lab-results-import.txt" download="lab-results-happy-case.txt">File mẫu</a>
+                        <button class="btn btn-primary" type="submit" disabled data-lab-import-submit>Import kết quả</button>
+                    </form>
                 </div>
             </c:if>
             <div class="table-scroll">
@@ -413,5 +424,6 @@
 
 <jsp:include page="footer.jsp"/>
 <script src="${pageContext.request.contextPath}/static/js/diabetes-routing.js?v=20260721-web-audit1" defer></script>
+<script src="${pageContext.request.contextPath}/static/js/lab-result-import.js?v=20260722-lab-compact1" defer></script>
 </body>
 </html>

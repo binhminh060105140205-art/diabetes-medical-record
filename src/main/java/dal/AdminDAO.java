@@ -90,6 +90,20 @@ public class AdminDAO extends DBContext {
 
     public record CreatedAccount(User user, Doctor doctor) {}
 
+    /** Removes a just-created managed account when mandatory document storage fails. */
+    public void rollbackFreshManagedAccount(int userId) {
+        inTransaction("Không thể hoàn tác tài khoản vừa tạo.", () -> {
+            update("DELETE FROM doctors WHERE user_id=?", userId);
+            int deleted = update("""
+                    DELETE FROM users
+                    WHERE user_id=? AND role IN ('STAFF','DOCTOR')
+                    """, userId);
+            if (deleted != 1) {
+                throw new SQLException("Fresh managed account was not removed");
+            }
+        });
+    }
+
     private String duplicateAccountMessage(SQLException error) {
         String detail = String.valueOf(error.getMessage()).toLowerCase(Locale.ROOT);
         if (detail.contains("username")) return "Tên đăng nhập đã tồn tại.";
@@ -123,7 +137,8 @@ public class AdminDAO extends DBContext {
                 ORDER BY deleted_at DESC,trash_id DESC""");
     }
 
-    public List<Map<String, Object>> loginHistory(String eventType, String keyword, int limit) {
+    public List<Map<String, Object>> loginHistory(
+            String eventType, String keyword, int limit, int offset) {
         StringBuilder sql = new StringBuilder("""
                 SELECT login_history_id,user_id,username,full_name,role,event_type,
                        ip_address,user_agent,session_id,occurred_at
@@ -134,12 +149,14 @@ public class AdminDAO extends DBContext {
             parameters.add(eventType);
         }
         if (keyword != null && !keyword.isBlank()) {
-            sql.append(" AND (full_name ILIKE ? OR username ILIKE ? OR ip_address ILIKE ?)");
+            sql.append(" AND (").append(SearchSupport.contains("full_name"))
+                    .append(" OR username ILIKE ? OR ip_address ILIKE ?)");
             String value = "%" + keyword.trim() + "%";
             parameters.add(value); parameters.add(value); parameters.add(value);
         }
-        sql.append(" ORDER BY occurred_at DESC,login_history_id DESC LIMIT ?");
+        sql.append(" ORDER BY occurred_at DESC,login_history_id DESC LIMIT ? OFFSET ?");
         parameters.add(Math.max(1, Math.min(limit, 500)));
+        parameters.add(Math.max(0, offset));
         return query(sql.toString(), parameters.toArray());
     }
 

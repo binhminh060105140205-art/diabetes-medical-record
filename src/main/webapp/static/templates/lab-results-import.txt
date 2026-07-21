@@ -1,9 +1,9 @@
-# File kết quả được nút "Import kết quả từ máy xét nghiệm" đọc trực tiếp.
-# Nhập mã đang hiển thị sau chữ "Bệnh án #" trong bảng xét nghiệm.
-record_id = (nhập mã bệnh án)
-blood_glucose = (nhập)
-hba1c = (nhập)
-cholesterol = (nhập)
-triglyceride = (nhập)
-hdl_c = (nhập)
-ldl_c = (nhập)
+# HAPPY CASE - kết quả mẫu từ máy xét nghiệm.
+# Trên màn hình Staff, hãy chọn bệnh án đã được bác sĩ chỉ định GLU và HbA1c.
+# Không nhập record_id trong file; hệ thống lấy mã từ bệnh án đã chọn.
+blood_glucose = 6.2
+hba1c = 6.8
+cholesterol = (để trống)
+triglyceride = (để trống)
+hdl_c = (để trống)
+ldl_c = (để trống)

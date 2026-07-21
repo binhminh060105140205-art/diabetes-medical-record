@@ -148,7 +148,20 @@ public class AdminCreateUserController extends HttpServlet {
                     docDAO.updateImages(doc.getDoctorId(), cccdFrontFile, cccdBackFile, licenseFile);
                 }
             } catch (Exception ex) {
-                LOGGER.log(Level.WARNING,"Không thể lưu ảnh hồ sơ bác sĩ userId="+newUser.getUserId(),ex);
+                LOGGER.log(Level.SEVERE,"Không thể lưu ảnh hồ sơ bác sĩ userId="+newUser.getUserId(),ex);
+                FileStorageUtil.deleteDoctorImages(doc.getDoctorId());
+                try {
+                    new AdminDAO().rollbackFreshManagedAccount(newUser.getUserId());
+                } catch (RuntimeException cleanupError) {
+                    LOGGER.log(Level.SEVERE,
+                            "Không thể hoàn tác tài khoản bác sĩ sau lỗi lưu ảnh userId="
+                                    + newUser.getUserId(), cleanupError);
+                }
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                request.setAttribute("err",
+                        "Không thể lưu đủ ảnh hồ sơ bác sĩ nên tài khoản chưa được tạo. Vui lòng thử lại.");
+                request.getRequestDispatcher("views/AdminCreateUser.jsp").forward(request, response);
+                return;
             }
         }
 

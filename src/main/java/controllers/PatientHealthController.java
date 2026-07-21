@@ -54,12 +54,12 @@ public class PatientHealthController extends HttpServlet {
         try {
             PatientDailyLog log = new PatientDailyLog();
             log.setPatientId(patientId);
-            log.setBloodGlucose(decimal(request, "bloodGlucose"));
-            log.setSystolicBp(integer(request, "systolicBp"));
-            log.setDiastolicBp(integer(request, "diastolicBp"));
-            log.setWeight(decimal(request, "weight"));
-            log.setHeartRate(integer(request, "heartRate"));
-            log.setSpo2(decimal(request, "spo2"));
+            log.setBloodGlucose(decimal(request, "bloodGlucose", "Đường huyết"));
+            log.setSystolicBp(integer(request, "systolicBp", "Huyết áp tâm thu"));
+            log.setDiastolicBp(integer(request, "diastolicBp", "Huyết áp tâm trương"));
+            log.setWeight(decimal(request, "weight", "Cân nặng"));
+            log.setHeartRate(integer(request, "heartRate", "Nhịp tim"));
+            log.setSpo2(decimal(request, "spo2", "SpO2"));
             log.setMealType(text(request, "mealType"));
             log.setSymptoms(text(request, "symptoms"));
             log.setNote(text(request, "note"));
@@ -89,21 +89,26 @@ public class PatientHealthController extends HttpServlet {
         return value.isEmpty() ? null : value;
     }
 
-    private Double decimal(HttpServletRequest request, String name) throws ServletException {
+    private Double decimal(HttpServletRequest request, String name, String label)
+            throws ServletException {
         String value = text(request, name);
         try {
-            return value == null ? null : Double.valueOf(value);
+            if (value == null) return null;
+            double parsed = Double.parseDouble(value);
+            if (!Double.isFinite(parsed)) throw new NumberFormatException();
+            return parsed;
         } catch (NumberFormatException error) {
-            throw new ServletException(name + " không hợp lệ", error);
+            throw new ServletException(label + " không hợp lệ", error);
         }
     }
 
-    private Integer integer(HttpServletRequest request, String name) throws ServletException {
+    private Integer integer(HttpServletRequest request, String name, String label)
+            throws ServletException {
         String value = text(request, name);
         try {
             return value == null ? null : Integer.valueOf(value);
         } catch (NumberFormatException error) {
-            throw new ServletException(name + " không hợp lệ", error);
+            throw new ServletException(label + " không hợp lệ", error);
         }
     }
 

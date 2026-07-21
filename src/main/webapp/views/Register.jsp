@@ -6,7 +6,7 @@
 <fmt:formatDate var="today" value="${now}" pattern="yyyy-MM-dd"/>
 <!DOCTYPE html>
 <html lang="vi">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Đăng ký — DiaCare</title><link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260721-web-audit1"></head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Đăng ký — DiaCare</title><link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260722-web-audit2"></head>
 <body class="register-body">
 <main class="register-shell">
     <section class="register-intro">
@@ -39,6 +39,6 @@
         </div>
     </section>
 </main>
-<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260721-web-audit2"></script><script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260721-web-audit2"></script>
+<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260722-validation2"></script><script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260722-validation1"></script>
 </body>
 </html>

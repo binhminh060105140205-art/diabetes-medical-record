@@ -21,6 +21,7 @@ public final class LabResultCsvImporter {
     private static final List<String> HEADERS = List.of(
             "record_id", "blood_glucose", "hba1c", "cholesterol",
             "triglyceride", "hdl_c", "ldl_c");
+    private static final List<String> RESULT_HEADERS = HEADERS.subList(1, HEADERS.size());
     private static final int MAX_ROWS = 200;
 
     private LabResultCsvImporter() {}
@@ -37,6 +38,25 @@ public final class LabResultCsvImporter {
                 .orElse("");
         if (firstDataLine.contains("=")) return parseKeyValue(content);
         return parseCsv(new ByteArrayInputStream(bytes));
+    }
+
+    /** Parses one uploaded result file and attaches it to the record selected on screen. */
+    public static List<LabResultImportRow> parseForRecord(InputStream input, int recordId)
+            throws IOException {
+        if (recordId <= 0) {
+            throw new IllegalArgumentException("Bệnh án được chọn không hợp lệ.");
+        }
+        if (input == null) throw new IllegalArgumentException("Chưa chọn file kết quả xét nghiệm.");
+        byte[] bytes = input.readAllBytes();
+        String content = new String(bytes, StandardCharsets.UTF_8);
+        String firstDataLine = content.lines()
+                .map(LabResultCsvImporter::stripBom)
+                .map(String::trim)
+                .filter(line -> !line.isEmpty() && !line.startsWith("#"))
+                .findFirst()
+                .orElse("");
+        if (firstDataLine.contains("=")) return parseKeyValueForRecord(content, recordId);
+        return parseCsvForRecord(new ByteArrayInputStream(bytes), recordId);
     }
 
     private static List<LabResultImportRow> parseCsv(InputStream input) throws IOException {
@@ -90,6 +110,41 @@ public final class LabResultCsvImporter {
     }
 
     private static List<LabResultImportRow> parseKeyValue(String content) {
+        KeyValueData data = parseKeyValueFields(content);
+        Map<String, String> values = data.values();
+        Map<String, Integer> lineNumbers = data.lineNumbers();
+        int recordLine = lineNumbers.getOrDefault("record_id", 1);
+        if (!values.containsKey("record_id")) {
+            throw invalid(recordLine, "Thiếu record_id.");
+        }
+        List<String> ordered = HEADERS.stream()
+                .map(key -> values.getOrDefault(key, ""))
+                .toList();
+        return List.of(parseRow(recordLine, ordered));
+    }
+
+    private static List<LabResultImportRow> parseKeyValueForRecord(
+            String content, int selectedRecordId) {
+        KeyValueData data = parseKeyValueFields(content);
+        Map<String, String> values = data.values();
+        Map<String, Integer> lineNumbers = data.lineNumbers();
+        int resultLine = lineNumbers.values().stream().findFirst().orElse(1);
+        String fileRecordId = values.getOrDefault("record_id", "");
+        if (!fileRecordId.isBlank()) {
+            int parsedRecordId = parseRecordId(
+                    lineNumbers.getOrDefault("record_id", resultLine), fileRecordId);
+            if (parsedRecordId != selectedRecordId) {
+                throw invalid(lineNumbers.getOrDefault("record_id", resultLine),
+                        "record_id trong file không khớp bệnh án đã chọn.");
+            }
+        }
+        List<String> resultValues = RESULT_HEADERS.stream()
+                .map(key -> values.getOrDefault(key, ""))
+                .toList();
+        return List.of(parseSelectedRow(resultLine, selectedRecordId, resultValues));
+    }
+
+    private static KeyValueData parseKeyValueFields(String content) {
         Map<String, String> values = new LinkedHashMap<>();
         Map<String, Integer> lineNumbers = new LinkedHashMap<>();
         int lineNumber = 0;
@@ -112,15 +167,63 @@ public final class LabResultCsvImporter {
             values.put(key, cleanPlaceholder(trimmed.substring(separator + 1)));
             lineNumbers.put(key, lineNumber);
         }
+        return new KeyValueData(values, lineNumbers);
+    }
 
-        List<String> ordered = HEADERS.stream()
-                .map(key -> values.getOrDefault(key, ""))
-                .toList();
-        int recordLine = lineNumbers.getOrDefault("record_id", 1);
-        if (!values.containsKey("record_id")) {
-            throw invalid(recordLine, "Thiếu record_id.");
+    private static List<LabResultImportRow> parseCsvForRecord(InputStream input, int recordId)
+            throws IOException {
+        List<LabResultImportRow> rows = new ArrayList<>();
+        boolean headerRead = false;
+        boolean includesRecordId = false;
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(input, StandardCharsets.UTF_8))) {
+            String line;
+            int lineNumber = 0;
+            Character delimiter = null;
+            while ((line = reader.readLine()) != null) {
+                lineNumber++;
+                if (lineNumber == 1) line = stripBom(line);
+                if (line.length() > 4000) {
+                    throw invalid(lineNumber, "Dòng quá dài, tối đa 4000 ký tự.");
+                }
+                if (line.isBlank() || line.trim().startsWith("#")) continue;
+
+                if (!headerRead) {
+                    delimiter = detectDelimiter(line);
+                    List<String> header = normalize(parseLine(line, delimiter));
+                    includesRecordId = HEADERS.equals(header);
+                    if (!includesRecordId && !RESULT_HEADERS.equals(header)) {
+                        throw invalid(lineNumber,
+                                "Tiêu đề không đúng. Hãy tải và dùng file happy case trên màn hình.");
+                    }
+                    headerRead = true;
+                    continue;
+                }
+
+                if (!rows.isEmpty()) {
+                    throw invalid(lineNumber,
+                            "Mỗi lần chỉ import một bệnh án đã chọn trên màn hình.");
+                }
+                List<String> values = parseLine(line, delimiter);
+                int expectedColumns = includesRecordId ? HEADERS.size() : RESULT_HEADERS.size();
+                if (values.size() != expectedColumns) {
+                    throw invalid(lineNumber, "Số cột kết quả không đúng với tiêu đề.");
+                }
+                if (includesRecordId) {
+                    int fileRecordId = parseRecordId(lineNumber, values.get(0));
+                    if (fileRecordId != recordId) {
+                        throw invalid(lineNumber,
+                                "record_id trong file không khớp bệnh án đã chọn.");
+                    }
+                    rows.add(parseRow(lineNumber, values));
+                } else {
+                    rows.add(parseSelectedRow(lineNumber, recordId, values));
+                }
+            }
         }
-        return List.of(parseRow(recordLine, ordered));
+        if (!headerRead) throw new IllegalArgumentException("File chưa có dòng tiêu đề.");
+        if (rows.isEmpty()) throw new IllegalArgumentException("File chưa có dòng kết quả để import.");
+        return rows;
     }
 
     private static String cleanPlaceholder(String value) {
@@ -142,6 +245,14 @@ public final class LabResultCsvImporter {
             throw invalid(lineNumber, "Cần nhập ít nhất một chỉ số xét nghiệm.");
         }
         return row;
+    }
+
+    private static LabResultImportRow parseSelectedRow(
+            int lineNumber, int recordId, List<String> resultValues) {
+        List<String> values = new ArrayList<>(HEADERS.size());
+        values.add(String.valueOf(recordId));
+        values.addAll(resultValues);
+        return parseRow(lineNumber, values);
     }
 
     private static int parseRecordId(int lineNumber, String raw) {
@@ -216,4 +327,7 @@ public final class LabResultCsvImporter {
     private static IllegalArgumentException invalid(int lineNumber, String message) {
         return new IllegalArgumentException("Dòng " + lineNumber + ": " + message);
     }
+
+    private record KeyValueData(
+            Map<String, String> values, Map<String, Integer> lineNumbers) {}
 }

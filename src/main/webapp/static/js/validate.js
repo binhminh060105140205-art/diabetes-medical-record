@@ -390,4 +390,20 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
+
+    document.querySelectorAll('form[data-require-any]').forEach(function (form) {
+        const fields = Array.from(form.querySelectorAll('[data-any-value]'));
+        const submit = form.querySelector('[data-require-any-submit]');
+        if (!submit) return;
+        const refresh = function () {
+            submit.disabled = !fields.some(function (field) {
+                return field.value.trim() !== '' && field.checkValidity();
+            });
+        };
+        fields.forEach(function (field) {
+            field.addEventListener('input', refresh);
+            field.addEventListener('change', refresh);
+        });
+        refresh();
+    });
 });

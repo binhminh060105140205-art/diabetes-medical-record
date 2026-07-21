@@ -2,7 +2,7 @@
 <%@taglib prefix="c" uri="jakarta.tags.core"%>
 <%@taglib prefix="fmt" uri="jakarta.tags.fmt"%>
 <!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Thùng rác — DiaCare</title><link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260721-web-audit1"></head>
+<title>Thùng rác — DiaCare</title><link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260722-web-audit2"></head>
 <body><jsp:include page="header.jsp"/><jsp:include page="topnav.jsp"/>
 <main class="page-wrapper app-workspace">
     <div class="workspace-heading"><div><span class="workspace-kicker">QUẢN TRỊ DỮ LIỆU</span><h1>Thùng rác</h1></div><a class="btn btn-light" href="${pageContext.request.contextPath}/AdminDashboard">Quay lại tài khoản</a></div>

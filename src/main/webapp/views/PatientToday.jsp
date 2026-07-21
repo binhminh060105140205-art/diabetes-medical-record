@@ -2,7 +2,7 @@
 <%@taglib prefix="c" uri="jakarta.tags.core"%>
 <%@taglib prefix="fn" uri="jakarta.tags.functions"%>
 <!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sức khỏe hôm nay — DiaCare</title><link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260721-patient-advice2"><link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/patient-care-path.css?v=20260721-patient1"></head>
+<title>Sức khỏe hôm nay — DiaCare</title><link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260722-web-audit2"><link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/patient-care-path.css?v=20260721-patient1"></head>
 <body><jsp:include page="header.jsp"/><jsp:include page="topnav.jsp"/>
 <main class="page-wrapper patient-today-page"><div class="page-heading"><div><div class="eyebrow">THEO DÕI HẰNG NGÀY</div><h1 class="page-title">Sức khỏe hôm nay</h1></div><a class="btn btn-light" href="${pageContext.request.contextPath}/PatientJournal">Nhật ký 30 ngày</a></div>
 <c:if test="${not empty msg}"><div class="alert alert-info"><c:out value="${msg}"/></div></c:if>
@@ -35,6 +35,7 @@
 <div class="form-group"><label>Thời điểm đo đường huyết</label><select id="log_meal" class="form-control"><option value="">Chọn thời điểm</option><option value="FASTING" ${todayLog.mealType=='FASTING'?'selected':''}>Lúc đói</option><option value="AFTER_MEAL" ${todayLog.mealType=='AFTER_MEAL'?'selected':''}>Sau ăn</option><option value="BEDTIME" ${todayLog.mealType=='BEDTIME'?'selected':''}>Trước khi ngủ</option><option value="OTHER" ${todayLog.mealType=='OTHER'?'selected':''}>Khác</option></select></div>
 <div class="form-group"><label>Đường huyết (mg/dL)</label><input type="number" min="20" max="600" step="0.1" id="log_bg" class="form-control" value="${todayLog.bloodGlucose}" placeholder="Ví dụ: 105"></div>
 <div class="two-column"><div class="form-group"><label>Huyết áp tâm thu</label><input type="number" min="60" max="260" id="log_sbp" class="form-control" value="${todayLog.systolicBp}" placeholder="120"></div><div class="form-group"><label>Huyết áp tâm trương</label><input type="number" min="30" max="180" id="log_dbp" class="form-control" value="${todayLog.diastolicBp}" placeholder="80"></div></div>
+<div class="two-column"><div class="form-group"><label>Nhịp tim (lần/phút)</label><input type="number" min="30" max="220" id="log_hr" class="form-control" value="${todayLog.heartRate}" placeholder="75"></div><div class="form-group"><label>SpO2 (%)</label><input type="number" min="50" max="100" step="0.1" id="log_spo2" class="form-control" value="${todayLog.spo2}" placeholder="98"></div></div>
 <div class="form-group"><label>Cân nặng (kg)</label><input type="number" min="20" max="300" step="0.1" id="log_weight" class="form-control" value="${todayLog.weight}" placeholder="65"></div>
 <div class="form-group"><label>Triệu chứng hôm nay</label><div class="checkbox-grid"><label><input type="checkbox" name="symptom" value="Không có triệu chứng"> Không có</label><label><input type="checkbox" name="symptom" value="Mệt mỏi"> Mệt mỏi</label><label><input type="checkbox" name="symptom" value="Khát nhiều"> Khát nhiều</label><label><input type="checkbox" name="symptom" value="Chóng mặt"> Chóng mặt</label><label><input type="checkbox" name="symptom" value="Run tay/vã mồ hôi"> Run tay/vã mồ hôi</label><c:if test="${diabetesProfile.diabetesType=='TYPE_1'}"><label><input type="checkbox" name="symptom" value="Buồn nôn hoặc đau bụng"> Buồn nôn/đau bụng</label><label><input type="checkbox" name="symptom" value="Thở nhanh hoặc thở sâu"> Thở nhanh/thở sâu</label></c:if><c:if test="${diabetesProfile.diabetesType=='TYPE_2'}"><label><input type="checkbox" name="symptom" value="Tê bì bàn chân"> Tê bì bàn chân</label><label><input type="checkbox" name="symptom" value="Phù chân"> Phù chân</label></c:if></div></div>
 <div class="form-group"><label>Ghi chú</label><textarea id="log_note" class="form-control" maxlength="1000" placeholder="Thông tin khác muốn bác sĩ biết"><c:out value="${todayLog.note}"/></textarea></div>
@@ -58,19 +59,21 @@ async function saveLog(){
     const glucose=document.getElementById('log_bg');
     const systolic=document.getElementById('log_sbp');
     const diastolic=document.getElementById('log_dbp');
+    const heartRate=document.getElementById('log_hr');
+    const spo2=document.getElementById('log_spo2');
     const weight=document.getElementById('log_weight');
     const note=document.getElementById('log_note');
-    const fields=[meal,glucose,systolic,diastolic,weight];
+    const fields=[meal,glucose,systolic,diastolic,heartRate,spo2,weight];
     showLogResult('');
     const invalid=fields.find(field=>field.value && !field.checkValidity());
     if (invalid) { showLogResult('Giá trị vừa nhập chưa hợp lệ. Vui lòng kiểm tra lại giới hạn của chỉ số.', 'error'); invalid.reportValidity(); return; }
     if (glucose.value && !meal.value) { showLogResult('Vui lòng chọn thời điểm đo đường huyết.', 'error'); meal.focus(); return; }
     if (meal.value && !glucose.value) { showLogResult('Đã chọn thời điểm đo thì cần nhập đường huyết.', 'error'); glucose.focus(); return; }
     const symptoms=symptomInputs.filter(input=>input.checked).map(input=>input.value).join(', ');
-    if (!glucose.value&&!systolic.value&&!diastolic.value&&!weight.value&&!symptoms&&!note.value.trim()) { showLogResult('Cần nhập ít nhất một chỉ số hoặc ghi chú.', 'error'); return; }
+    if (!glucose.value&&!systolic.value&&!diastolic.value&&!heartRate.value&&!spo2.value&&!weight.value&&!symptoms&&!note.value.trim()) { showLogResult('Cần nhập ít nhất một chỉ số hoặc ghi chú.', 'error'); return; }
     button.disabled=true; showLogResult('Đang lưu chỉ số...', 'loading');
     try{
-        const body=new URLSearchParams({action:'saveLog',mealType:meal.value,bloodGlucose:glucose.value,systolicBp:systolic.value,diastolicBp:diastolic.value,weight:weight.value,symptoms,note:note.value});
+        const body=new URLSearchParams({action:'saveLog',mealType:meal.value,bloodGlucose:glucose.value,systolicBp:systolic.value,diastolicBp:diastolic.value,heartRate:heartRate.value,spo2:spo2.value,weight:weight.value,symptoms,note:note.value});
         const response=await fetch(CTX+'/PatientHealth',{method:'POST',body});
         const data=await response.json();
         showLogResult(data.success?'Đã lưu chỉ số hôm nay.':(data.error||'Không thể lưu dữ liệu.'), data.success?'success':'error');
