@@ -541,10 +541,18 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
         if (!ENCOUNTER_STATUSES.contains(status)) {
             throw new IllegalArgumentException("Trạng thái không hợp lệ");
         }
-        try {
+        inTransaction("Không thể cập nhật trạng thái lượt khám.", () -> {
             String timestampUpdate = encounterTimestampUpdate(status);
             update("UPDATE encounters SET status=?" + timestampUpdate + " WHERE encounter_id=?",
                     status, encounterId);
+
+            if ("COMPLETED".equals(status) || "CANCELLED".equals(status)) {
+                update("""
+                        UPDATE appointments a SET status=?
+                        FROM encounters e
+                        WHERE e.encounter_id=? AND a.appointment_id=e.appointment_id""",
+                        status, encounterId);
+            }
 
             String queueStatus = queueStatusFor(status);
             if (queueStatus != null) {
@@ -554,9 +562,7 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
                         WHERE encounter_id=?""", queueStatus, encounterId);
             }
             audit(actor, "STATUS", "ENCOUNTER", String.valueOf(encounterId), status);
-        } catch (SQLException error) {
-            throw new IllegalStateException("Không thể cập nhật trạng thái lượt khám.", error);
-        }
+        });
     }
 
     private String encounterTimestampUpdate(String status) {

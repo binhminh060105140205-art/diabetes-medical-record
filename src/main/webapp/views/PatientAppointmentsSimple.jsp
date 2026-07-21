@@ -101,7 +101,9 @@
                         </div>
                         <c:choose>
                             <c:when test="${a.status=='REQUESTED'}"><h3>Phòng khám đang sắp xếp bác sĩ</h3></c:when>
-                            <c:otherwise><h3>BS. <c:out value="${a.doctor_name}"/></h3></c:otherwise>
+                            <c:otherwise>
+                                <h3><c:if test="${not fn:startsWith(a.doctor_name, 'BS.')}">BS. </c:if><c:out value="${a.doctor_name}"/></h3>
+                            </c:otherwise>
                         </c:choose>
                         <p><c:out value="${a.reason}"/></p>
                         <c:if test="${a.status=='REQUESTED'||a.status=='BOOKED'||a.status=='CONFIRMED'}">
