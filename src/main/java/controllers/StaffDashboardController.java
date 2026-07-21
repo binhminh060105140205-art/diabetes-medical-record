@@ -22,6 +22,8 @@ public class StaffDashboardController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        // Query parameters may contain Vietnamese names; decode them before reading keyword.
+        request.setCharacterEncoding("UTF-8");
         User user = ControllerSupport.currentUser(request);
         if (!ControllerSupport.hasRole(user, "STAFF")) {
             ControllerSupport.redirectToLogin(request, response);
