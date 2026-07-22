@@ -158,7 +158,7 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
           LEFT JOIN diabetes_profiles dp ON dp.patient_id=p.patient_id
           UNION ALL
           SELECT 'DOCTOR',NULL,d.doctor_id,u.full_name,NULL,d.specialty,d.diabetes_focus,
-                 NULL::VARCHAR,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
+                 NULL::VARCHAR,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
                  NULL::INTEGER,NULL::TIMESTAMP
           FROM doctors d JOIN users u ON u.user_id=d.user_id AND u.status='ACTIVE'
           WHERE d.diabetes_focus IN ('TYPE_1','TYPE_2','BOTH')
