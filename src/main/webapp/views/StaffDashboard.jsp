@@ -21,6 +21,13 @@
             <p>Tìm hồ sơ trước khi tạo mới; mọi thao tác bệnh nhân được gom tại một màn hình.</p>
         </div>
         <div class="heading-actions">
+            <a class="btn ${pendingAppointmentRequests > 0 ? 'btn-warning' : 'btn-light'}"
+               href="${pageContext.request.contextPath}/ClinicWorkflow?view=appointments">
+                <c:choose>
+                    <c:when test="${pendingAppointmentRequests > 0}">${pendingAppointmentRequests} lịch chờ xác nhận</c:when>
+                    <c:otherwise>Xem lịch hẹn</c:otherwise>
+                </c:choose>
+            </a>
             <a class="btn btn-primary" href="#new-patient" data-open-intake>+ Tiếp nhận bệnh nhân mới</a>
         </div>
     </div>

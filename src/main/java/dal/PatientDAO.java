@@ -132,8 +132,11 @@ public class PatientDAO extends DBContext {
         // The outer CTE query exposes patient columns without the original p alias.
         String order = searching ? " ORDER BY full_name" : " ORDER BY created_at DESC";
         String sql = "WITH filtered AS (SELECT p.* FROM patients p LEFT JOIN users u ON u.user_id=p.user_id"
-                + where + "), total AS (SELECT COUNT(*) value FROM filtered), data AS (SELECT * FROM filtered"
-                + order + " LIMIT ? OFFSET ?) SELECT d.*,t.value total FROM total t LEFT JOIN data d ON TRUE";
+                + where + "), total AS (SELECT COUNT(*) value FROM filtered), "
+                + "pending_requests AS (SELECT COUNT(*) value FROM appointments WHERE status='REQUESTED'), "
+                + "data AS (SELECT * FROM filtered" + order + " LIMIT ? OFFSET ?) "
+                + "SELECT d.*,t.value total,pr.value pending_appointment_requests "
+                + "FROM total t CROSS JOIN pending_requests pr LEFT JOIN data d ON TRUE";
         List<Patient> patients = new ArrayList<>();
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             int index = 1;
@@ -145,16 +148,19 @@ public class PatientDAO extends DBContext {
             ps.setInt(index, (page - 1) * pageSize);
             try (ResultSet rows = ps.executeQuery()) {
                 int total = 0;
+                int pendingAppointmentRequests = 0;
                 while (rows.next()) {
                     total = rows.getInt("total");
+                    pendingAppointmentRequests = rows.getInt("pending_appointment_requests");
                     if (rows.getObject("patient_id") != null) patients.add(mapRow(rows));
                 }
-                return new PatientListData(total, patients);
+                return new PatientListData(total, patients, pendingAppointmentRequests);
             }
         } catch (SQLException error) { throw databaseError("load patient list", error); }
     }
 
-    public record PatientListData(int total, List<Patient> patients) {}
+    public record PatientListData(int total, List<Patient> patients,
+            int pendingAppointmentRequests) {}
 
     /** Paginated patient list scoped to one doctor, including past encounters. */
     public PatientListData loadPatientListForDoctor(int doctorUserId, String keyword,
@@ -201,7 +207,7 @@ public class PatientDAO extends DBContext {
                     total = rows.getInt("total");
                     if (rows.getObject("patient_id") != null) patients.add(mapRow(rows));
                 }
-                return new PatientListData(total, patients);
+                return new PatientListData(total, patients, 0);
             }
         } catch (SQLException error) {
             throw databaseError("load doctor patient list", error);

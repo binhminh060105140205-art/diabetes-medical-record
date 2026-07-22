@@ -153,12 +153,13 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
                  NULL::DATE preferred_date,NULL::VARCHAR preferred_period,
                  NULL::VARCHAR reason,NULL::VARCHAR note,NULL::VARCHAR status,
                  NULL::VARCHAR patient_name,NULL::VARCHAR patient_phone,NULL::VARCHAR doctor_name,
-                 p.created_at sort_date
+                 NULL::INTEGER sort_priority,p.created_at sort_date
           FROM patients p JOIN users pu ON pu.user_id=p.user_id AND pu.status='ACTIVE'
           LEFT JOIN diabetes_profiles dp ON dp.patient_id=p.patient_id
           UNION ALL
           SELECT 'DOCTOR',NULL,d.doctor_id,u.full_name,NULL,d.specialty,d.diabetes_focus,
-                 NULL::VARCHAR,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL
+                 NULL::VARCHAR,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
+                 NULL::INTEGER,NULL::TIMESTAMP
           FROM doctors d JOIN users u ON u.user_id=d.user_id AND u.status='ACTIVE'
           WHERE d.diabetes_focus IN ('TYPE_1','TYPE_2','BOTH')
           UNION ALL
@@ -166,14 +167,18 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
                  COALESCE(dp.diabetes_type,'UNKNOWN'),
                  a.appointment_id,a.appointment_at,a.preferred_date,a.preferred_period,
                  a.reason,a.note,a.status,p.full_name,p.phone,u.full_name,
-                 COALESCE(a.appointment_at,a.preferred_date::timestamp)
+                 CASE WHEN a.status='REQUESTED' THEN 0 ELSE 1 END,
+                 CASE WHEN a.status='REQUESTED' THEN a.created_at
+                      ELSE COALESCE(a.appointment_at,a.preferred_date::timestamp) END
           FROM (
-            SELECT * FROM appointments
-            ORDER BY preferred_date DESC,appointment_at DESC NULLS FIRST LIMIT 50
+            SELECT * FROM appointments WHERE status='REQUESTED'
+            UNION ALL
+            (SELECT * FROM appointments WHERE status<>'REQUESTED'
+             ORDER BY COALESCE(appointment_at,preferred_date::timestamp) DESC LIMIT 50)
           ) a JOIN patients p ON p.patient_id=a.patient_id
           LEFT JOIN diabetes_profiles dp ON dp.patient_id=p.patient_id
           LEFT JOIN doctors d ON d.doctor_id=a.doctor_id LEFT JOIN users u ON u.user_id=d.user_id
-          ORDER BY row_type,sort_date DESC NULLS LAST,display_name
+          ORDER BY row_type,sort_priority NULLS LAST,sort_date DESC NULLS LAST,display_name
           """;
         List<Patient> patients = new ArrayList<>();
         List<Doctor> doctors = new ArrayList<>();

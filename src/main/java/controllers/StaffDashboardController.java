@@ -47,6 +47,7 @@ public class StaffDashboardController extends HttpServlet {
 
         request.setAttribute("patients", data.patients());
         request.setAttribute("totalPatients", data.total());
+        request.setAttribute("pendingAppointmentRequests", data.pendingAppointmentRequests());
         request.setAttribute("currentPage", currentPage);
         request.setAttribute("totalPages", totalPages);
         request.setAttribute("maxDOB", LocalDate.now().toString());
