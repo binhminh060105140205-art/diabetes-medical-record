@@ -358,10 +358,10 @@
                                 <c:if test="${sessionScope.user.role=='DOCTOR' && not empty l.record_id}">
                                     <a class="btn btn-light btn-sm" href="${pageContext.request.contextPath}/MedicalRecordForm?recordId=${l.record_id}&tab=3">Mở phiếu xét nghiệm</a>
                                 </c:if>
-                                <c:if test="${sessionScope.user.role=='STAFF' && not empty l.record_id && (l.test_code=='GLU'||l.test_code=='GLU_FASTING'||l.test_code=='HBA1C'||l.test_code=='LIPID') && l.status!='REVIEWED'&&l.status!='CANCELLED'}">
+                                <c:if test="${sessionScope.user.role=='STAFF' && not empty l.record_id && (l.test_code=='GLU'||l.test_code=='GLU_FASTING'||l.test_code=='HBA1C'||l.test_code=='LIPID') && (l.status=='ORDERED'||l.status=='COLLECTED')}">
                                     <a class="btn btn-primary btn-sm" href="${pageContext.request.contextPath}/MedicalRecordForm?recordId=${l.record_id}&tab=3">Nhập theo phiếu xét nghiệm</a>
                                 </c:if>
-                                <c:if test="${(sessionScope.user.role=='STAFF'||sessionScope.user.role=='ADMIN') && (empty l.record_id || !(l.test_code=='GLU'||l.test_code=='GLU_FASTING'||l.test_code=='HBA1C'||l.test_code=='LIPID')) && l.status!='REVIEWED'&&l.status!='CANCELLED'}">
+                                <c:if test="${(sessionScope.user.role=='STAFF'||sessionScope.user.role=='ADMIN') && (empty l.record_id || !(l.test_code=='GLU'||l.test_code=='GLU_FASTING'||l.test_code=='HBA1C'||l.test_code=='LIPID')) && (l.status=='ORDERED'||l.status=='COLLECTED')}">
                                     <button class="btn btn-primary btn-sm" type="button"
                                             onclick="document.getElementById('lab-result-${l.lab_order_id}').showModal()">Nhập kết quả</button>
                                     <dialog class="lab-result-dialog" id="lab-result-${l.lab_order_id}"
