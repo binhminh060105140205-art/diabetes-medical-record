@@ -60,9 +60,6 @@ src/main/resources/db/migration-sqlserver
 
 Mở ứng dụng tại http://localhost:8082.
 
-- `/health`: xác nhận ứng dụng đã khởi động.
-- `/ready`: xác nhận ứng dụng kết nối được SQL Server.
-
 ## Kiểm tra dự án
 
 Chạy unit test:
@@ -71,10 +68,10 @@ Chạy unit test:
 .\mvnw.cmd clean test
 ```
 
-Build đầy đủ và precompile JSP:
+Build đầy đủ:
 
 ```powershell
-.\mvnw.cmd -Pprecompile-jsp clean verify
+.\mvnw.cmd clean verify
 ```
 
 ## Email

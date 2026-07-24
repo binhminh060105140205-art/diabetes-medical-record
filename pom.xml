@@ -18,48 +18,4 @@
     <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency>
   </dependencies>
   <build><finalName>diabetes-medical-record</finalName><plugins><plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId></plugin></plugins></build>
-  <profiles>
-    <profile>
-      <id>precompile-jsp</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-antrun-plugin</artifactId>
-            <version>3.1.0</version>
-            <executions>
-              <execution>
-                <id>precompile-jsp-pages</id>
-                <phase>prepare-package</phase>
-                <goals><goal>run</goal></goals>
-                <configuration>
-                  <target>
-                    <copy todir="${project.build.directory}/precompiled-webapp">
-                      <fileset dir="${project.basedir}/src/main/webapp"/>
-                    </copy>
-                    <taskdef name="jasper" classname="org.apache.jasper.JspC"
-                             classpathref="maven.compile.classpath"/>
-                    <jasper uriroot="${project.build.directory}/precompiled-webapp"
-                            outputDir="${project.build.outputDirectory}"
-                            package="org.apache.jsp"
-                            classpath="${maven.compile.classpath}"
-                            compile="true"
-                            failOnError="true">
-                    </jasper>
-                  </target>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-war-plugin</artifactId>
-            <configuration>
-              <warSourceDirectory>${project.build.directory}/precompiled-webapp</warSourceDirectory>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>

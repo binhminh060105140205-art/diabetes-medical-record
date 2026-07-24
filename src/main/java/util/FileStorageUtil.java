@@ -27,17 +27,21 @@ public class FileStorageUtil {
 
     private static File getRootDir() {
         String configured = System.getProperty("app.upload-dir");
-        File root = configured == null || configured.isBlank()
+        return configured == null || configured.isBlank()
                 ? new File(System.getProperty("user.dir"), "uploads")
                 : new File(configured);
-        if (!root.exists()) root.mkdirs();
-        return root;
     }
 
     private static File getDoctorDir(int doctorId) {
-        File dir = new File(getRootDir(), String.valueOf(doctorId));
-        if (!dir.exists()) dir.mkdirs();
-        return dir;
+        return new File(getRootDir(), String.valueOf(doctorId));
+    }
+
+    private static File createDoctorDir(int doctorId) throws IOException {
+        File directory = getDoctorDir(doctorId);
+        if (!directory.isDirectory() && !directory.mkdirs()) {
+            throw new IOException("Không thể tạo thư mục lưu ảnh bác sĩ.");
+        }
+        return directory;
     }
 
     private static String extractExtension(Part part) {
@@ -75,13 +79,14 @@ public class FileStorageUtil {
         if (part == null || part.getSize() == 0) return null;
         validateDoctorImage(part, "Ảnh hồ sơ bác sĩ", false);
         String ext = extractExtension(part);
+        File doctorDirectory = createDoctorDir(doctorId);
 
-        File targetFile = new File(getDoctorDir(doctorId), type + "." + ext);
+        File targetFile = new File(doctorDirectory, type + "." + ext);
 
         // Xóa các file cùng loại nhưng khác đuôi từ lần upload trước (tránh rác + ảnh cũ lẫn ảnh mới)
         for (String otherExt : ALLOWED_EXT) {
             if (!otherExt.equals(ext)) {
-                File stale = new File(getDoctorDir(doctorId), type + "." + otherExt);
+                File stale = new File(doctorDirectory, type + "." + otherExt);
                 if (stale.exists()) stale.delete();
             }
         }

@@ -1,6 +1,7 @@
 package util;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
@@ -33,5 +34,13 @@ class FileStorageUtilTest {
         assertFalse(Files.exists(back));
         assertFalse(Files.exists(license));
         assertTrue(Files.exists(unrelated));
+    }
+
+    @Test
+    void resolvingMissingImageDoesNotCreateDoctorDirectory() {
+        System.setProperty("app.upload-dir", uploadRoot.toString());
+
+        assertNull(FileStorageUtil.resolveDoctorImage(27, "cccd.jpg"));
+        assertFalse(Files.exists(uploadRoot.resolve("27")));
     }
 }
