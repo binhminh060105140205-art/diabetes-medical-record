@@ -650,21 +650,25 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
         String sql = """
                 WITH subject AS (
                   SELECT patient_id,full_name,phone FROM patients WHERE patient_id=?
+                ), clinical_rows AS (
+                  SELECT 'PATIENT' row_type,s.patient_id,s.full_name,s.phone,
+                         CAST(NULL AS INT) item_id,CAST(NULL AS NVARCHAR(150)) item_name,
+                         CAST(NULL AS NVARCHAR(30)) item_type,
+                         CAST(NULL AS NVARCHAR(20)) item_status,CAST(NULL AS NVARCHAR(500)) item_note,
+                         CAST(NULL AS DATETIME2) item_date
+                  FROM subject s
+                  UNION ALL
+                  SELECT 'ALLERGY',s.patient_id,s.full_name,s.phone,a.allergy_id,a.allergen,NULL,
+                         a.severity,a.reaction,a.noted_at
+                  FROM subject s JOIN patient_allergies a ON a.patient_id=s.patient_id
+                  UNION ALL
+                  SELECT 'HISTORY',s.patient_id,s.full_name,s.phone,h.history_id,h.condition_name,
+                         h.history_type,h.status,h.note,h.noted_at
+                  FROM subject s JOIN patient_medical_histories h ON h.patient_id=s.patient_id
                 )
-                SELECT 'PATIENT' row_type,s.patient_id,s.full_name,s.phone,
-                       CAST(NULL AS INT) item_id,CAST(NULL AS NVARCHAR(150)) item_name,
-                       CAST(NULL AS NVARCHAR(30)) item_type,
-                       CAST(NULL AS NVARCHAR(20)) item_status,CAST(NULL AS NVARCHAR(500)) item_note,
-                       CAST(NULL AS DATETIME2) item_date
-                FROM subject s
-                UNION ALL
-                SELECT 'ALLERGY',s.patient_id,s.full_name,s.phone,a.allergy_id,a.allergen,NULL,
-                       a.severity,a.reaction,a.noted_at
-                FROM subject s JOIN patient_allergies a ON a.patient_id=s.patient_id
-                UNION ALL
-                SELECT 'HISTORY',s.patient_id,s.full_name,s.phone,h.history_id,h.condition_name,
-                       h.history_type,h.status,h.note,h.noted_at
-                FROM subject s JOIN patient_medical_histories h ON h.patient_id=s.patient_id
+                SELECT row_type,patient_id,full_name,phone,item_id,item_name,item_type,
+                       item_status,item_note,item_date
+                FROM clinical_rows
                 ORDER BY row_type,CASE WHEN item_date IS NULL THEN 1 ELSE 0 END,item_date DESC
                 """;
         Patient patient = null;
