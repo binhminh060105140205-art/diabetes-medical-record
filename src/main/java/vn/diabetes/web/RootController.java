@@ -28,7 +28,7 @@ public class RootController {
         return ResponseEntity.ok("OK revision=" + revision);
     }
 
-    /** Render only routes users to a new instance after PostgreSQL is ready. */
+    /** Reports whether the configured database is ready for application traffic. */
     @GetMapping("/ready")
     @ResponseBody
     public ResponseEntity<String> ready() {

@@ -93,13 +93,13 @@ public class PatientDAO extends DBContext {
         String where = searching
                 ? " WHERE COALESCE(u.status,'ACTIVE') <> 'DELETED' AND "
                   + "(" + SearchSupport.contains("p.full_name")
-                  + " OR p.phone ILIKE ? OR p.health_insurance_no ILIKE ? OR p.national_id ILIKE ?)"
+                  + " OR LOWER(p.phone) LIKE LOWER(?) OR LOWER(p.health_insurance_no) LIKE LOWER(?) OR LOWER(p.national_id) LIKE LOWER(?))"
                 : " WHERE COALESCE(u.status,'ACTIVE') <> 'DELETED'";
         String order = searching ? " ORDER BY p.full_name" : " ORDER BY p.created_at DESC";
         String sql = "WITH total AS (SELECT COUNT(*) value FROM patients p LEFT JOIN users u ON u.user_id=p.user_id"
                 + " WHERE COALESCE(u.status,'ACTIVE') <> 'DELETED'), data AS (SELECT p.* FROM patients p "
                 + "LEFT JOIN users u ON u.user_id=p.user_id"
-                + where + order + " LIMIT ?) SELECT d.*,t.value total FROM total t LEFT JOIN data d ON TRUE";
+                + where + order + " OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY) SELECT d.*,t.value total FROM total t LEFT JOIN data d ON 1=1";
         List<Patient> patients = new ArrayList<>();
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             int index = 1;
@@ -121,22 +121,22 @@ public class PatientDAO extends DBContext {
 
     public record StaffDashboardData(int totalPatients, List<Patient> patients) {}
 
-    /** Loads a filtered count and one page in one Aiven round-trip. */
+    /** Loads a filtered count and one page in one database round-trip. */
     public PatientListData loadPatientList(String keyword, int page, int pageSize) {
         boolean searching = keyword != null && !keyword.isBlank();
         String where = searching
                 ? " WHERE COALESCE(u.status,'ACTIVE') <> 'DELETED' AND "
                   + "(" + SearchSupport.contains("p.full_name")
-                  + " OR p.phone ILIKE ? OR p.health_insurance_no ILIKE ? OR p.national_id ILIKE ?)"
+                  + " OR LOWER(p.phone) LIKE LOWER(?) OR LOWER(p.health_insurance_no) LIKE LOWER(?) OR LOWER(p.national_id) LIKE LOWER(?))"
                 : " WHERE COALESCE(u.status,'ACTIVE') <> 'DELETED'";
         // The outer CTE query exposes patient columns without the original p alias.
         String order = searching ? " ORDER BY full_name" : " ORDER BY created_at DESC";
         String sql = "WITH filtered AS (SELECT p.* FROM patients p LEFT JOIN users u ON u.user_id=p.user_id"
                 + where + "), total AS (SELECT COUNT(*) value FROM filtered), "
                 + "pending_requests AS (SELECT COUNT(*) value FROM appointments WHERE status='REQUESTED'), "
-                + "data AS (SELECT * FROM filtered" + order + " LIMIT ? OFFSET ?) "
+                + "data AS (SELECT * FROM filtered" + order + " OFFSET ? ROWS FETCH NEXT ? ROWS ONLY) "
                 + "SELECT d.*,t.value total,pr.value pending_appointment_requests "
-                + "FROM total t CROSS JOIN pending_requests pr LEFT JOIN data d ON TRUE";
+                + "FROM total t CROSS JOIN pending_requests pr LEFT JOIN data d ON 1=1";
         List<Patient> patients = new ArrayList<>();
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             int index = 1;
@@ -144,8 +144,8 @@ public class PatientDAO extends DBContext {
                 String value = "%" + keyword.trim() + "%";
                 for (int i = 0; i < 4; i++) ps.setString(index++, value);
             }
-            ps.setInt(index++, pageSize);
-            ps.setInt(index, (page - 1) * pageSize);
+            ps.setInt(index++, (page - 1) * pageSize);
+            ps.setInt(index, pageSize);
             try (ResultSet rows = ps.executeQuery()) {
                 int total = 0;
                 int pendingAppointmentRequests = 0;
@@ -167,8 +167,8 @@ public class PatientDAO extends DBContext {
             int page, int pageSize) {
         boolean searching = keyword != null && !keyword.isBlank();
         String search = searching
-                ? " AND (" + SearchSupport.contains("p.full_name") + " OR p.phone ILIKE ? OR "
-                  + "p.health_insurance_no ILIKE ? OR p.national_id ILIKE ?)"
+                ? " AND (" + SearchSupport.contains("p.full_name") + " OR LOWER(p.phone) LIKE LOWER(?) OR "
+                  + "LOWER(p.health_insurance_no) LIKE LOWER(?) OR LOWER(p.national_id) LIKE LOWER(?))"
                 : "";
         String order = searching ? " ORDER BY full_name" : " ORDER BY created_at DESC";
         String sql = """
@@ -177,7 +177,7 @@ public class PatientDAO extends DBContext {
                 ), filtered AS (
                   SELECT p.* FROM patients p
                   LEFT JOIN users u ON u.user_id=p.user_id
-                  JOIN doctor_scope d ON TRUE
+                  JOIN doctor_scope d ON 1=1
                   WHERE COALESCE(u.status,'ACTIVE') <> 'DELETED'
                     AND (
                       EXISTS (SELECT 1 FROM encounters e
@@ -189,8 +189,8 @@ public class PatientDAO extends DBContext {
                 """ + search + """
                 ), total AS (SELECT COUNT(*) value FROM filtered),
                 data AS (SELECT * FROM filtered
-                """ + order + " LIMIT ? OFFSET ?) "
-                + "SELECT d.*,t.value total FROM total t LEFT JOIN data d ON TRUE";
+                """ + order + " OFFSET ? ROWS FETCH NEXT ? ROWS ONLY) "
+                + "SELECT d.*,t.value total FROM total t LEFT JOIN data d ON 1=1";
         List<Patient> patients = new ArrayList<>();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             int index = 1;
@@ -199,8 +199,8 @@ public class PatientDAO extends DBContext {
                 String value = "%" + keyword.trim() + "%";
                 for (int i = 0; i < 4; i++) statement.setString(index++, value);
             }
-            statement.setInt(index++, pageSize);
-            statement.setInt(index, (page - 1) * pageSize);
+            statement.setInt(index++, (page - 1) * pageSize);
+            statement.setInt(index, pageSize);
             try (ResultSet rows = statement.executeQuery()) {
                 int total = 0;
                 while (rows.next()) {
@@ -234,7 +234,7 @@ public class PatientDAO extends DBContext {
         } catch (SQLException e) { throw databaseError("load patient account", e); }
     }
 
-    /** Loads every read-only section of the patient home page in one Aiven round-trip. */
+    /** Loads every read-only section of the patient home page in one database round-trip. */
     public PatientDashboardData loadPatientDashboard(int userId) {
         String sql = """
             SELECT p.*,
@@ -254,13 +254,13 @@ public class PatientDAO extends DBContext {
                    l.meal_type today_meal_type,l.created_at today_created_at
             FROM patients p
             LEFT JOIN diabetes_profiles dp ON dp.patient_id=p.patient_id
-            LEFT JOIN LATERAL (
-              SELECT record_id,doctor_id,visit_date,final_diagnosis,status
-              FROM medicalrecords WHERE patient_id=p.patient_id
-              ORDER BY visit_date DESC LIMIT 1
-            ) r ON TRUE
+            OUTER APPLY (
+              SELECT TOP 1 record_id,doctor_id,visit_date,final_diagnosis,status
+              FROM medicalrecords r0 WHERE r0.patient_id=p.patient_id
+              ORDER BY visit_date DESC
+            ) r
             LEFT JOIN patientdailylogs l
-              ON l.patient_id=p.patient_id AND l.log_date=CURRENT_DATE
+              ON l.patient_id=p.patient_id AND l.log_date=CAST(SYSDATETIME() AS DATE)
             WHERE p.user_id=?
             """;
         try (PreparedStatement ps = connection.prepareStatement(sql)) {

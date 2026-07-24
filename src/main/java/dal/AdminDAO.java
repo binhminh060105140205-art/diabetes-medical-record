@@ -79,7 +79,7 @@ public class AdminDAO extends DBContext {
             return new CreatedAccount(user, doctor);
         } catch (SQLException error) {
             try { connection.rollback(); } catch (SQLException ignored) { }
-            if ("23505".equals(error.getSQLState())) {
+            if (isUniqueViolation(error)) {
                 throw new IllegalArgumentException(duplicateAccountMessage(error), error);
             }
             throw databaseError("create managed account", error);
@@ -150,13 +150,13 @@ public class AdminDAO extends DBContext {
         }
         if (keyword != null && !keyword.isBlank()) {
             sql.append(" AND (").append(SearchSupport.contains("full_name"))
-                    .append(" OR username ILIKE ? OR ip_address ILIKE ?)");
+                    .append(" OR LOWER(username) LIKE LOWER(?) OR LOWER(ip_address) LIKE LOWER(?))");
             String value = "%" + keyword.trim() + "%";
             parameters.add(value); parameters.add(value); parameters.add(value);
         }
-        sql.append(" ORDER BY occurred_at DESC,login_history_id DESC LIMIT ? OFFSET ?");
-        parameters.add(Math.max(1, Math.min(limit, 500)));
+        sql.append(" ORDER BY occurred_at DESC,login_history_id DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
         parameters.add(Math.max(0, offset));
+        parameters.add(Math.max(1, Math.min(limit, 500)));
         return query(sql.toString(), parameters.toArray());
     }
 
@@ -164,7 +164,7 @@ public class AdminDAO extends DBContext {
         inTransaction("Không thể đưa tài khoản vào thùng rác.", () -> {
             Map<String, Object> user = one("""
                     SELECT user_id,username,full_name,email,role,status
-                    FROM users WHERE user_id=? FOR UPDATE""", userId);
+                    FROM users WITH (UPDLOCK,HOLDLOCK) WHERE user_id=?""", userId);
             if (user == null) throw new IllegalArgumentException("Không tìm thấy tài khoản.");
             if (userId == adminId || "ADMIN".equals(user.get("role"))) {
                 throw new IllegalArgumentException("Không thể xóa tài khoản quản trị viên.");
@@ -195,7 +195,7 @@ public class AdminDAO extends DBContext {
         inTransaction("Không thể cập nhật trạng thái tài khoản.", () -> {
             Map<String, Object> user = one("""
                     SELECT user_id,username,full_name,role,status
-                    FROM users WHERE user_id=? FOR UPDATE""", userId);
+                    FROM users WITH (UPDLOCK,HOLDLOCK) WHERE user_id=?""", userId);
             if (user == null) throw new IllegalArgumentException("Không tìm thấy tài khoản.");
             if (userId == adminId || "ADMIN".equals(user.get("role"))) {
                 throw new IllegalArgumentException("Không thể khóa tài khoản quản trị viên.");
@@ -312,8 +312,8 @@ public class AdminDAO extends DBContext {
     public void restore(long trashId, int adminId) {
         inTransaction("Không thể khôi phục dữ liệu.", () -> {
             Map<String, Object> item = one("""
-                    SELECT trash_id,entity_type,entity_id FROM admin_trash
-                    WHERE trash_id=? AND restored_at IS NULL AND purged_at IS NULL FOR UPDATE""",
+                    SELECT trash_id,entity_type,entity_id FROM admin_trash WITH (UPDLOCK,HOLDLOCK)
+                    WHERE trash_id=? AND restored_at IS NULL AND purged_at IS NULL""",
                     trashId);
             if (item == null) throw new IllegalArgumentException("Mục thùng rác không tồn tại.");
             if (!"USER".equals(item.get("entity_type"))) {
@@ -333,8 +333,8 @@ public class AdminDAO extends DBContext {
     public void purge(long trashId, int adminId) {
         inTransaction("Không thể xóa vĩnh viễn dữ liệu.", () -> {
             Map<String, Object> item = one("""
-                    SELECT trash_id,entity_type,entity_id FROM admin_trash
-                    WHERE trash_id=? AND restored_at IS NULL AND purged_at IS NULL FOR UPDATE""",
+                    SELECT trash_id,entity_type,entity_id FROM admin_trash WITH (UPDLOCK,HOLDLOCK)
+                    WHERE trash_id=? AND restored_at IS NULL AND purged_at IS NULL""",
                     trashId);
             if (item == null) throw new IllegalArgumentException("Mục thùng rác không tồn tại.");
             if (!"USER".equals(item.get("entity_type"))) {
@@ -348,7 +348,7 @@ public class AdminDAO extends DBContext {
                     throw new IllegalArgumentException("Tài khoản không còn tồn tại.");
                 }
             } catch (SQLException error) {
-                if ("23503".equals(error.getSQLState())) {
+                if (isForeignKeyViolation(error)) {
                     throw new IllegalArgumentException(
                             "Không thể xóa vĩnh viễn vì tài khoản đang có dữ liệu liên quan.");
                 }

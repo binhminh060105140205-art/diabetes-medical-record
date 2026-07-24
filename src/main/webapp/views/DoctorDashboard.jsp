@@ -20,7 +20,7 @@
     </div>
 
     <section class="metric-grid doctor-metrics">
-        <article class="metric-card"><span class="metric-icon blue">BN</span><div><small>BỆNH NHÂN</small><strong>${totalPatients}</strong><p>Trong toàn hệ thống</p></div></article>
+        <article class="metric-card"><span class="metric-icon blue">BN</span><div><small>BỆNH NHÂN</small><strong>${totalPatients}</strong><p>Đã được phân công</p></div></article>
         <article class="metric-card"><span class="metric-icon green">BA</span><div><small>BỆNH ÁN CỦA TÔI</small><strong>${totalMyRecords}</strong><p>Tổng hồ sơ đã phụ trách</p></div></article>
         <article class="metric-card"><span class="metric-icon blue">LH</span><div><small>LỊCH ĐƯỢC PHÂN CÔNG</small><strong>${fn:length(assignedAppointments)}</strong><p>Lịch sắp tới và hôm nay</p></div></article>
         <article class="metric-card urgent"><span class="metric-icon red">!</span><div><small>CẦN KẾT LUẬN</small><strong>${totalPending}</strong><p>Bệnh án đang chờ xử lý</p></div></article>
@@ -51,7 +51,7 @@
         <section class="card dashboard-main">
             <div class="panel-heading"><div><span class="panel-eyebrow urgent-text">ƯU TIÊN HÔM NAY</span><h2>Bệnh nhân chờ kết luận</h2></div><a href="${pageContext.request.contextPath}/ClinicWorkflow?view=encounters">Xem hàng đợi →</a></div>
             <div class="table-scroll"><table class="modern-table"><thead><tr><th>Bệnh án</th><th>Bệnh nhân</th><th>Lý do khám</th><th>Thời gian</th><th></th></tr></thead><tbody>
-            <c:forEach var="r" items="${pendingRecords}"><tr><td><span class="record-code">#${r.recordId}</span></td><td><a class="patient-link" href="${pageContext.request.contextPath}/PatientHistory?patientId=${r.patientId}"><c:out value="${r.patientName}" default="Bệnh nhân #${r.patientId}"/></a></td><td><c:out value="${r.reasonForVisit}"/></td><td>${r.visitDateLabel}</td><td><div class="row-actions"><a href="${pageContext.request.contextPath}/RecordDetail?id=${r.recordId}">Xem</a><a class="primary" href="${pageContext.request.contextPath}/MedicalRecordForm?recordId=${r.recordId}&tab=4">Kết luận</a></div></td></tr></c:forEach>
+            <c:forEach var="r" items="${pendingRecords}"><tr><td><span class="record-code">#${r.recordId}</span></td><td><a class="patient-link" href="${pageContext.request.contextPath}/PatientHistory?patientId=${r.patientId}"><c:out value="${r.patientName}" default="Bệnh nhân #${r.patientId}"/></a></td><td><c:out value="${r.reasonForVisit}"/></td><td>${r.visitDateLabel}</td><td><div class="row-actions"><a href="${pageContext.request.contextPath}/RecordDetail?id=${r.recordId}">Xem</a><a class="primary" href="${pageContext.request.contextPath}/ClinicWorkflow?view=encounters">Tiếp tục xử lý</a></div></td></tr></c:forEach>
             <c:if test="${empty pendingRecords}"><tr><td colspan="5" class="empty-state success-empty"><strong>Không còn bệnh án chờ kết luận</strong></td></tr></c:if>
             </tbody></table></div>
         </section>

@@ -1,97 +1,90 @@
 # DiaCare
 
-Đồ án quản lý phòng khám tiểu đường bằng Java 17, Spring Boot, JSP và PostgreSQL.
+Đồ án quản lý phòng khám tiểu đường sử dụng Java 17, Spring Boot, JSP và Microsoft SQL Server.
 
-## Chức năng
+## Chức năng chính
 
-- Quản trị tài khoản và hồ sơ bệnh nhân.
-- Phân quyền Quản trị viên, Nhân viên tiếp nhận, Bác sĩ và Bệnh nhân.
-- Lịch hẹn, đổi/hủy lịch, vắng hẹn, ghi nhận đến khám và hàng đợi.
-- Bệnh án, chỉ số lâm sàng, xét nghiệm và đơn thuốc cơ bản.
-- Nhật ký sức khỏe của bệnh nhân; bác sĩ được phân công có thể xem.
+- Quản trị tài khoản và phân quyền ADMIN, STAFF, DOCTOR, PATIENT.
+- Quản lý bệnh nhân, lịch hẹn, tiếp nhận và hàng đợi khám.
+- Hồ sơ bệnh án, chỉ số sức khỏe, xét nghiệm và đơn thuốc.
+- Nhật ký sức khỏe, cảnh báo và tư vấn hỗ trợ bệnh nhân.
 
-## Chạy local
+## Yêu cầu
 
-Tạo duy nhất file `.env` ở thư mục gốc:
+- JDK 17.
+- Microsoft SQL Server 2019 trở lên.
+- Maven Wrapper đã có sẵn trong dự án.
 
-```env
-SERVER_PORT=8082
-DB_URL=jdbc:postgresql://YOUR_HOST:YOUR_PORT/diabetes_medical_record?sslmode=require
-DB_USERNAME=avnadmin
-DB_PASSWORD=YOUR_DATABASE_PASSWORD
-DB_POOL_SIZE=5
-DB_POOL_MIN_IDLE=1
-DB_STATEMENT_TIMEOUT_MS=10000
-BOOTSTRAP_ADMIN_USERNAME=admin
-BOOTSTRAP_ADMIN_PASSWORD=Admin@123
-BOOTSTRAP_ADMIN_NAME=Quản trị hệ thống
-MAIL_USERNAME=
-MAIL_PASSWORD=
-MAIL_HOST=smtp.gmail.com
-MAIL_PORT=587
-MAIL_STARTTLS=true
-MAIL_FROM_NAME=DiaCare
-SPRING_LAZY_INITIALIZATION=true
-OPENAI_API_KEY=
-OPENAI_MODEL=gpt-5.6-terra
-OPENAI_TIMEOUT_SECONDS=20
-UPLOAD_DIR=./uploads
+## Cấu hình SQL Server local
+
+Tạo database và tài khoản SQL Server cho ứng dụng:
+
+```sql
+CREATE DATABASE SWP_DiabetesMedicalRecordDB;
+GO
+
+CREATE LOGIN swp_app
+WITH PASSWORD = 'CHANGE_ME_STRONG_PASSWORD',
+     CHECK_POLICY = ON,
+     CHECK_EXPIRATION = OFF;
+GO
+
+USE SWP_DiabetesMedicalRecordDB;
+CREATE USER swp_app FOR LOGIN swp_app WITH DEFAULT_SCHEMA = dbo;
+ALTER ROLE db_datareader ADD MEMBER swp_app;
+ALTER ROLE db_datawriter ADD MEMBER swp_app;
+ALTER ROLE db_ddladmin ADD MEMBER swp_app;
+GRANT VIEW DEFINITION TO swp_app;
+GO
 ```
 
+Sao chép file cấu hình mẫu:
+
 ```powershell
-cd D:\SWP\diabetes-medical-record
+Copy-Item .env.example .env
+```
+
+Sau đó sửa `DB_PASSWORD` trong `.env` cho khớp với mật khẩu SQL Server vừa tạo. File `.env` đã được Git ignore và không được commit.
+
+Flyway tự tạo bảng, khóa, constraint và index từ:
+
+```text
+src/main/resources/db/migration-sqlserver
+```
+
+## Chạy ứng dụng
+
+```powershell
 .\mvnw.cmd spring-boot:run
 ```
 
-Mở [http://localhost:8082](http://localhost:8082). Spring Boot tự đọc `.env`; Flyway tự cập nhật database từ `src/main/resources/db/migration`.
+Mở ứng dụng tại http://localhost:8082.
 
-## Gửi thư điện tử thật
+- `/health`: xác nhận ứng dụng đã khởi động.
+- `/ready`: xác nhận ứng dụng kết nối được SQL Server.
 
-Hệ thống gửi thông tin đăng nhập khi Quản trị viên hoặc Nhân viên tiếp nhận tạo tài khoản. Với Gmail:
+## Kiểm tra dự án
 
-1. Bật xác minh hai bước cho tài khoản Google dùng để gửi thư.
-2. Tạo Mật khẩu ứng dụng trong phần Bảo mật của tài khoản Google.
-3. Gán địa chỉ Gmail vào `MAIL_USERNAME` và Mật khẩu ứng dụng 16 ký tự vào `MAIL_PASSWORD`.
-4. Giữ `MAIL_HOST=smtp.gmail.com`, `MAIL_PORT=587` và `MAIL_STARTTLS=true`.
+Chạy unit test:
 
-Không dùng mật khẩu Gmail thông thường. Thông báo trên giao diện chỉ xác nhận thư đã được đưa vào hàng đợi; kết quả gửi thực tế được ghi trong nhật ký máy chủ.
-
-## Import kết quả xét nghiệm
-
-File mẫu dạng dễ đọc nằm tại `src/main/webapp/static/templates/lab-results-import.txt`. Nhân viên chọn bệnh nhân/bệnh án đang chờ kết quả trên màn Xét nghiệm, sửa các dòng theo dạng `hba1c = (nhập)`, chọn file `.txt` hoặc `.csv`, rồi bấm **Import kết quả**. File không cần chứa `record_id` vì hệ thống lấy đúng bệnh án đã chọn trên giao diện.
-
-Hệ thống kiểm tra định dạng, phạm vi chỉ số, mã bệnh án và chỉ định của bác sĩ trước khi lưu. Toàn bộ file được xử lý trong một giao dịch; nếu một dòng sai thì không dòng nào được ghi vào database.
-
-## Deploy Render
-
-Kho mã đã có `Dockerfile` và `render.yaml`. Trên Render cấu hình `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `BOOTSTRAP_ADMIN_PASSWORD`, `MAIL_USERNAME` và `MAIL_PASSWORD`.
-
-Để triển khai nhanh, đặt `Health Check Path` của dịch vụ thành `/health`. Đường dẫn này chỉ xác nhận ứng dụng đã khởi động; `/ready` vẫn được giữ để kiểm tra riêng kết nối PostgreSQL khi cần chẩn đoán. Với dịch vụ Render đã tạo trước đó, kiểm tra lại mục Settings vì thay đổi trong `render.yaml` chỉ có hiệu lực khi Blueprint được đồng bộ.
-
-Để bật tư vấn sức khỏe hằng ngày, thêm `OPENAI_API_KEY` trong Environment của Render. Nếu để trống, hệ thống vẫn hoạt động và dùng bộ quy tắc an toàn tại máy chủ.
-
-## Tư vấn sức khỏe AI và quyền riêng tư
-
-- Chỉ gọi AI khi bệnh nhân chủ động tích xác nhận và nhấn nút nhận tư vấn.
-- Dữ liệu gửi đi đã được tối thiểu hóa: nhóm tuổi, loại tiểu đường, nhóm điều trị, mục tiêu HbA1c và thống kê chỉ số gần đây.
-- Không gửi họ tên, ngày sinh chính xác, số điện thoại, email, địa chỉ, CCCD, BHYT, username, mã bệnh nhân, tên/liều thuốc hoặc ghi chú thô.
-- Request dùng `store: false`; lời khuyên cùng ngữ cảnh được cache trong ngày để giảm thời gian chờ và số lần gọi API.
-- AI chỉ hỗ trợ giáo dục sức khỏe, không chẩn đoán và không tự thay đổi thuốc. Quy tắc an toàn của hệ thống luôn có quyền ưu tiên hơn nội dung do AI sinh.
-
-## Cấu trúc
-
-```text
-src/main/java/controllers/       Servlet tương thích, chia theo từng màn hình
-src/main/java/dal/               Truy vấn JDBC thuần
-src/main/java/models/            Model dùng chung
-src/main/java/vn/diabetes/auth/  Spring MVC đăng nhập hoàn chỉnh
-src/main/java/vn/diabetes/config/Bridge tạm cho DAO legacy dùng Hikari
-src/main/java/vn/diabetes/service/Service nghiệp vụ đang được migrate
-src/main/java/vn/diabetes/validation/Quy tắc validate dùng chung
-src/main/resources/db/migration/ Flyway schema/seed
-src/main/webapp/views/           JSP
-src/main/webapp/static/          CSS/JavaScript
-src/test/java/                   Unit test service, validation và auth
+```powershell
+.\mvnw.cmd clean test
 ```
 
-`.env`, `target/` và `uploads/` không được đưa lên GitHub.
+Build đầy đủ và precompile JSP:
+
+```powershell
+.\mvnw.cmd -Pprecompile-jsp clean verify
+```
+
+## Email
+
+Để gửi email bằng Gmail, cấu hình `MAIL_USERNAME` và `MAIL_PASSWORD` bằng App Password. Không sử dụng mật khẩu Gmail thông thường.
+
+## Tư vấn AI
+
+Cấu hình `OPENAI_API_KEY` nếu muốn sử dụng tư vấn AI. Khi không có khóa API, ứng dụng vẫn dùng bộ quy tắc cục bộ.
+
+## Upload
+
+File tải lên được lưu trong thư mục `uploads`. Thư mục này được Git ignore để tránh đưa dữ liệu người dùng lên repository.

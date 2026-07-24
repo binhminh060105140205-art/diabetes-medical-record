@@ -26,7 +26,7 @@
             </div>
 
             <section class="card patient-table-card">
-                <div class="section-header"><div><h2>Kết quả tra cứu</h2><p>Đối chiếu ngày sinh và số điện thoại trước khi mở hồ sơ.</p></div><span class="data-count">${not empty patients ? fn:length(patients) : 0} bệnh nhân trên trang</span></div>
+                <div class="section-header"><div><h2>Kết quả tra cứu</h2><p>Đối chiếu ngày sinh và số điện thoại trước khi mở hồ sơ.</p></div><span class="data-count">${totalRecords} bệnh nhân · Trang ${currentPage}/${totalPages}</span></div>
                 <div class="table-scroll"><table class="modern-table">
                     <thead>
                         <tr>
@@ -44,7 +44,7 @@
                             <c:when test="${not empty patients}">
                                 <c:forEach var="p" items="${patients}" varStatus="s">
                                     <tr>
-                                        <td>${s.count + (currentPage - 1) * 10}</td>
+                                        <td>${s.count + (currentPage - 1) * pageSize}</td>
                                         <td><strong><c:out value="${p.fullName}"/></strong></td>
                                         <td><c:out value="${p.dateOfBirth}" default="—"/></td>
                                         <td><c:out value="${p.genderLabel}" default="—"/></td>
@@ -64,24 +64,20 @@
                 </table></div>
             </section>
 
-            <c:if test="${totalPages > 1 && empty keyword}">
+            <c:if test="${totalPages > 1}">
                 <div class="pagination">
                     <c:if test="${currentPage > 1}">
-                        <a href="${pageContext.request.contextPath}/PatientList?page=${currentPage - 1}">
-                            &laquo; Trước
-                        </a>
+                        <c:url var="patientPreviousPageUrl" value="/PatientList"><c:param name="page" value="${currentPage-1}"/><c:param name="keyword" value="${keyword}"/></c:url>
+                        <a href="${patientPreviousPageUrl}">&laquo; Trước</a>
                     </c:if>
 
                     <c:forEach begin="1" end="${totalPages}" var="i">
-                        <a class="${currentPage == i ? 'active' : ''}" href="${pageContext.request.contextPath}/PatientList?page=${i}">
-                            ${i}
-                        </a>
+                        <c:if test="${i>=currentPage-2&&i<=currentPage+2}"><c:url var="patientPageUrl" value="/PatientList"><c:param name="page" value="${i}"/><c:param name="keyword" value="${keyword}"/></c:url><a class="${currentPage == i ? 'active' : ''}" href="${patientPageUrl}">${i}</a></c:if>
                     </c:forEach>
 
                     <c:if test="${currentPage < totalPages}">
-                        <a href="${pageContext.request.contextPath}/PatientList?page=${currentPage + 1}">
-                            Sau &raquo;
-                        </a>
+                        <c:url var="patientNextPageUrl" value="/PatientList"><c:param name="page" value="${currentPage+1}"/><c:param name="keyword" value="${keyword}"/></c:url>
+                        <a href="${patientNextPageUrl}">Sau &raquo;</a>
                     </c:if>
                 </div>
             </c:if>

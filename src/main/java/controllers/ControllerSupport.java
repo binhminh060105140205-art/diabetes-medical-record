@@ -25,6 +25,8 @@ final class ControllerSupport {
     private static final DateTimeFormatter APPOINTMENT_DATE_LABEL =
             DateTimeFormatter.ofPattern("EEEE, dd/MM/yyyy", Locale.forLanguageTag("vi-VN"));
     private static final DateTimeFormatter TIME_VALUE = DateTimeFormatter.ofPattern("HH:mm");
+    private static final DateTimeFormatter DATETIME_LOCAL_VALUE =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
 
     private ControllerSupport() {}
 
@@ -93,6 +95,49 @@ final class ControllerSupport {
         } catch (DateTimeParseException error) {
             throw new IllegalArgumentException("Ngày hoặc giờ khám không hợp lệ.");
         }
+    }
+
+    static LocalDateTime appointmentDateTime(String dateTimeValue) {
+        String value = clean(dateTimeValue);
+        if (value.isEmpty()) throw new IllegalArgumentException("Vui lòng chọn ngày giờ khám.");
+        try {
+            LocalDateTime parsed = LocalDateTime.parse(value, DATETIME_LOCAL_VALUE);
+            if (parsed.getMinute() % AppointmentRules.SLOT_MINUTES != 0) {
+                throw new IllegalArgumentException("Khung giờ khám phải theo khoảng 30 phút.");
+            }
+            return parsed;
+        } catch (DateTimeParseException error) {
+            throw new IllegalArgumentException("Ngày giờ khám không hợp lệ.");
+        }
+    }
+
+    static String appointmentDateTimeInputValue(LocalDateTime value) {
+        return value.format(DATETIME_LOCAL_VALUE);
+    }
+
+    static LocalDateTime nextAppointmentSlot(LocalDateTime now) {
+        LocalDateTime candidate = now.plusMinutes(15).withSecond(0).withNano(0);
+        int remainder = candidate.getMinute() % AppointmentRules.SLOT_MINUTES;
+        if (remainder != 0) {
+            candidate = candidate.plusMinutes(AppointmentRules.SLOT_MINUTES - remainder);
+        }
+
+        while (candidate.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            candidate = candidate.plusDays(1).with(AppointmentRules.OPEN_TIME);
+        }
+        LocalTime time = candidate.toLocalTime();
+        if (time.isBefore(AppointmentRules.OPEN_TIME)) {
+            return candidate.with(AppointmentRules.OPEN_TIME);
+        }
+        if (!time.isBefore(AppointmentRules.MORNING_END)
+                && time.isBefore(AppointmentRules.AFTERNOON_START)) {
+            return candidate.with(AppointmentRules.AFTERNOON_START);
+        }
+        if (time.isAfter(AppointmentRules.CLOSE_TIME.minusMinutes(AppointmentRules.SLOT_MINUTES))) {
+            candidate = candidate.plusDays(1).with(AppointmentRules.OPEN_TIME);
+            if (candidate.getDayOfWeek() == DayOfWeek.SUNDAY) candidate = candidate.plusDays(1);
+        }
+        return candidate;
     }
 
     static List<Map<String, String>> appointmentDateOptions(boolean includeToday) {

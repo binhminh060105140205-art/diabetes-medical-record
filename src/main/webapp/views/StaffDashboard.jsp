@@ -192,14 +192,13 @@
             </table>
         </div>
 
-        <c:if test="${totalPages > 1 && empty keyword}">
+        <c:if test="${totalPages > 1}">
             <nav class="pagination" aria-label="Phân trang bệnh nhân">
-                <c:if test="${currentPage > 1}"><a href="${pageContext.request.contextPath}/StaffDashboard?page=${currentPage-1}#patients">&laquo; Trước</a></c:if>
+                <c:if test="${currentPage > 1}"><c:url var="staffPreviousPageUrl" value="/StaffDashboard"><c:param name="page" value="${currentPage-1}"/><c:param name="keyword" value="${keyword}"/></c:url><a href="${staffPreviousPageUrl}#patients">&laquo; Trước</a></c:if>
                 <c:forEach begin="1" end="${totalPages}" var="pageNumber">
-                    <a class="${currentPage==pageNumber?'active':''}"
-                       href="${pageContext.request.contextPath}/StaffDashboard?page=${pageNumber}#patients">${pageNumber}</a>
+                    <c:if test="${pageNumber>=currentPage-2&&pageNumber<=currentPage+2}"><c:url var="staffPageUrl" value="/StaffDashboard"><c:param name="page" value="${pageNumber}"/><c:param name="keyword" value="${keyword}"/></c:url><a class="${currentPage==pageNumber?'active':''}" href="${staffPageUrl}#patients">${pageNumber}</a></c:if>
                 </c:forEach>
-                <c:if test="${currentPage < totalPages}"><a href="${pageContext.request.contextPath}/StaffDashboard?page=${currentPage+1}#patients">Sau &raquo;</a></c:if>
+                <c:if test="${currentPage < totalPages}"><c:url var="staffNextPageUrl" value="/StaffDashboard"><c:param name="page" value="${currentPage+1}"/><c:param name="keyword" value="${keyword}"/></c:url><a href="${staffNextPageUrl}#patients">Sau &raquo;</a></c:if>
             </nav>
         </c:if>
     </section>

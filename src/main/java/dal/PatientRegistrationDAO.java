@@ -51,8 +51,9 @@ public class PatientRegistrationDAO extends DBContext implements vn.diabetes.ser
                 try (ResultSet rs = ps.getGeneratedKeys()) { rs.next(); patientId = rs.getInt(1); }
             }
             try (PreparedStatement ps = connection.prepareStatement(
-                    "INSERT INTO diabetes_profiles(patient_id) VALUES(?) ON CONFLICT (patient_id) DO NOTHING")) {
+                    "INSERT INTO diabetes_profiles(patient_id) SELECT ? WHERE NOT EXISTS (SELECT 1 FROM diabetes_profiles WHERE patient_id=?)")) {
                 ps.setInt(1, patientId);
+                ps.setInt(2, patientId);
                 ps.executeUpdate();
             }
             connection.commit();

@@ -24,21 +24,19 @@ public class BootstrapAdmin implements ApplicationRunner {
         String username = environment.getProperty("BOOTSTRAP_ADMIN_USERNAME", "admin");
         String password = environment.getProperty("BOOTSTRAP_ADMIN_PASSWORD");
         String name = environment.getProperty("BOOTSTRAP_ADMIN_NAME", "Quản trị hệ thống");
-        if (password == null || password.isBlank()) {
-            return;
+        if (password == null || password.isBlank()) return;
+
+        String encodedPassword = Passwords.encode(password);
+        int updated = jdbc.update("""
+                UPDATE users
+                SET password=?,full_name=?,role='ADMIN',status='ACTIVE'
+                WHERE username=?
+                """, encodedPassword, name, username);
+        if (updated == 0) {
+            jdbc.update("""
+                    INSERT INTO users(username,password,full_name,role,status)
+                    VALUES (?,?,?,?,?)
+                    """, username, encodedPassword, name, "ADMIN", "ACTIVE");
         }
-        jdbc.update("""
-                INSERT INTO users(username,password,full_name,role,status)
-                VALUES (?,?,?,?,?)
-                ON CONFLICT (username) DO UPDATE SET
-                  password=EXCLUDED.password,
-                  full_name=EXCLUDED.full_name,
-                  role='ADMIN',
-                  status='ACTIVE'
-                WHERE users.password IS DISTINCT FROM EXCLUDED.password
-                   OR users.full_name IS DISTINCT FROM EXCLUDED.full_name
-                   OR users.role IS DISTINCT FROM 'ADMIN'
-                   OR users.status IS DISTINCT FROM 'ACTIVE'
-                """, username, Passwords.encode(password), name, "ADMIN", "ACTIVE");
     }
 }

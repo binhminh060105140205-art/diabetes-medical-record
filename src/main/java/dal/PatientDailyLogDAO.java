@@ -2,132 +2,165 @@ package dal;
 
 import models.PatientDailyLog;
 import models.Patient;
-import java.sql.*;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.sql.Types;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 /** Stores and loads each patient's daily self-monitoring data. */
 public class PatientDailyLogDAO extends DBContext {
-    private PatientDailyLog mapRow(ResultSet rs) throws SQLException {
-        PatientDailyLog l = new PatientDailyLog();
-        l.setLogId(rs.getInt("log_id"));
-        l.setPatientId(rs.getInt("patient_id"));
-        Date d = rs.getDate("log_date");             if (d != null) l.setLogDate(d.toLocalDate());
-        double bg = rs.getDouble("blood_glucose");   if (!rs.wasNull()) l.setBloodGlucose(bg);
-        int sbp   = rs.getInt("systolic_bp");        if (!rs.wasNull()) l.setSystolicBp(sbp);
-        int dbp   = rs.getInt("diastolic_bp");       if (!rs.wasNull()) l.setDiastolicBp(dbp);
-        double w  = rs.getDouble("weight");          if (!rs.wasNull()) l.setWeight(w);
-        l.setSymptoms(rs.getString("symptoms"));
-        l.setNote(rs.getString("note"));
-        Timestamp t = rs.getTimestamp("created_at"); if (t != null) l.setCreatedAt(t.toLocalDateTime());
-        int hr = rs.getInt("heart_rate");        if (!rs.wasNull()) l.setHeartRate(hr);
-        double spo2 = rs.getDouble("spo2");      if (!rs.wasNull()) l.setSpo2(spo2);
-        l.setMealType(rs.getString("meal_type"));
-        return l;
-    }
-
-    public PatientDailyLog save(PatientDailyLog log) {
-        String sql = """
-            INSERT INTO patientdailylogs(patient_id,log_date,blood_glucose,systolic_bp,diastolic_bp,
-              weight,symptoms,note,heart_rate,spo2,meal_type)
-            VALUES(?,CURRENT_DATE,?,?,?,?,?,?,?,?,?)
-            ON CONFLICT (patient_id,log_date) DO UPDATE SET
-              blood_glucose=EXCLUDED.blood_glucose,systolic_bp=EXCLUDED.systolic_bp,
-              diastolic_bp=EXCLUDED.diastolic_bp,weight=EXCLUDED.weight,
-              symptoms=EXCLUDED.symptoms,note=EXCLUDED.note,heart_rate=EXCLUDED.heart_rate,
-              spo2=EXCLUDED.spo2,meal_type=EXCLUDED.meal_type
-            RETURNING log_id
-            """;
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, log.getPatientId());
-            setND(ps,2,log.getBloodGlucose()); setNI(ps,3,log.getSystolicBp());
-            setNI(ps,4,log.getDiastolicBp());  setND(ps,5,log.getWeight());
-            ps.setString(6, log.getSymptoms()); ps.setString(7, log.getNote());
-            setNI(ps,8,log.getHeartRate());    setND(ps,9,log.getSpo2());
-            ps.setString(10, log.getMealType());
-            try (ResultSet rows = ps.executeQuery()) {
-                if (rows.next()) log.setLogId(rows.getInt(1));
-            }
-        } catch (SQLException e) { throw databaseError("save patient daily log", e); }
+    private PatientDailyLog mapRow(ResultSet rows) throws SQLException {
+        PatientDailyLog log = new PatientDailyLog();
+        log.setLogId(rows.getInt("log_id"));
+        log.setPatientId(rows.getInt("patient_id"));
+        Date date = rows.getDate("log_date"); if (date != null) log.setLogDate(date.toLocalDate());
+        double bloodGlucose = rows.getDouble("blood_glucose"); if (!rows.wasNull()) log.setBloodGlucose(bloodGlucose);
+        int systolic = rows.getInt("systolic_bp"); if (!rows.wasNull()) log.setSystolicBp(systolic);
+        int diastolic = rows.getInt("diastolic_bp"); if (!rows.wasNull()) log.setDiastolicBp(diastolic);
+        double weight = rows.getDouble("weight"); if (!rows.wasNull()) log.setWeight(weight);
+        log.setSymptoms(rows.getString("symptoms"));
+        log.setNote(rows.getString("note"));
+        Timestamp createdAt = rows.getTimestamp("created_at");
+        if (createdAt != null) log.setCreatedAt(createdAt.toLocalDateTime());
+        int heartRate = rows.getInt("heart_rate"); if (!rows.wasNull()) log.setHeartRate(heartRate);
+        double spo2 = rows.getDouble("spo2"); if (!rows.wasNull()) log.setSpo2(spo2);
+        log.setMealType(rows.getString("meal_type"));
         return log;
     }
 
-    /** Resolves the patient account and loads its journal in one database round-trip. */
-    public PatientJournalData loadJournalForUser(int userId, int limit) {
-        String sql = """
-            WITH subject AS (SELECT patient_id FROM patients WHERE user_id=?)
-            SELECT s.patient_id subject_patient_id,l.*
-            FROM subject s LEFT JOIN LATERAL (
-              SELECT * FROM patientdailylogs WHERE patient_id=s.patient_id
-              ORDER BY log_date DESC LIMIT ?
-            ) l ON TRUE
-            """;
-        List<PatientDailyLog> logs = new ArrayList<>();
-        Integer patientId = null;
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, userId); ps.setInt(2, limit);
-            try (ResultSet rows = ps.executeQuery()) {
-                while (rows.next()) {
-                    patientId = rows.getInt("subject_patient_id");
-                    if (rows.getObject("log_id") != null) logs.add(mapRow(rows));
+    public PatientDailyLog save(PatientDailyLog log) {
+        Date today = Date.valueOf(LocalDate.now());
+        try {
+            int updated;
+            try (PreparedStatement statement = connection.prepareStatement("""
+                    UPDATE patientdailylogs SET blood_glucose=?,systolic_bp=?,diastolic_bp=?,
+                      weight=?,symptoms=?,note=?,heart_rate=?,spo2=?,meal_type=?
+                    WHERE patient_id=? AND log_date=?
+                    """)) {
+                bindValues(statement, log, 1);
+                statement.setInt(10, log.getPatientId());
+                statement.setDate(11, today);
+                updated = statement.executeUpdate();
+            }
+            if (updated == 0) {
+                try (PreparedStatement statement = connection.prepareStatement("""
+                        INSERT INTO patientdailylogs(patient_id,log_date,blood_glucose,systolic_bp,
+                          diastolic_bp,weight,symptoms,note,heart_rate,spo2,meal_type)
+                        VALUES(?,?,?,?,?,?,?,?,?,?,?)
+                        """, Statement.RETURN_GENERATED_KEYS)) {
+                    statement.setInt(1, log.getPatientId());
+                    statement.setDate(2, today);
+                    bindValues(statement, log, 3);
+                    statement.executeUpdate();
+                    try (ResultSet keys = statement.getGeneratedKeys()) {
+                        if (keys.next()) log.setLogId(keys.getInt(1));
+                    }
+                }
+            } else {
+                try (PreparedStatement statement = connection.prepareStatement("""
+                        SELECT log_id FROM patientdailylogs WHERE patient_id=? AND log_date=?
+                        """)) {
+                    statement.setInt(1, log.getPatientId());
+                    statement.setDate(2, today);
+                    try (ResultSet rows = statement.executeQuery()) {
+                        if (rows.next()) log.setLogId(rows.getInt(1));
+                    }
                 }
             }
+        } catch (SQLException error) { throw databaseError("save patient daily log", error); }
+        return log;
+    }
+
+    public PatientJournalData loadJournalForUser(int userId, int limit) {
+        Integer patientId = null;
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT patient_id FROM patients WHERE user_id=?")) {
+            statement.setInt(1, userId);
+            try (ResultSet rows = statement.executeQuery()) {
+                if (rows.next()) patientId = rows.getInt(1);
+            }
+            return new PatientJournalData(patientId,
+                    patientId == null ? List.of() : loadLogs(patientId, limit));
         } catch (SQLException error) {
             throw databaseError("load patient journal", error);
         }
-        return new PatientJournalData(patientId, logs);
     }
 
     public record PatientJournalData(Integer patientId, List<PatientDailyLog> logs) {}
 
-    /** Checks doctor access and loads the patient journal in one database round-trip. */
     public DoctorJournalData loadJournalForDoctor(int doctorUserId, int patientId, int limit) {
-        String sql = """
-                WITH subject AS (
-                  SELECT p.patient_id,p.full_name,EXISTS (
-                    SELECT 1 FROM doctors d JOIN encounters e ON e.doctor_id=d.doctor_id
-                    WHERE d.user_id=? AND e.patient_id=p.patient_id
-                  ) authorized
-                  FROM patients p WHERE p.patient_id=?
-                )
-                SELECT s.patient_id subject_patient_id,s.full_name subject_full_name,
-                       s.authorized,l.*
-                FROM subject s LEFT JOIN LATERAL (
-                  SELECT * FROM patientdailylogs WHERE patient_id=s.patient_id
-                  ORDER BY log_date DESC LIMIT ?
-                ) l ON TRUE
-                """;
         Patient patient = null;
         boolean authorized = false;
-        List<PatientDailyLog> logs = new ArrayList<>();
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (PreparedStatement statement = connection.prepareStatement("""
+                SELECT p.patient_id,p.full_name,
+                       CASE WHEN EXISTS (
+                         SELECT 1 FROM doctors d JOIN encounters e ON e.doctor_id=d.doctor_id
+                         WHERE d.user_id=? AND e.patient_id=p.patient_id
+                       ) THEN 1 ELSE 0 END authorized
+                FROM patients p WHERE p.patient_id=?
+                """)) {
             statement.setInt(1, doctorUserId);
             statement.setInt(2, patientId);
-            statement.setInt(3, limit);
             try (ResultSet rows = statement.executeQuery()) {
-                while (rows.next()) {
-                    if (patient == null) {
-                        patient = new Patient();
-                        patient.setPatientId(rows.getInt("subject_patient_id"));
-                        patient.setFullName(rows.getString("subject_full_name"));
-                        authorized = rows.getBoolean("authorized");
-                    }
-                    if (rows.getObject("log_id") != null) logs.add(mapRow(rows));
+                if (rows.next()) {
+                    patient = new Patient();
+                    patient.setPatientId(rows.getInt("patient_id"));
+                    patient.setFullName(rows.getString("full_name"));
+                    authorized = rows.getBoolean("authorized");
                 }
             }
+            List<PatientDailyLog> logs = patient == null ? List.of() : loadLogs(patientId, limit);
+            return new DoctorJournalData(patient, authorized, logs);
         } catch (SQLException error) {
             throw databaseError("load doctor patient journal", error);
         }
-        return new DoctorJournalData(patient, authorized, logs);
     }
 
     public record DoctorJournalData(Patient patient, boolean authorized,
             List<PatientDailyLog> logs) {}
 
-    private void setND(PreparedStatement s, int i, Double v) throws SQLException {
-        if (v != null && v > 0) s.setDouble(i, v); else s.setNull(i, Types.DOUBLE);
+    private List<PatientDailyLog> loadLogs(int patientId, int limit) throws SQLException {
+        List<PatientDailyLog> logs = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement("""
+                SELECT * FROM patientdailylogs WHERE patient_id=? ORDER BY log_date DESC
+                """)) {
+            statement.setInt(1, patientId);
+            statement.setMaxRows(Math.max(1, limit));
+            try (ResultSet rows = statement.executeQuery()) {
+                while (rows.next()) logs.add(mapRow(rows));
+            }
+        }
+        return logs;
     }
-    private void setNI(PreparedStatement s, int i, Integer v) throws SQLException {
-        if (v != null && v > 0) s.setInt(i, v); else s.setNull(i, Types.INTEGER);
+
+    private void bindValues(PreparedStatement statement, PatientDailyLog log, int start)
+            throws SQLException {
+        setNullableDouble(statement, start, log.getBloodGlucose());
+        setNullableInteger(statement, start + 1, log.getSystolicBp());
+        setNullableInteger(statement, start + 2, log.getDiastolicBp());
+        setNullableDouble(statement, start + 3, log.getWeight());
+        statement.setString(start + 4, log.getSymptoms());
+        statement.setString(start + 5, log.getNote());
+        setNullableInteger(statement, start + 6, log.getHeartRate());
+        setNullableDouble(statement, start + 7, log.getSpo2());
+        statement.setString(start + 8, log.getMealType());
+    }
+
+    private void setNullableDouble(PreparedStatement statement, int index, Double value)
+            throws SQLException {
+        if (value != null && value > 0) statement.setDouble(index, value);
+        else statement.setNull(index, Types.DOUBLE);
+    }
+
+    private void setNullableInteger(PreparedStatement statement, int index, Integer value)
+            throws SQLException {
+        if (value != null && value > 0) statement.setInt(index, value);
+        else statement.setNull(index, Types.INTEGER);
     }
 }

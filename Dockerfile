@@ -22,5 +22,5 @@ RUN useradd --system --uid 10001 spring
 COPY --from=build /app/target/diabetes-medical-record.war app.war
 RUN mkdir -p /app/uploads && chown -R spring:spring /app
 USER spring
-EXPOSE 10000
+EXPOSE 8082
 ENTRYPOINT ["java","-XX:+UseSerialGC","-XX:InitialRAMPercentage=20.0","-XX:MaxRAMPercentage=60.0","-Xss512k","-XX:TieredStopAtLevel=1","-jar","/app/app.war"]

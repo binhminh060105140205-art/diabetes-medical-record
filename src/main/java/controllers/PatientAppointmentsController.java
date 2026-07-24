@@ -69,6 +69,7 @@ public class PatientAppointmentsController extends HttpServlet {
                         ControllerSupport.positiveId(request.getParameter("appointmentId"), "Lịch hẹn"),
                         user.getUserId(), user.getUserId());
                 ControllerSupport.flash(request, "appointmentFlash", "Đã hủy lịch hẹn.");
+                ControllerSupport.flash(request, "appointmentFlashType", "success");
                 redirectToPage(request, response);
                 return;
             }
@@ -89,12 +90,15 @@ public class PatientAppointmentsController extends HttpServlet {
                     reason, null, user.getUserId());
             ControllerSupport.flash(request, "appointmentFlash",
                     "Đã gửi yêu cầu. Nhân viên sẽ xác nhận bác sĩ và giờ khám cụ thể.");
+            ControllerSupport.flash(request, "appointmentFlashType", "success");
         } catch (IllegalArgumentException error) {
             ControllerSupport.flash(request, "appointmentFlash",
                     "Không thể đặt lịch: " + error.getMessage());
+            ControllerSupport.flash(request, "appointmentFlashType", "danger");
         } catch (IllegalStateException error) {
             ControllerSupport.flash(request, "appointmentFlash",
                     "Không thể xử lý lịch hẹn lúc này. Vui lòng tải lại trang và thử lại.");
+            ControllerSupport.flash(request, "appointmentFlashType", "danger");
         }
         redirectToPage(request, response);
     }

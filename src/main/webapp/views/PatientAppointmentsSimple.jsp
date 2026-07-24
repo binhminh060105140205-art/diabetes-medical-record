@@ -19,8 +19,9 @@
     </div>
 
     <c:if test="${not empty sessionScope.appointmentFlash}">
-        <div class="alert alert-info"><c:out value="${sessionScope.appointmentFlash}"/></div>
+        <div class="alert ${sessionScope.appointmentFlashType == 'danger' ? 'alert-danger' : 'alert-success'}" role="alert"><c:out value="${sessionScope.appointmentFlash}"/></div>
         <c:remove var="appointmentFlash" scope="session"/>
+        <c:remove var="appointmentFlashType" scope="session"/>
     </c:if>
 
     <div class="appointment-layout booking-simple">
@@ -37,6 +38,7 @@
                         <input id="preferredDate" class="form-control booking-date-input" type="date" name="preferredDate"
                                min="${minAppointmentDate}" max="${maxAppointmentDate}" required>
                         <small class="form-hint">Từ ngày mai, không nhận Chủ nhật và không quá 90 ngày.</small>
+                        <small class="booking-date-error" data-date-validation role="alert" hidden></small>
                     </div>
                 </div>
 
@@ -79,7 +81,7 @@
                         <div class="appointment-date">
                             <strong>
                                 <c:choose>
-                                    <c:when test="${a.status=='REQUESTED'}">
+                                    <c:when test="${empty a.appointment_at}">
                                         <fmt:formatDate value="${a.preferred_date}" pattern="dd/MM/yyyy"/>
                                         · ${a.preferred_period=='MORNING'?'Buổi sáng':'Buổi chiều'}
                                     </c:when>
@@ -100,10 +102,8 @@
                             </span>
                         </div>
                         <c:choose>
-                            <c:when test="${a.status=='REQUESTED'}"><h3>Phòng khám đang sắp xếp bác sĩ</h3></c:when>
-                            <c:otherwise>
-                                <h3><c:if test="${not fn:startsWith(a.doctor_name, 'BS.')}">BS. </c:if><c:out value="${a.doctor_name}"/></h3>
-                            </c:otherwise>
+                            <c:when test="${empty a.doctor_name}"><h3>Chưa phân công bác sĩ</h3></c:when>
+                            <c:otherwise><h3><c:if test="${not fn:startsWith(a.doctor_name, 'BS.')}">BS. </c:if><c:out value="${a.doctor_name}"/></h3></c:otherwise>
                         </c:choose>
                         <p><c:out value="${a.reason}"/></p>
                         <c:if test="${a.status=='REQUESTED'||a.status=='BOOKED'||a.status=='CONFIRMED'}">

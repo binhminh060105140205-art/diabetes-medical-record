@@ -53,7 +53,7 @@
                         <input id="username" type="text" name="username" class="form-control"
                                value="${fn:escapeXml(requestScope.username)}" placeholder="Nhập tên đăng nhập"
                                minlength="4" maxlength="50" pattern="[A-Za-z0-9._-]+"
-                               autocomplete="username" required autofocus>
+                               autocomplete="username" required autofocus ${not empty requestScope.lockUntil?'disabled':''}>
                     </div>
                 </div>
                 <div class="form-group">
@@ -61,15 +61,17 @@
                     <div class="input-with-icon">
                         <span>⌑</span>
                         <input id="password" type="password" name="password" class="form-control"
-                               placeholder="Nhập mật khẩu" maxlength="72" autocomplete="current-password" required>
+                               placeholder="Nhập mật khẩu" maxlength="72" autocomplete="current-password" required
+                               ${not empty requestScope.lockUntil?'disabled':''}>
                         <button type="button" class="password-toggle" aria-label="Hiện mật khẩu"
+                                ${not empty requestScope.lockUntil?'disabled':''}
                                 onclick="const p=document.getElementById('password');p.type=p.type==='password'?'text':'password';this.textContent=p.type==='password'?'Hiện':'Ẩn'">Hiện</button>
                     </div>
                 </div>
                 <c:if test="${not empty requestScope.lockUntil}">
                     <div class="lock-message">Tài khoản tạm khóa. Thử lại sau <strong id="lock-timer"></strong>.</div>
                 </c:if>
-                <button type="submit" class="btn btn-primary auth-submit">Đăng nhập an toàn <span>→</span></button>
+                <button type="submit" class="btn btn-primary auth-submit" ${not empty requestScope.lockUntil?'disabled':''}>Đăng nhập an toàn <span>→</span></button>
             </form>
 
             <div class="auth-register-link">Chưa có hồ sơ? <a href="${pageContext.request.contextPath}/Register"><strong>Đăng ký tài khoản bệnh nhân</strong></a>.</div>
@@ -85,11 +87,13 @@
         (function () {
             const lockUntil = ${requestScope.lockUntil};
             const element = document.getElementById('lock-timer');
+            const controls = document.querySelectorAll('.auth-form input, .auth-form button');
             const updateTimer = () => {
                 const left = lockUntil - Date.now();
                 if (left <= 0) {
                     clearInterval(timer);
-                    element.textContent = '0 giây';
+                    element.textContent = '0 giây — bạn có thể đăng nhập lại';
+                    controls.forEach((control) => control.disabled = false);
                     return;
                 }
                 element.textContent = Math.floor(left / 60000) + ' phút '

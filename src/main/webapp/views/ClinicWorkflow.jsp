@@ -1,5 +1,6 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@taglib prefix="c" uri="jakarta.tags.core"%>
+<%@taglib prefix="fmt" uri="jakarta.tags.fmt"%>
 <%@taglib prefix="fn" uri="jakarta.tags.functions"%>
 <!DOCTYPE html>
 <html lang="vi">
@@ -7,7 +8,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Điều hành khám — DiaCare</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260722-lab-compact1">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260722-appointment4">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
@@ -45,11 +46,16 @@
                     <input type="hidden" name="action" value="createAppointment">
                     <div class="appointment-form-grid">
                         <div class="form-group">
-                            <label class="required">Bệnh nhân</label>
-                            <select class="form-control" name="patientId" required data-diabetes-patient>
+                            <label for="appointmentPatientSearch">Tìm bệnh nhân</label>
+                            <input id="appointmentPatientSearch" class="form-control select-filter-input" type="search"
+                                   data-select-filter="appointmentPatientId" autocomplete="off"
+                                   placeholder="Nhập tên, số điện thoại hoặc loại tiểu đường">
+                            <label class="required" for="appointmentPatientId">Bệnh nhân</label>
+                            <select id="appointmentPatientId" class="form-control" name="patientId" required data-diabetes-patient>
                                 <option value="">Chọn bệnh nhân</option>
                                 <c:forEach var="p" items="${patients}"><option value="${p.patientId}" data-diabetes-type="${p.diabetesType}"><c:out value="${p.fullName}"/> — ${p.diabetesTypeLabel} — <c:out value="${p.phone}"/></option></c:forEach>
                             </select>
+                            <small data-select-filter-status="appointmentPatientId">Gõ để thu hẹp danh sách bệnh nhân.</small>
                         </div>
                         <div class="form-group">
                             <label class="required">Bác sĩ điều trị tiểu đường</label>
@@ -59,21 +65,12 @@
                             </select>
                             <small data-diabetes-routing>Chọn bệnh nhân để hệ thống lọc bác sĩ phù hợp.</small>
                         </div>
-                        <div class="form-group">
-                            <label class="required">Ngày khám</label>
-                            <select class="form-control" name="appointmentDate" required>
-                                <option value="">Chọn ngày khám</option>
-                                <c:forEach var="date" items="${appointmentDates}"><option value="${date.value}"><c:out value="${date.label}"/></option></c:forEach>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="required">Khung giờ</label>
-                            <select class="form-control" name="appointmentTime" required>
-                                <option value="">Chọn khung giờ</option>
-                                <optgroup label="Buổi sáng (07:30–11:30)"><c:forEach var="slot" items="${appointmentTimeSlots}"><c:if test="${slot.period=='MORNING'}"><option value="${slot.value}">${slot.label}</option></c:if></c:forEach></optgroup>
-                                <optgroup label="Buổi chiều (13:00–17:00)"><c:forEach var="slot" items="${appointmentTimeSlots}"><c:if test="${slot.period=='AFTERNOON'}"><option value="${slot.value}">${slot.label}</option></c:if></c:forEach></optgroup>
-                            </select>
-                            <small>Chỉ hiển thị khung 30 phút hợp lệ; phòng khám nghỉ Chủ nhật và giờ nghỉ trưa.</small>
+                        <div class="form-group appointment-form-wide">
+                            <label class="required" for="appointmentAt">Ngày và giờ khám</label>
+                            <input id="appointmentAt" class="form-control appointment-datetime-input" type="datetime-local"
+                                   name="appointmentAt" min="${appointmentMinDateTime}" max="${appointmentMaxDateTime}"
+                                   step="1800" required>
+                            <small>Chọn theo khung 30 phút, từ 07:30–11:30 hoặc 13:00–17:00; phòng khám nghỉ Chủ nhật.</small>
                         </div>
                         <div class="form-group appointment-form-wide">
                             <label class="required">Lý do khám</label>
@@ -108,8 +105,8 @@
                         <tr data-search-row>
                             <td>
                                 <c:choose>
-                                    <c:when test="${a.status=='REQUESTED'}"><strong>${a.preferred_date}</strong><small class="table-sub">${a.preferred_period=='MORNING'?'Buổi sáng':'Buổi chiều'}</small></c:when>
-                                    <c:otherwise><strong>${a.appointment_at}</strong></c:otherwise>
+                                    <c:when test="${empty a.appointment_at}"><strong><fmt:formatDate value="${a.preferred_date}" pattern="dd/MM/yyyy"/></strong><small class="table-sub">${a.preferred_period=='MORNING'?'Buổi sáng':'Buổi chiều'}</small></c:when>
+                                    <c:otherwise><strong><fmt:formatDate value="${a.appointment_at}" pattern="dd/MM/yyyy · HH:mm"/></strong></c:otherwise>
                                 </c:choose>
                             </td>
                             <td><strong><c:out value="${a.patient_name}"/></strong><small class="table-sub">${a.diabetes_type=='TYPE_1'?'Típ 1':a.diabetes_type=='TYPE_2'?'Típ 2':'Chưa phân loại'} · <c:out value="${a.patient_phone}"/></small></td>

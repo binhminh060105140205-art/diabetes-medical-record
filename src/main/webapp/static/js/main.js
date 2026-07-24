@@ -36,7 +36,9 @@ function validationFieldLabel(control) {
     const fieldset = control.closest('fieldset');
     const legend = fieldset ? fieldset.querySelector('legend') : null;
     const formGroup = control.closest('.form-group');
-    const label = formGroup ? formGroup.querySelector('label') : null;
+    const explicitLabel = formGroup && control.id
+        ? formGroup.querySelector('label[for="' + control.id + '"]') : null;
+    const label = explicitLabel || (formGroup ? formGroup.querySelector('label') : null);
     const text = (label ? label.textContent : legend ? legend.textContent : 'thông tin')
         .replace('*', '').replace(/^\s*\d+\.\s*/, '').trim();
     return text.charAt(0).toLowerCase() + text.slice(1);
@@ -45,6 +47,9 @@ function validationFieldLabel(control) {
 function vietnameseValidationMessage(control) {
     const label = validationFieldLabel(control);
     const validity = control.validity;
+    if (validity.customError && control.dataset.validationMessage) {
+        return control.dataset.validationMessage;
+    }
     if (validity.valueMissing) {
         const action = control.tagName === 'SELECT' || control.type === 'radio'
             || control.type === 'checkbox' ? 'chọn' : 'nhập';
@@ -111,6 +116,92 @@ function refreshAppointmentTimeOptions(form) {
     }
 }
 
+function refreshAppointmentDateTimeValidity(control) {
+    control.setCustomValidity('');
+    delete control.dataset.validationMessage;
+    if (!control.value) return;
+
+    const value = new Date(control.value);
+    const minutes = value.getHours() * 60 + value.getMinutes();
+    let message = '';
+    if (value.getDay() === 0) {
+        message = 'Phòng khám nghỉ Chủ nhật.';
+    } else if (value.getMinutes() % 30 !== 0) {
+        message = 'Giờ khám phải theo khung 30 phút.';
+    } else if (!((minutes >= 450 && minutes <= 690)
+            || (minutes >= 780 && minutes <= 1020))) {
+        message = 'Chỉ nhận lịch từ 07:30–11:30 hoặc 13:00–17:00.';
+    }
+    if (message) {
+        control.dataset.validationMessage = message;
+        control.setCustomValidity(message);
+    }
+}
+
+function refreshRequestedDateValidity(control) {
+    if (!control) return;
+    control.setCustomValidity('');
+    const error = control.closest('.form-group')
+        ? control.closest('.form-group').querySelector('[data-date-validation]') : null;
+    if (error) {
+        error.textContent = '';
+        error.hidden = true;
+    }
+    if (!control.value) return;
+
+    const selected = new Date(control.value + 'T00:00:00');
+    if (selected.getDay() !== 0) return;
+
+    const message = 'Phòng khám nghỉ Chủ nhật.';
+    control.setCustomValidity(message);
+    if (error) {
+        error.textContent = message;
+        error.hidden = false;
+    }
+}
+
+function normalizedSearchText(value) {
+    return (value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .toLocaleLowerCase('vi').trim();
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-select-filter]').forEach(function (input) {
+        const select = document.getElementById(input.dataset.selectFilter);
+        if (!select) return;
+        const status = document.querySelector(
+            '[data-select-filter-status="' + input.dataset.selectFilter + '"]');
+        const refresh = function () {
+            const keyword = normalizedSearchText(input.value);
+            let visible = 0;
+            Array.from(select.options).forEach(function (option) {
+                if (!option.value) return;
+                const matches = !keyword || normalizedSearchText(option.textContent).includes(keyword);
+                option.hidden = !matches;
+                option.disabled = !matches;
+                if (matches) visible++;
+            });
+            if (status) status.textContent = keyword
+                ? 'Tìm thấy ' + visible + ' bệnh nhân phù hợp.'
+                : 'Gõ để thu hẹp danh sách bệnh nhân.';
+            if (select.selectedOptions.length && select.selectedOptions[0].disabled) {
+                select.value = '';
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        };
+        input.addEventListener('input', refresh);
+        refresh();
+    });
+
+    document.querySelectorAll('input[type="datetime-local"][name="appointmentAt"]')
+        .forEach(function (control) {
+            const refresh = function () { refreshAppointmentDateTimeValidity(control); };
+            control.addEventListener('input', refresh);
+            control.addEventListener('change', refresh);
+            refresh();
+        });
+});
+
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('form[data-appointment-form]').forEach(function (form) {
         refreshAppointmentTimeOptions(form);
@@ -125,7 +216,9 @@ document.addEventListener('DOMContentLoaded', function () {
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('form[data-gated-submit]').forEach(function (form) {
         const submits = Array.from(form.querySelectorAll('button[type=submit],input[type=submit]'));
+        const requestedDate = form.querySelector('[name=preferredDate]');
         const refresh = function () {
+            refreshRequestedDateValidity(requestedDate);
             const required = Array.from(form.querySelectorAll('[required]'));
             const complete = required.every(function (control) {
                 if (control.type === 'radio' || control.type === 'checkbox') {

@@ -490,15 +490,12 @@ public class MedicalRecordFormController extends HttpServlet {
                     request.getParameterValues("medicineName"),
                     request.getParameterValues("dosage"),
                     request.getParameterValues("frequency"),
-                    request.getParameterValues("durationDays"));
+                    request.getParameterValues("durationDays"),
+                    doctorId, user.getUserId());
         } catch (IllegalArgumentException error) {
             redirectRecordError(request, response, recordId,
                     "Đơn thuốc chưa hợp lệ: " + error.getMessage());
             return;
-        }
-        if (record.getEncounterId() > 0) {
-            new ClinicWorkflowDAO().setEncounterStatus(
-                    record.getEncounterId(), "COMPLETED", user.getUserId());
         }
         response.sendRedirect(request.getContextPath()
                 + "/RecordDetail?id=" + record.getRecordId());

@@ -56,10 +56,27 @@ class ControllerSupportTest {
     void combinesVietnameseAppointmentDateAndTimeFields() {
         assertEquals(LocalDateTime.of(2026, 7, 21, 14, 30),
                 ControllerSupport.appointmentDateTime("2026-07-21", "14:30"));
+        assertEquals(LocalDateTime.of(2026, 7, 21, 14, 30),
+                ControllerSupport.appointmentDateTime("2026-07-21T14:30"));
         assertThrows(IllegalArgumentException.class,
                 () -> ControllerSupport.appointmentDateTime("2026-07-21", "14:22"));
         assertThrows(IllegalArgumentException.class,
+                () -> ControllerSupport.appointmentDateTime("2026-07-21T14:22"));
+        assertThrows(IllegalArgumentException.class,
                 () -> ControllerSupport.appointmentDateTime("", "14:30"));
+    }
+
+    @Test
+    void roundsDatetimePickerMinimumToNextValidClinicSlot() {
+        assertEquals(LocalDateTime.of(2026, 7, 21, 9, 0),
+                ControllerSupport.nextAppointmentSlot(
+                        LocalDateTime.of(2026, 7, 21, 8, 31)));
+        assertEquals(LocalDateTime.of(2026, 7, 21, 13, 0),
+                ControllerSupport.nextAppointmentSlot(
+                        LocalDateTime.of(2026, 7, 21, 11, 50)));
+        assertEquals(LocalDateTime.of(2026, 7, 27, 7, 30),
+                ControllerSupport.nextAppointmentSlot(
+                        LocalDateTime.of(2026, 7, 25, 17, 1)));
     }
 
     @Test

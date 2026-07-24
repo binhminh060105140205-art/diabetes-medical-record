@@ -62,7 +62,7 @@ public class UserRepository {
     }
 
     public LoginSecurityState recordFailedLogin(int userId, int maxAttempts, Instant lockUntil) {
-        return jdbc.sql("""
+        jdbc.sql("""
                 UPDATE users
                 SET failed_login_attempts = COALESCE(failed_login_attempts, 0) + 1,
                     lock_until = CASE
@@ -71,15 +71,12 @@ public class UserRepository {
                         ELSE NULL
                     END
                 WHERE user_id = :id
-                RETURNING failed_login_attempts, lock_until
                 """)
                 .param("id", userId)
                 .param("maxAttempts", maxAttempts)
                 .param("lockUntil", Timestamp.from(lockUntil))
-                .query((rs, rowNum) -> mapLoginSecurityState(
-                        rs.getInt("failed_login_attempts"), rs.getTimestamp("lock_until")))
-                .optional()
-                .orElse(LoginSecurityState.clear());
+                .update();
+        return getLoginSecurityState(userId);
     }
 
     public void clearLoginFailures(int userId) {

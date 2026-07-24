@@ -63,4 +63,4 @@
 </aside>
 <button class="sidebar-toggle" type="button" aria-label="Mở menu" aria-controls="app-sidebar" aria-expanded="false">☰</button>
 <button class="sidebar-backdrop" type="button" aria-label="Đóng menu"></button>
-<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260722-validation2" defer></script>
+<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260722-appointment5" defer></script>

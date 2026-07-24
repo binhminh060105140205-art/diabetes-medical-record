@@ -100,7 +100,7 @@ function splitAdvice(value){
     const prefix=text.match(/^\[(THEO_DOI|DIEU_TRI|AN_UONG|VAN_DONG|CHAM_SOC|LIEN_HE)]\s*/i);
     if(prefix){
         const code=prefix[1].toUpperCase();
-        return {text:text.slice(prefix[0].length).trim(),group:adviceGroups.find(group=>group.prefixes.includes(code))};
+        return {text:text.slice(prefix[0].length).replace(/^\s*[:\-]\s*/, '').trim(),group:adviceGroups.find(group=>group.prefixes.includes(code))};
     }
     const normalized=normalizeAdvice(text);
     return {text,group:adviceGroups.find(group=>group.keywords.some(keyword=>normalized.includes(keyword)))};

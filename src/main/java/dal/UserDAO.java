@@ -67,7 +67,7 @@ public class UserDAO extends DBContext {
         if (hasStatus) where.append(" AND status=?");
         if (hasKeyword) {
             where.append(" AND (").append(SearchSupport.contains("full_name"))
-                    .append(" OR username ILIKE ? OR phone ILIKE ?)");
+                    .append(" OR LOWER(username) LIKE LOWER(?) OR LOWER(phone) LIKE LOWER(?))");
         }
         String ordering = "OLDEST".equals(sortOrder)
                 ? "created_at ASC, user_id ASC" : "created_at DESC, user_id DESC";
@@ -76,13 +76,13 @@ public class UserDAO extends DBContext {
               SELECT (SELECT COUNT(*) FROM patients p LEFT JOIN users pu ON pu.user_id=p.user_id
                               WHERE COALESCE(pu.status,'ACTIVE') <> 'DELETED') patients,
                      COUNT(*) total_users,
-                     COUNT(*) FILTER (WHERE role='DOCTOR') doctors,
-                     COUNT(*) FILTER (WHERE role='STAFF') staff
+                     SUM(CASE WHEN role='DOCTOR' THEN 1 ELSE 0 END) doctors,
+                     SUM(CASE WHEN role='STAFF' THEN 1 ELSE 0 END) staff
               FROM users
               WHERE COALESCE(status,'ACTIVE') <> 'DELETED'
             ), filtered AS (SELECT * FROM users""" + where + "), total AS (SELECT COUNT(*) total FROM filtered), "
-                + "page_data AS (SELECT * FROM filtered ORDER BY " + ordering + " LIMIT ? OFFSET ?) "
-                + "SELECT p.*,m.total_users,m.patients,m.doctors,m.staff,t.total FROM metrics m CROSS JOIN total t LEFT JOIN page_data p ON TRUE";
+                + "page_data AS (SELECT * FROM filtered ORDER BY " + ordering + " OFFSET ? ROWS FETCH NEXT ? ROWS ONLY) "
+                + "SELECT p.*,m.total_users,m.patients,m.doctors,m.staff,t.total FROM metrics m CROSS JOIN total t LEFT JOIN page_data p ON 1=1";
         List<User> users = new ArrayList<>();
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             int index = 1;
@@ -92,7 +92,7 @@ public class UserDAO extends DBContext {
                 String value = "%" + keyword.trim() + "%";
                 ps.setString(index++, value); ps.setString(index++, value); ps.setString(index++, value);
             }
-            ps.setInt(index++, pageSize); ps.setInt(index, (page - 1) * pageSize);
+            ps.setInt(index++, (page - 1) * pageSize); ps.setInt(index, pageSize);
             try (ResultSet rows = ps.executeQuery()) {
                 int total = 0, totalUsers = 0, patients = 0, doctors = 0, staff = 0;
                 while (rows.next()) {

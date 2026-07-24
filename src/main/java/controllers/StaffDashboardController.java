@@ -12,6 +12,7 @@ import java.time.LocalDate;
 
 @WebServlet("/StaffDashboard")
 public class StaffDashboardController extends HttpServlet {
+    private static final int PAGE_SIZE = 12;
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -30,19 +31,18 @@ public class StaffDashboardController extends HttpServlet {
             return;
         }
         String keyword = ControllerSupport.clean(request.getParameter("keyword"));
-        boolean searching = !keyword.isEmpty();
-        int pageSize = searching ? 50 : 12;
-        int currentPage = searching ? 1 : Math.max(
+        if (keyword.length() > 80) keyword = keyword.substring(0, 80);
+        int currentPage = Math.max(
                 1, ControllerSupport.positiveIdOrZero(request.getParameter("page")));
 
         PatientDAO dao = new PatientDAO();
         PatientDAO.PatientListData data = dao.loadPatientList(
-                searching ? keyword : null, currentPage, pageSize);
-        int totalPages = searching ? 1
-                : Math.max(1, (int) Math.ceil((double) data.total() / pageSize));
-        if (!searching && currentPage > totalPages) {
+                keyword.isEmpty() ? null : keyword, currentPage, PAGE_SIZE);
+        int totalPages = Math.max(1, (int) Math.ceil((double) data.total() / PAGE_SIZE));
+        if (currentPage > totalPages) {
             currentPage = totalPages;
-            data = dao.loadPatientList(null, currentPage, pageSize);
+            data = dao.loadPatientList(
+                    keyword.isEmpty() ? null : keyword, currentPage, PAGE_SIZE);
         }
 
         request.setAttribute("patients", data.patients());
@@ -50,8 +50,9 @@ public class StaffDashboardController extends HttpServlet {
         request.setAttribute("pendingAppointmentRequests", data.pendingAppointmentRequests());
         request.setAttribute("currentPage", currentPage);
         request.setAttribute("totalPages", totalPages);
+        request.setAttribute("pageSize", PAGE_SIZE);
         request.setAttribute("maxDOB", LocalDate.now().toString());
-        if (searching) request.setAttribute("keyword", keyword);
+        request.setAttribute("keyword", keyword);
 
         request.getRequestDispatcher("views/StaffDashboard.jsp").forward(request, response);
     }

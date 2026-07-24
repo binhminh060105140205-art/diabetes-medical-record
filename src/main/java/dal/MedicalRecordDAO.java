@@ -51,32 +51,32 @@ public class MedicalRecordDAO extends DBContext {
         } catch (SQLException e) { throw databaseError("load medical record", e); }
     }
 
-    /** Loads the patient, access decision and complete visit history in one Aiven round-trip. */
+    /** Loads the patient, access decision and complete visit history in one database round-trip. */
     public PatientHistoryData loadPatientHistory(Integer patientId, Integer patientUserId,
             Integer doctorUserId) {
         String sql = """
             WITH subject AS (
-              SELECT p.*,
+              SELECT TOP 1 p.*,
                      COALESCE(dp.diabetes_type,'UNKNOWN') dp_type,
                      dp.diagnosis_date dp_diagnosis_date,
                      dp.treatment_method dp_treatment_method,
                      dp.hba1c_target dp_hba1c_target,
                      dp.updated_at dp_updated_at,
-                     CASE WHEN ? IS NULL THEN TRUE ELSE EXISTS (
-                       SELECT 1 FROM doctors d
-                       WHERE d.user_id=? AND (
-                         EXISTS (SELECT 1 FROM encounters e
-                                 WHERE e.doctor_id=d.doctor_id AND e.patient_id=p.patient_id)
-                         OR EXISTS (SELECT 1 FROM appointments a
-                                    WHERE a.doctor_id=d.doctor_id AND a.patient_id=p.patient_id
-                                      AND a.status IN ('BOOKED','CONFIRMED','CHECKED_IN'))
-                       )
-                     ) END authorized
+                     CASE WHEN ? IS NULL THEN 1
+                          WHEN EXISTS (
+                            SELECT 1 FROM doctors d
+                            WHERE d.user_id=? AND (
+                              EXISTS (SELECT 1 FROM encounters e
+                                      WHERE e.doctor_id=d.doctor_id AND e.patient_id=p.patient_id)
+                              OR EXISTS (SELECT 1 FROM appointments a
+                                         WHERE a.doctor_id=d.doctor_id AND a.patient_id=p.patient_id
+                                           AND a.status IN ('BOOKED','CONFIRMED','CHECKED_IN'))
+                            )
+                          ) THEN 1 ELSE 0 END authorized
               FROM patients p
               LEFT JOIN diabetes_profiles dp ON dp.patient_id=p.patient_id
               WHERE (? IS NOT NULL AND p.patient_id=?)
                  OR (? IS NOT NULL AND p.user_id=?)
-              LIMIT 1
             )
             SELECT s.patient_id p_patient_id,s.user_id p_user_id,s.full_name p_full_name,
                    s.date_of_birth p_date_of_birth,s.gender p_gender,s.phone p_phone,
@@ -166,8 +166,10 @@ public class MedicalRecordDAO extends DBContext {
                    lh.blood_glucose lh_blood_glucose,lh.hba1c lh_hba1c,
                    lh.cholesterol lh_cholesterol,lh.triglyceride lh_triglyceride,
                    lh.hdl_c lh_hdl_c,lh.ldl_c lh_ldl_c,lh.measured_at lh_measured_at,
-                   (SELECT string_agg(l.test_name||': '||COALESCE(l.result_value,'Chưa có kết quả')||
-                           CASE WHEN l.result_unit IS NULL THEN '' ELSE ' '||l.result_unit END,' | ' ORDER BY l.ordered_at)
+                   (SELECT STRING_AGG(CONCAT(l.test_name, ': ',
+                           COALESCE(l.result_value,'Chưa có kết quả'),
+                           CASE WHEN l.result_unit IS NULL THEN '' ELSE CONCAT(' ',l.result_unit) END), ' | ')
+                           WITHIN GROUP (ORDER BY l.ordered_at)
                     FROM lab_orders l WHERE l.encounter_id=r.encounter_id) lab_summary,
                    d.user_id d_user_id,d.specialty d_specialty,d.license_no d_license_no,
                    d.face_image_path d_face_image_path,d.cccd_image_path d_cccd_image_path,
@@ -179,12 +181,12 @@ public class MedicalRecordDAO extends DBContext {
             JOIN patients p ON p.patient_id=r.patient_id
             LEFT JOIN diabetes_profiles dp ON dp.patient_id=p.patient_id
             LEFT JOIN healthindicators h ON h.record_id=r.record_id
-            LEFT JOIN LATERAL (
-              SELECT hi.* FROM healthindicators hi
+            OUTER APPLY (
+              SELECT TOP 1 hi.* FROM healthindicators hi
               JOIN medicalrecords mr ON mr.record_id=hi.record_id
               WHERE mr.patient_id=r.patient_id
-              ORDER BY hi.measured_at DESC LIMIT 1
-            ) lh ON TRUE
+              ORDER BY hi.measured_at DESC
+            ) lh
             LEFT JOIN doctors d ON d.doctor_id=r.doctor_id
             LEFT JOIN users u ON u.user_id=d.user_id
             LEFT JOIN prescriptionitems pi ON pi.record_id=r.record_id
@@ -349,7 +351,7 @@ public class MedicalRecordDAO extends DBContext {
             ), stats AS (
               SELECT s.doctor_id,
                      COUNT(r.record_id) total_records,
-                     COUNT(r.record_id) FILTER (WHERE r.status='DRAFT') pending_records,
+                     SUM(CASE WHEN r.status='DRAFT' THEN 1 ELSE 0 END) pending_records,
                      (SELECT COUNT(*) FROM (
                         SELECT e.patient_id FROM encounters e
                         WHERE e.doctor_id=s.doctor_id
@@ -362,17 +364,17 @@ public class MedicalRecordDAO extends DBContext {
               GROUP BY s.doctor_id
             ), items AS (
               SELECT recent.*, 'RECENT' bucket FROM (
-                SELECT r.*,p.full_name patient_name
+                SELECT TOP 5 r.*,p.full_name patient_name
                 FROM medicalrecords r JOIN selected s ON s.doctor_id=r.doctor_id
                 JOIN patients p ON p.patient_id=r.patient_id
-                ORDER BY r.visit_date DESC LIMIT 5
+                ORDER BY r.visit_date DESC
               ) recent
               UNION ALL
               SELECT pending.*, 'PENDING' bucket FROM (
-                SELECT r.*,p.full_name patient_name
+                SELECT TOP 20 r.*,p.full_name patient_name
                 FROM medicalrecords r JOIN selected s ON s.doctor_id=r.doctor_id
                 JOIN patients p ON p.patient_id=r.patient_id
-                WHERE r.status='DRAFT' ORDER BY r.visit_date DESC LIMIT 20
+                WHERE r.status='DRAFT' ORDER BY r.visit_date DESC
               ) pending
             )
             SELECT i.*,s.doctor_id selected_doctor_id,s.user_id selected_user_id,
@@ -385,7 +387,7 @@ public class MedicalRecordDAO extends DBContext {
                    s.full_name selected_full_name,
                    st.total_records,st.pending_records,st.total_patients
             FROM selected s JOIN stats st ON st.doctor_id=s.doctor_id
-            LEFT JOIN items i ON TRUE
+            LEFT JOIN items i ON 1=1
             """;
         List<MedicalRecord> recent = new ArrayList<>(), pending = new ArrayList<>();
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -426,15 +428,27 @@ public class MedicalRecordDAO extends DBContext {
             int pendingCount, List<MedicalRecord> recent, List<MedicalRecord> pending) {}
 
     public MedicalRecord create(MedicalRecord rec) {
-        String sql = "INSERT INTO MedicalRecords(patient_id,doctor_id,created_by_staff,encounter_id,"
-                   + "reason_for_visit,symptoms,medical_history,lifestyle_habits,clinical_exam,status) "
-                   + "VALUES(?,?,?,?,?,?,?,?,?,'DRAFT') "
-                   + "ON CONFLICT(encounter_id) DO UPDATE SET "
-                   + "reason_for_visit=EXCLUDED.reason_for_visit,symptoms=EXCLUDED.symptoms,"
-                   + "medical_history=EXCLUDED.medical_history,lifestyle_habits=EXCLUDED.lifestyle_habits,"
-                   + "clinical_exam=EXCLUDED.clinical_exam,created_by_staff=EXCLUDED.created_by_staff "
-                   + "WHERE MedicalRecords.status='DRAFT' "
-                   + "RETURNING record_id";
+        String sql = """
+                MERGE MedicalRecords WITH (HOLDLOCK) AS target
+                USING (VALUES(?,?,?,?,?,?,?,?,?)) AS source(
+                    patient_id,doctor_id,created_by_staff,encounter_id,reason_for_visit,
+                    symptoms,medical_history,lifestyle_habits,clinical_exam)
+                ON target.encounter_id=source.encounter_id AND source.encounter_id IS NOT NULL
+                WHEN MATCHED AND target.status='DRAFT' THEN UPDATE SET
+                    reason_for_visit=source.reason_for_visit,
+                    symptoms=source.symptoms,
+                    medical_history=source.medical_history,
+                    lifestyle_habits=source.lifestyle_habits,
+                    clinical_exam=source.clinical_exam,
+                    created_by_staff=source.created_by_staff
+                WHEN NOT MATCHED THEN INSERT(
+                    patient_id,doctor_id,created_by_staff,encounter_id,reason_for_visit,
+                    symptoms,medical_history,lifestyle_habits,clinical_exam,status)
+                VALUES(source.patient_id,source.doctor_id,source.created_by_staff,source.encounter_id,
+                    source.reason_for_visit,source.symptoms,source.medical_history,
+                    source.lifestyle_habits,source.clinical_exam,'DRAFT')
+                OUTPUT inserted.record_id;
+                """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, rec.getPatientId());
             setPositiveOrNull(statement, 2, rec.getDoctorId());
@@ -548,11 +562,17 @@ public class MedicalRecordDAO extends DBContext {
     }
 
     public void completeWithPrescription(MedicalRecord record, String[] names, String[] dosages,
-            String[] frequencies, String[] durations) {
+            String[] frequencies, String[] durations, int doctorId, int actor) {
         try {
             connection.setAutoCommit(false);
+            if (record.getEncounterId() > 0) {
+                lockEncounterForConclusion(record.getEncounterId(), doctorId);
+            }
             updateConclusion(record);
             replacePrescriptionItems(record.getRecordId(), names, dosages, frequencies, durations);
+            if (record.getEncounterId() > 0) {
+                completeEncounter(record.getEncounterId(), actor);
+            }
             connection.commit();
         } catch (RuntimeException | SQLException error) {
             try { connection.rollback(); } catch (SQLException rollbackError) { error.addSuppressed(rollbackError); }
@@ -561,6 +581,71 @@ public class MedicalRecordDAO extends DBContext {
         } finally {
             try { connection.setAutoCommit(true); }
             catch (SQLException e) { throw databaseError("restore database transaction", e); }
+        }
+    }
+
+    private void lockEncounterForConclusion(int encounterId, int doctorId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("""
+                SELECT e.status, CASE WHEN EXISTS (
+                    SELECT 1 FROM lab_orders l
+                    WHERE l.encounter_id=e.encounter_id
+                      AND l.status IN ('ORDERED','COLLECTED','RESULTED')
+                ) THEN 1 ELSE 0 END unreviewed_labs
+                FROM encounters e WITH (UPDLOCK,HOLDLOCK)
+                WHERE e.encounter_id=? AND e.doctor_id=?
+                """)) {
+            statement.setInt(1, encounterId);
+            statement.setInt(2, doctorId);
+            try (ResultSet rows = statement.executeQuery()) {
+                if (!rows.next()) {
+                    throw new IllegalArgumentException(
+                            "Lượt khám không tồn tại hoặc không thuộc bác sĩ phụ trách.");
+                }
+                if (!"IN_CONSULTATION".equals(rows.getString("status"))) {
+                    throw new IllegalArgumentException(
+                            "Bác sĩ cần bắt đầu hoặc tiếp tục lượt khám trước khi kết luận.");
+                }
+                if (rows.getBoolean("unreviewed_labs")) {
+                    throw new IllegalArgumentException(
+                            "Kết quả xét nghiệm phải được nhập và bác sĩ xác nhận trước khi hoàn tất bệnh án.");
+                }
+            }
+        }
+    }
+
+    private void completeEncounter(int encounterId, int actor) throws SQLException {
+        try (PreparedStatement encounter = connection.prepareStatement("""
+                UPDATE encounters
+                SET status='COMPLETED',completed_at=CURRENT_TIMESTAMP
+                WHERE encounter_id=? AND status='IN_CONSULTATION'
+                """);
+             PreparedStatement appointment = connection.prepareStatement("""
+                UPDATE a SET status='COMPLETED'
+                FROM appointments a
+                JOIN encounters e ON a.appointment_id=e.appointment_id
+                WHERE e.encounter_id=?
+                """);
+             PreparedStatement queue = connection.prepareStatement("""
+                UPDATE queue_entries
+                SET status='COMPLETED',called_at=COALESCE(called_at,CURRENT_TIMESTAMP)
+                WHERE encounter_id=?
+                """);
+             PreparedStatement audit = connection.prepareStatement("""
+                INSERT INTO audit_logs(user_id,action,entity_type,entity_id,details)
+                VALUES(?,'STATUS','ENCOUNTER',?,'COMPLETED')
+                """)) {
+            encounter.setInt(1, encounterId);
+            if (encounter.executeUpdate() != 1) {
+                throw new IllegalArgumentException(
+                        "Lượt khám không còn ở trạng thái có thể hoàn tất.");
+            }
+            appointment.setInt(1, encounterId);
+            appointment.executeUpdate();
+            queue.setInt(1, encounterId);
+            queue.executeUpdate();
+            audit.setInt(1, actor);
+            audit.setString(2, String.valueOf(encounterId));
+            audit.executeUpdate();
         }
     }
 

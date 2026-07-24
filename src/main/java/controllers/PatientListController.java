@@ -17,6 +17,7 @@ public class PatientListController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8");
         User user = ControllerSupport.currentUser(request);
         if (!ControllerSupport.hasRole(user, "STAFF", "DOCTOR", "ADMIN")) {
             ControllerSupport.redirectToLogin(request, response);
@@ -38,31 +39,28 @@ public class PatientListController extends HttpServlet {
         int currentPage = Math.max(
                 1, ControllerSupport.positiveIdOrZero(request.getParameter("page")));
         
-        String keyword = request.getParameter("keyword");
-        boolean searching = keyword != null && !keyword.isBlank();
-        if (searching) currentPage = 1;
-        int effectivePageSize = searching ? 50 : pageSize;
+        String keyword = ControllerSupport.clean(request.getParameter("keyword"));
+        if (keyword.length() > 80) keyword = keyword.substring(0, 80);
         PatientDAO.PatientListData data = "DOCTOR".equals(user.getRole())
                 ? dao.loadPatientListForDoctor(
-                        user.getUserId(), keyword, currentPage, effectivePageSize)
-                : dao.loadPatientList(keyword, currentPage, effectivePageSize);
-        if (searching) {
-            request.setAttribute("patients", data.patients());
-            request.setAttribute("keyword", keyword.trim());
-            request.setAttribute("currentPage", currentPage);
-        } else {
-            int totalPages = Math.max(1, (int) Math.ceil((double) data.total() / pageSize));
-            if (currentPage > totalPages) {
-                currentPage = totalPages;
-                data = "DOCTOR".equals(user.getRole())
-                        ? dao.loadPatientListForDoctor(
-                                user.getUserId(), null, currentPage, pageSize)
-                        : dao.loadPatientList(null, currentPage, pageSize);
-            }
-            request.setAttribute("patients", data.patients());
-            request.setAttribute("currentPage", currentPage);
-            request.setAttribute("totalPages", totalPages);
+                        user.getUserId(), keyword.isEmpty() ? null : keyword, currentPage, pageSize)
+                : dao.loadPatientList(keyword.isEmpty() ? null : keyword, currentPage, pageSize);
+        int totalPages = Math.max(1, (int) Math.ceil((double) data.total() / pageSize));
+        if (currentPage > totalPages) {
+            currentPage = totalPages;
+            data = "DOCTOR".equals(user.getRole())
+                    ? dao.loadPatientListForDoctor(
+                            user.getUserId(), keyword.isEmpty() ? null : keyword,
+                            currentPage, pageSize)
+                    : dao.loadPatientList(keyword.isEmpty() ? null : keyword,
+                            currentPage, pageSize);
         }
+        request.setAttribute("patients", data.patients());
+        request.setAttribute("keyword", keyword);
+        request.setAttribute("currentPage", currentPage);
+        request.setAttribute("totalPages", totalPages);
+        request.setAttribute("totalRecords", data.total());
+        request.setAttribute("pageSize", pageSize);
         request.getRequestDispatcher("views/PatientList.jsp").forward(request, response);
     }
 

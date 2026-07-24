@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.Date;
+import java.time.LocalDateTime;
 import java.util.Set;
 import models.User;
 import vn.diabetes.service.ClinicWorkflowService;
@@ -104,8 +105,16 @@ public class ClinicWorkflowController extends HttpServlet {
                     ControllerSupport.appointmentDateOptions(true));
             request.setAttribute("appointmentTimeSlots",
                     ControllerSupport.appointmentTimeOptions());
-            request.setAttribute("appointmentToday",
-                    AppointmentRules.nowInVietnam().toLocalDate().toString());
+            LocalDateTime now = AppointmentRules.nowInVietnam();
+            request.setAttribute("appointmentToday", now.toLocalDate().toString());
+            request.setAttribute("appointmentMinDateTime",
+                    ControllerSupport.appointmentDateTimeInputValue(
+                            ControllerSupport.nextAppointmentSlot(now)));
+            request.setAttribute("appointmentMaxDateTime",
+                    ControllerSupport.appointmentDateTimeInputValue(
+                            now.toLocalDate().plusDays(AppointmentRules.MAX_ADVANCE_DAYS)
+                                    .atTime(AppointmentRules.CLOSE_TIME.minusMinutes(
+                                            AppointmentRules.SLOT_MINUTES))));
         }
 
         if ("DOCTOR".equals(user.getRole())) {
@@ -247,8 +256,15 @@ public class ClinicWorkflowController extends HttpServlet {
         int encounterId = positiveParameter(request, "encounterId");
         int doctorId = requireAssignedDoctor(request, user, workflow, encounterId);
 
+        String status = ControllerSupport.requiredParameter(request, "status");
+        // Doctors start/resume a visit here; completion is only allowed through
+        // the conclusion transaction so the medical record cannot be skipped.
+        if (!"IN_CONSULTATION".equalsIgnoreCase(status)) {
+            throw new IllegalArgumentException(
+                    "Chỉ được bắt đầu hoặc tiếp tục lượt khám tại bước này.");
+        }
         service.setEncounterStatus(
-                encounterId, ControllerSupport.requiredParameter(request, "status"), user.getUserId());
+                encounterId, status, user.getUserId());
         return "encounters";
     }
 
@@ -391,6 +407,10 @@ public class ClinicWorkflowController extends HttpServlet {
     }
 
     private java.time.LocalDateTime appointmentDateTime(HttpServletRequest request) {
+        String combinedValue = request.getParameter("appointmentAt");
+        if (combinedValue != null && !combinedValue.isBlank()) {
+            return ControllerSupport.appointmentDateTime(combinedValue);
+        }
         return ControllerSupport.appointmentDateTime(
                 request.getParameter("appointmentDate"),
                 request.getParameter("appointmentTime"));

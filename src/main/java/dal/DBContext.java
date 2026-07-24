@@ -29,8 +29,8 @@ public class DBContext {
             if (REQUEST_ACTIVE.get()) REQUEST_CONNECTION.set(connection);
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE,
-                    "Cannot connect to PostgreSQL. Check DB_URL, DB_USERNAME and DB_PASSWORD.", ex);
-            throw new IllegalStateException("Cannot connect to PostgreSQL. Check database configuration.", ex);
+                    "Cannot connect to the database. Check DB_URL, DB_USERNAME and DB_PASSWORD.", ex);
+            throw new IllegalStateException("Cannot connect to the database. Check database configuration.", ex);
         }
     }
 
@@ -63,6 +63,15 @@ public class DBContext {
         return new IllegalStateException("Không thể xử lý dữ liệu. Vui lòng thử lại sau.", cause);
     }
 
+
+    protected boolean isUniqueViolation(SQLException error) {
+        return "23505".equals(error.getSQLState())
+                || error.getErrorCode() == 2601 || error.getErrorCode() == 2627;
+    }
+
+    protected boolean isForeignKeyViolation(SQLException error) {
+        return "23503".equals(error.getSQLState()) || error.getErrorCode() == 547;
+    }
     private Connection openConnection() throws SQLException {
         DataSource configured = dataSource;
         long startedAt = System.nanoTime();
@@ -71,8 +80,9 @@ public class DBContext {
 
             return DriverManager.getConnection(
                     value("DB_URL", "spring.datasource.url",
-                            "jdbc:postgresql://localhost:5432/diabetes_medical_record"),
-                    value("DB_USERNAME", "spring.datasource.username", "postgres"),
+                            "jdbc:sqlserver://localhost:1433;databaseName=SWP_DiabetesMedicalRecordDB;"
+                                    + "encrypt=true;trustServerCertificate=true;loginTimeout=5"),
+                    value("DB_USERNAME", "spring.datasource.username", "swp_app"),
                     value("DB_PASSWORD", "spring.datasource.password", ""));
         } finally {
             long elapsedMs = (System.nanoTime() - startedAt) / 1_000_000;
