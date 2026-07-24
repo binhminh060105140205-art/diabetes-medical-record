@@ -22,7 +22,7 @@ public class StaticCacheFilter implements Filter {
         if (query != null && query.contains("v=")) {
             httpResponse.setHeader("Cache-Control", "public, max-age=31536000, immutable");
         } else {
-            // Revalidate unversioned assets so deployments never keep an outdated interface.
+            // Revalidate unversioned assets so browsers do not keep an outdated interface.
             httpResponse.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
         }
         chain.doFilter(request, response);

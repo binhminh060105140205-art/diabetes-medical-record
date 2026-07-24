@@ -12,8 +12,7 @@ import java.util.Set;
 
 /**
  * Lưu / đọc file ảnh của bác sĩ (ảnh khuôn mặt, ảnh CCCD, ảnh chứng chỉ hành nghề)
- * ra một thư mục NẰM NGOÀI thư mục deploy của webapp (catalina.base), để dữ liệu
- * không bị mất khi rebuild / redeploy project.
+ * trong thư mục uploads bên ngoài file WAR để dữ liệu không bị mất khi clean hoặc build lại.
  */
 public class FileStorageUtil {
 

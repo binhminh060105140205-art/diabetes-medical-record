@@ -23,9 +23,7 @@ public class RootController {
     @GetMapping("/health")
     @ResponseBody
     public ResponseEntity<String> health() {
-        String revision = System.getenv().getOrDefault("RENDER_GIT_COMMIT", "local");
-        if (revision.length() > 8) revision = revision.substring(0, 8);
-        return ResponseEntity.ok("OK revision=" + revision);
+        return ResponseEntity.ok("OK");
     }
 
     /** Reports whether the configured database is ready for application traffic. */

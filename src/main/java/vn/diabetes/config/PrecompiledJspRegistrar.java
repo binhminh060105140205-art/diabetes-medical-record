@@ -8,7 +8,7 @@ import java.util.Map;
 import org.springframework.boot.web.servlet.ServletContextInitializer;
 import org.springframework.stereotype.Component;
 
-/** Uses JSP classes produced by the Render build and falls back to Jasper during local development. */
+/** Uses JSP classes produced by the optional Maven precompile profile. */
 @Component
 public class PrecompiledJspRegistrar implements ServletContextInitializer {
     private static final Map<String, String> PAGES = pages();
@@ -23,7 +23,7 @@ public class PrecompiledJspRegistrar implements ServletContextInitializer {
                     registration.addMapping(page.getKey());
                 }
             } catch (ClassNotFoundException ignored) {
-                // spring-boot:run does not use the production precompile profile.
+                // spring-boot:run falls back to Jasper when precompiled classes are unavailable.
             }
         }
     }

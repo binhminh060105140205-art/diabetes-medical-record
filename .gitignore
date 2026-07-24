@@ -4,6 +4,7 @@ target/
 !.env.example
 uploads/
 *.log
+.deploy-*
 
 # IDE / editor files
 .vscode/
