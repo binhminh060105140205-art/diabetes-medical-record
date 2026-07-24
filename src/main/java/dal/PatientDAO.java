@@ -365,19 +365,55 @@ public class PatientDAO extends DBContext {
         String sql = "UPDATE Patients SET full_name=?,date_of_birth=?,gender=?,phone=?,address=?,"
                    + "health_insurance_no=?,national_id=?,national_id_date=?,national_id_place=?"
                    + " WHERE patient_id=?";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, p.getFullName());
-            statement.setDate(2, p.getDateOfBirth() != null ? Date.valueOf(p.getDateOfBirth()) : null);
-            statement.setString(3, p.getGender());
-            statement.setString(4, p.getPhone());
-            statement.setString(5, p.getAddress());
-            statement.setString(6, p.getHealthInsuranceNo());
-            statement.setString(7, p.getNationalId());
-            statement.setDate(8, p.getNationalIdDate() != null ? Date.valueOf(p.getNationalIdDate()) : null);
-            statement.setString(9, p.getNationalIdPlace());
-            statement.setInt(10, p.getPatientId());
-            statement.executeUpdate();
-        } catch (SQLException e) { throw databaseError("update patient", e); }
+        boolean manageTransaction = false;
+        try {
+            manageTransaction = connection.getAutoCommit();
+            if (manageTransaction) connection.setAutoCommit(false);
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setString(1, p.getFullName());
+                statement.setDate(2, p.getDateOfBirth() != null ? Date.valueOf(p.getDateOfBirth()) : null);
+                statement.setString(3, p.getGender());
+                statement.setString(4, p.getPhone());
+                statement.setString(5, p.getAddress());
+                statement.setString(6, p.getHealthInsuranceNo());
+                statement.setString(7, p.getNationalId());
+                statement.setDate(8, p.getNationalIdDate() != null ? Date.valueOf(p.getNationalIdDate()) : null);
+                statement.setString(9, p.getNationalIdPlace());
+                statement.setInt(10, p.getPatientId());
+                if (statement.executeUpdate() != 1) {
+                    throw new IllegalArgumentException("Không tìm thấy hồ sơ bệnh nhân để cập nhật.");
+                }
+            }
+            if (p.getUserId() > 0) {
+                try (PreparedStatement statement = connection.prepareStatement(
+                        "UPDATE Users SET full_name=?,dob=?,gender=?,phone=?,address=? WHERE user_id=?")) {
+                    statement.setString(1, p.getFullName());
+                    statement.setDate(2, p.getDateOfBirth() != null ? Date.valueOf(p.getDateOfBirth()) : null);
+                    statement.setString(3, p.getGender());
+                    statement.setString(4, p.getPhone());
+                    statement.setString(5, p.getAddress());
+                    statement.setInt(6, p.getUserId());
+                    if (statement.executeUpdate() != 1) {
+                        throw new IllegalArgumentException("Không tìm thấy tài khoản bệnh nhân để đồng bộ.");
+                    }
+                }
+            }
+            if (manageTransaction) connection.commit();
+        } catch (RuntimeException | SQLException error) {
+            if (manageTransaction) {
+                try { connection.rollback(); }
+                catch (SQLException rollbackError) { error.addSuppressed(rollbackError); }
+            }
+            throw error instanceof RuntimeException runtime
+                    ? runtime : databaseError("update patient", (SQLException) error);
+        } finally {
+            if (manageTransaction) {
+                try { connection.setAutoCommit(true); }
+                catch (SQLException error) {
+                    throw databaseError("restore database transaction", error);
+                }
+            }
+        }
     }
 
     public void updateBasicProfile(Patient p) throws SQLException {

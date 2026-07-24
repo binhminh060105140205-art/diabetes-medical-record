@@ -180,8 +180,12 @@ public class MedicalRecordFormController extends HttpServlet {
             record.setDoctorId(assignment[1]);
         }
 
-        record.setReasonForVisit(Validators.max(Validators.required(
-                request.getParameter("reasonForVisit"), "Lý do đến khám"), 255, "Lý do đến khám"));
+        String reasonForVisit = Validators.max(Validators.required(
+                request.getParameter("reasonForVisit"), "Lý do đến khám"), 255, "Lý do đến khám");
+        if (reasonForVisit.length() < 5) {
+            throw new IllegalArgumentException("Lý do đến khám phải có ít nhất 5 ký tự.");
+        }
+        record.setReasonForVisit(reasonForVisit);
         record.setSymptoms(Validators.max(request.getParameter("symptoms"), 2000, "Triệu chứng"));
         record.setMedicalHistory(Validators.max(
                 request.getParameter("medicalHistory"), 2000, "Tiền sử bệnh"));
@@ -426,38 +430,26 @@ public class MedicalRecordFormController extends HttpServlet {
         }
 
         String finalDiagnosis = ControllerSupport.clean(request.getParameter("finalDiagnosis"));
-        if (finalDiagnosis.isEmpty() || finalDiagnosis.length() > 255) {
+        if (finalDiagnosis.length() < 5 || finalDiagnosis.length() > 255) {
             redirectRecordError(request, response, recordId,
-                    "Chẩn đoán là bắt buộc và tối đa 255 ký tự.");
+                    "Chẩn đoán phải có từ 5 đến 255 ký tự.");
             return;
         }
-        if (tooLong(request.getParameter("treatmentPlan"), 3000)
-                || tooLong(request.getParameter("advice"), 2000)
-                || tooLong(request.getParameter("complicationNote"), 2000)
-                || tooLong(request.getParameter("prescriptionNote"), 500)
-                || tooLong(request.getParameter("doctorNote"), 1000)) {
-            redirectRecordError(request, response, recordId,
-                    "Nội dung kết luận vượt quá độ dài cho phép.");
+        try {
+            record.setComplicationNote(Validators.max(
+                    request.getParameter("complicationNote"), 2000, "Ghi chú biến chứng"));
+            record.setFinalDiagnosis(finalDiagnosis);
+            record.setTreatmentPlan(Validators.max(
+                    request.getParameter("treatmentPlan"), 3000, "Hướng điều trị"));
+            record.setPrescriptionNote(Validators.max(
+                    request.getParameter("prescriptionNote"), 500, "Ghi chú đơn thuốc"));
+            record.setAdvice(Validators.max(
+                    request.getParameter("advice"), 2000, "Lời dặn bệnh nhân"));
+            record.setDoctorNote(Validators.max(
+                    request.getParameter("doctorNote"), 1000, "Ghi chú bác sĩ"));
+        } catch (IllegalArgumentException error) {
+            redirectRecordError(request, response, recordId, error.getMessage());
             return;
-        }
-
-        if (request.getParameter("complicationNote") != null) {
-            record.setComplicationNote(request.getParameter("complicationNote"));
-        }
-        if (request.getParameter("finalDiagnosis") != null) {
-            record.setFinalDiagnosis(request.getParameter("finalDiagnosis"));
-        }
-        if (request.getParameter("treatmentPlan") != null) {
-            record.setTreatmentPlan(request.getParameter("treatmentPlan"));
-        }
-        if (request.getParameter("prescriptionNote") != null) {
-            record.setPrescriptionNote(request.getParameter("prescriptionNote"));
-        }
-        if (request.getParameter("advice") != null) {
-            record.setAdvice(request.getParameter("advice"));
-        }
-        if (request.getParameter("doctorNote") != null) {
-            record.setDoctorNote(request.getParameter("doctorNote"));
         }
 
         if (record.getEncounterId() > 0
@@ -612,8 +604,6 @@ public class MedicalRecordFormController extends HttpServlet {
         request.setAttribute("orderedHba1c", orderedHba1c);
         request.setAttribute("orderedLipid", orderedLipid);
     }
-
-    private boolean tooLong(String value, int max) { return value != null && value.length() > max; }
 
     private double parseDouble(String value, String label) {
         try {

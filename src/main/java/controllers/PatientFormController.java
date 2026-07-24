@@ -52,7 +52,7 @@ public class PatientFormController extends HttpServlet {
         String insurance = ControllerSupport.clean(request.getParameter("healthInsuranceNo"));
         try {
             fullName=Validators.fullName(fullName); phone=Validators.phone(phone); gender=Validators.gender(gender);
-            address=Validators.max(Validators.required(address,"Địa chỉ"),255,"Địa chỉ"); insurance=Validators.insurance(insurance);
+            address=Validators.requiredAddress(address); insurance=Validators.insurance(insurance);
             LocalDate dob = Validators.dateOfBirth(dobText,true);
             if (id.isBlank()) {
                 String username = ControllerSupport.clean(request.getParameter("username"));

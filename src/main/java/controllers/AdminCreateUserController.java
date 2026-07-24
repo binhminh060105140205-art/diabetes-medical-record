@@ -71,7 +71,7 @@ public class AdminCreateUserController extends HttpServlet {
             username=Validators.username(username); password=Validators.password(password,"Mật khẩu");
             fullName=Validators.fullName(fullName); phone=Validators.phone(phone); email=Validators.email(email,true);
             gender=Validators.gender(gender);
-            address=Validators.max(Validators.required(address,"Địa chỉ"),255,"Địa chỉ");
+            address=Validators.requiredAddress(address);
             role=Validators.role(role);
             cccd=Validators.cccd(Validators.required(cccd,"Số CCCD"));
             if (!java.util.Set.of("STAFF", "DOCTOR").contains(role)) {

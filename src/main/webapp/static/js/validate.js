@@ -84,8 +84,8 @@ function validatePatientForm() {
     }
 
     const bhyt = val('healthInsuranceNo');
-    if (bhyt && !/^[A-Z]{2}[0-9]{10}$/.test(bhyt)) {
-        showErr('healthInsuranceNo', 'Số BHYT không đúng định dạng (VD: HC4012345678)');
+    if (bhyt && !/^[A-Za-z0-9]{10,20}$/.test(bhyt)) {
+        showErr('healthInsuranceNo', 'Số BHYT phải có 10–20 chữ hoặc số, không có khoảng trắng');
         ok = false;
     }
 

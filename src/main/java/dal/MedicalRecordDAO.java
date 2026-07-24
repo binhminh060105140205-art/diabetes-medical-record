@@ -521,40 +521,50 @@ public class MedicalRecordDAO extends DBContext {
         String delete = "DELETE FROM PrescriptionItems WHERE record_id=?";
         String insert = "INSERT INTO PrescriptionItems(record_id,medicine_name,dosage,frequency,duration_days) "
                 + "VALUES(?,?,?,?,?)";
+        int rowCount = Math.max(Math.max(lengthOf(names), lengthOf(dosages)),
+                Math.max(lengthOf(frequencies), lengthOf(durations)));
+        List<PrescriptionInput> items = new ArrayList<>();
+        for (int i = 0; i < rowCount; i++) {
+            String name = valueAt(names, i);
+            String dosage = valueAt(dosages, i);
+            String frequency = valueAt(frequencies, i);
+            String duration = valueAt(durations, i);
+            boolean hasDetails = !dosage.isBlank() || !frequency.isBlank() || !duration.isBlank();
+            if (name.isBlank() && !hasDetails) continue;
+            if (name.isBlank()) throw new IllegalArgumentException("Thuốc phải có tên thuốc.");
+            if (name.length() > 150) throw new IllegalArgumentException("Tên thuốc tối đa 150 ký tự.");
+            if (dosage.isBlank()) throw new IllegalArgumentException("Thuốc phải có liều dùng.");
+            if (dosage.length() > 100) throw new IllegalArgumentException("Liều dùng tối đa 100 ký tự.");
+            if (frequency.isBlank()) {
+                throw new IllegalArgumentException("Thuốc phải có số lần dùng trong ngày.");
+            }
+            if (frequency.length() > 100) {
+                throw new IllegalArgumentException("Tần suất dùng thuốc tối đa 100 ký tự.");
+            }
+            if (duration.isBlank()) {
+                throw new IllegalArgumentException("Thuốc phải có số ngày sử dụng.");
+            }
+            int days;
+            try {
+                days = Integer.parseInt(duration);
+            } catch (NumberFormatException error) {
+                throw new IllegalArgumentException("Số ngày dùng thuốc phải là số nguyên.");
+            }
+            if (days < 1 || days > 365) {
+                throw new IllegalArgumentException("Số ngày dùng thuốc phải từ 1 đến 365.");
+            }
+            items.add(new PrescriptionInput(name, dosage, frequency, days));
+        }
         try (PreparedStatement del = connection.prepareStatement(delete);
              PreparedStatement add = connection.prepareStatement(insert)) {
             del.setInt(1, recordId);
             del.executeUpdate();
-            if (names == null) return;
-            for (int i = 0; i < names.length; i++) {
-                String name = names[i] == null ? "" : names[i].trim();
-                if (name.isEmpty()) continue;
-                if (name.length() > 150) {
-                    throw new IllegalArgumentException("Tên thuốc tối đa 150 ký tự.");
-                }
-                String dosage = valueAt(dosages, i);
-                if (dosage.isBlank()) throw new IllegalArgumentException("Thuốc phải có liều dùng.");
-                if (dosage.length() > 100) {
-                    throw new IllegalArgumentException("Liều dùng tối đa 100 ký tự.");
-                }
-                String frequency = valueAt(frequencies, i);
-                if (frequency.isBlank()) {
-                    throw new IllegalArgumentException("Thuốc phải có số lần dùng trong ngày.");
-                }
-                if (frequency.length() > 100) {
-                    throw new IllegalArgumentException("Tần suất dùng thuốc tối đa 100 ký tự.");
-                }
+            for (PrescriptionInput item : items) {
                 add.setInt(1, recordId);
-                add.setString(2, name);
-                add.setString(3, dosage);
-                add.setString(4, frequency);
-                String duration = valueAt(durations, i);
-                if (duration.isBlank()) {
-                    throw new IllegalArgumentException("Thuốc phải có số ngày sử dụng.");
-                }
-                int days = Integer.parseInt(duration);
-                if (days < 1 || days > 365) throw new IllegalArgumentException("Số ngày dùng thuốc phải từ 1 đến 365.");
-                add.setInt(5, days);
+                add.setString(2, item.name());
+                add.setString(3, item.dosage());
+                add.setString(4, item.frequency());
+                add.setInt(5, item.durationDays());
                 add.addBatch();
             }
             add.executeBatch();
@@ -652,6 +662,13 @@ public class MedicalRecordDAO extends DBContext {
     private String valueAt(String[] values, int index) {
         return values != null && index < values.length && values[index] != null ? values[index].trim() : "";
     }
+
+    private int lengthOf(String[] values) {
+        return values == null ? 0 : values.length;
+    }
+
+    private record PrescriptionInput(String name, String dosage, String frequency,
+            int durationDays) {}
 
     private void setPositiveOrNull(PreparedStatement statement, int index, int value)
             throws SQLException {

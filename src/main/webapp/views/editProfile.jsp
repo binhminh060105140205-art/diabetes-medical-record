@@ -133,7 +133,8 @@
                         <div class="form-group">
                             <label for="settingDob">Ngày sinh</label>
                             <input id="settingDob" class="form-control" type="date" name="dob"
-                                   value="${fn:escapeXml(profilePost ? param.dob : profileUser.dob)}" max="${maxDOB}">
+                                   value="${fn:escapeXml(profilePost ? param.dob : profileUser.dob)}"
+                                   min="1900-01-01" max="${maxDOB}">
                         </div>
                         <div class="form-group">
                             <label for="settingGender">Giới tính</label>
@@ -146,7 +147,7 @@
                         </div>
                         <div class="form-group settings-wide-field">
                             <label for="settingAddress">Địa chỉ</label>
-                            <textarea id="settingAddress" class="form-control" name="address" maxlength="255"
+                            <textarea id="settingAddress" class="form-control" name="address" minlength="5" maxlength="255"
                                       autocomplete="street-address" placeholder="Địa chỉ liên hệ hiện tại"><c:out value="${profilePost ? param.address : profileUser.address}"/></textarea>
                         </div>
                     </div>

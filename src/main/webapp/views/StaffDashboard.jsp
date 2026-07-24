@@ -57,7 +57,7 @@
                         <label class="required" for="intakeFullName">Họ và tên</label>
                         <input id="intakeFullName" class="form-control" name="fullName"
                                value="${fn:escapeXml(param.fullName)}" maxlength="100"
-                               autocomplete="name" placeholder="Nguyễn Văn A" required>
+                               minlength="2" autocomplete="name" placeholder="Nguyễn Văn A" required>
                         <span class="err-msg" id="err_fullName"></span>
                     </div>
                     <div class="form-group">
@@ -76,22 +76,23 @@
                     </div>
                     <div class="form-group">
                         <label class="required" for="intakePhone">Số điện thoại</label>
-                        <input id="intakePhone" class="form-control" name="phone"
-                               value="${fn:escapeXml(param.phone)}" inputmode="tel" maxlength="15"
+                        <input id="intakePhone" class="form-control" type="tel" name="phone"
+                               value="${fn:escapeXml(param.phone)}" pattern="(0|\+84)[0-9]{9}" maxlength="12"
                                autocomplete="tel" placeholder="0912345678" required>
                         <span class="err-msg" id="err_phone"></span>
                     </div>
                     <div class="form-group">
                         <label for="intakeInsurance">Số BHYT</label>
                         <input id="intakeInsurance" class="form-control" name="healthInsuranceNo"
-                               value="${fn:escapeXml(param.healthInsuranceNo)}" maxlength="20"
+                               value="${fn:escapeXml(param.healthInsuranceNo)}"
+                               pattern="[A-Za-z0-9]{10,20}" maxlength="20"
                                placeholder="HC4012345678">
                         <span class="err-msg" id="err_bhyt"></span>
                     </div>
                     <div class="form-group patient-intake-wide">
                         <label class="required" for="intakeAddress">Địa chỉ</label>
                         <textarea id="intakeAddress" class="form-control" name="address" maxlength="255"
-                                  autocomplete="street-address"
+                                  minlength="5" autocomplete="street-address"
                                   placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố" required><c:out value="${param.address}"/></textarea>
                     </div>
                 </div>
@@ -232,7 +233,7 @@ if (${showIntakeForm == true}) {
     });
 }
 </script>
-<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260722-validation1"></script>
+<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260724-validation3"></script>
 <jsp:include page="footer.jsp"/>
 </body>
 </html>

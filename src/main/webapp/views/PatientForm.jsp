@@ -73,7 +73,7 @@
             <div class="form-group">
                 <label class="required">Địa chỉ</label>
                 <textarea name="address" class="form-control"
-                          maxlength="255" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố" required><c:out value="${not empty param.address ? param.address : patient.address}"/></textarea>
+                          minlength="5" maxlength="255" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố" required><c:out value="${not empty param.address ? param.address : patient.address}"/></textarea>
             </div>
 
             <c:if test="${not editMode}">
@@ -93,7 +93,7 @@
     </div>
 </div>
 
-<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260722-validation1"></script>
+<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260724-validation3"></script>
 <jsp:include page="footer.jsp"/>
 </body>
 </html>

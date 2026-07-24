@@ -42,6 +42,7 @@ public class ClinicWorkflowController extends HttpServlet {
         ClinicWorkflowDAO workflow = new ClinicWorkflowDAO();
         String view = normalizeView(request.getParameter("view"), user.getRole());
         request.setAttribute("view", view);
+        request.setAttribute("today", AppointmentRules.nowInVietnam().toLocalDate().toString());
 
         loadViewData(request, response, user, workflow, view);
         if (response.isCommitted()) return;

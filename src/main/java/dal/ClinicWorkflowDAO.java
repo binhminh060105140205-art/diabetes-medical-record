@@ -168,6 +168,7 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
     /** Loads patients, doctors and the latest appointments in one database round-trip. */
     public AppointmentOperationsPageData loadAppointmentOperationsPage() {
         String sql = """
+          SELECT * FROM (
           SELECT 'PATIENT' row_type,p.patient_id,CAST(NULL AS INT) doctor_id,p.full_name display_name,
                  p.phone,CAST(NULL AS NVARCHAR(100)) specialty,CAST(NULL AS NVARCHAR(10)) diabetes_focus,
                  COALESCE(dp.diabetes_type,'UNKNOWN') diabetes_type,
@@ -204,9 +205,11 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
            ) a JOIN patients p ON p.patient_id=a.patient_id
           LEFT JOIN diabetes_profiles dp ON dp.patient_id=p.patient_id
           LEFT JOIN doctors d ON d.doctor_id=a.doctor_id LEFT JOIN users u ON u.user_id=d.user_id
-          ORDER BY row_type,
-                   CASE WHEN sort_priority IS NULL THEN 1 ELSE 0 END,sort_priority,
-                   CASE WHEN sort_date IS NULL THEN 1 ELSE 0 END,sort_date DESC,display_name
+          ) operations
+          ORDER BY operations.row_type,
+                   CASE WHEN operations.sort_priority IS NULL THEN 1 ELSE 0 END,operations.sort_priority,
+                   CASE WHEN operations.sort_date IS NULL THEN 1 ELSE 0 END,operations.sort_date DESC,
+                   operations.display_name
           """;
         List<Patient> patients = new ArrayList<>();
         List<Doctor> doctors = new ArrayList<>();

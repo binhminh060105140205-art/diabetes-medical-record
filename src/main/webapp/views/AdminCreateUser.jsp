@@ -82,7 +82,7 @@
             <div class="form-row">
                 <div class="form-group">
                     <label class="required">Địa chỉ</label>
-                    <input type="text" name="address" class="form-control" maxlength="255" value="${fn:escapeXml(param.address)}" autocomplete="street-address" required>
+                    <input type="text" name="address" class="form-control" minlength="5" maxlength="255" value="${fn:escapeXml(param.address)}" autocomplete="street-address" required>
                 </div>
             </div>
 
@@ -146,6 +146,6 @@
     toggleDoctorFields();
 </script>
 <jsp:include page="footer.jsp"/>
-<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260722-validation1"></script>
+<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260724-validation3"></script>
 </body>
 </html>

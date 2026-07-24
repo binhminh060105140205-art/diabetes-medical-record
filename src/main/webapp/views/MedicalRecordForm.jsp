@@ -123,7 +123,7 @@
                 </div>
                 <div class="form-group">
                     <label class="required">Lý do đến khám</label>
-                    <textarea name="reasonForVisit" class="form-control" maxlength="255" required
+                    <textarea name="reasonForVisit" class="form-control" minlength="5" maxlength="255" required
                         placeholder="Bệnh nhân đến khám vì..."><c:out value="${record.reasonForVisit}"/></textarea>
                 </div>
                 <div class="form-group">
@@ -337,7 +337,8 @@
                     </div>
                     <div class="form-group">
                         <label>Ngày phát hiện bệnh</label>
-                        <input type="date" name="diagnosisDate" class="form-control" value="${diabetesProfile.diagnosisDate}">
+                        <input type="date" name="diagnosisDate" class="form-control" value="${diabetesProfile.diagnosisDate}"
+                               min="${patient.dateOfBirth}" max="<%= java.time.LocalDate.now() %>">
                     </div>
                     <div class="form-group">
                         <label>Phương pháp điều trị</label>
@@ -378,7 +379,7 @@
                 </div>
                 <div class="form-group">
                     <label class="required">Chẩn đoán cuối cùng</label>
-                    <textarea name="finalDiagnosis" class="form-control" maxlength="255" required
+                    <textarea name="finalDiagnosis" class="form-control" minlength="5" maxlength="255" required
                         placeholder="Ví dụ: Đái tháo đường típ 2 kiểm soát chưa đạt, kèm rối loạn mỡ máu..."><c:out value="${record.finalDiagnosis}"/></textarea>
                 </div>
                 <div class="form-group">
@@ -534,7 +535,7 @@ var defaultTab = serverErrTab ? parseInt(serverErrTab)
 showTab(defaultTab);
 syncDiabetesTreatmentOptions();
 </script>
-<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260722-validation1"></script>
+<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260724-validation3"></script>
 <jsp:include page="footer.jsp"/>
 </body>
 </html>

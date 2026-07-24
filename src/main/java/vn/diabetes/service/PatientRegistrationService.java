@@ -24,8 +24,7 @@ public class PatientRegistrationService {
         String email = Validators.email(command.email(), command.createdBy() == null);
         LocalDate dateOfBirth = Validators.dateOfBirth(command.dateOfBirth(), true);
         String gender = Validators.gender(command.gender());
-        String address = Validators.max(
-                Validators.required(command.address(), "Địa chỉ"), 255, "Địa chỉ");
+        String address = Validators.requiredAddress(command.address());
         String insurance = Validators.insurance(command.insuranceNo());
 
         int patientId = gateway.register(username, password, fullName, phone,

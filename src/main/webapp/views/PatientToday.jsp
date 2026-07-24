@@ -69,6 +69,11 @@ async function saveLog(){
     if (invalid) { showLogResult('Giá trị vừa nhập chưa hợp lệ. Vui lòng kiểm tra lại giới hạn của chỉ số.', 'error'); invalid.reportValidity(); return; }
     if (glucose.value && !meal.value) { showLogResult('Vui lòng chọn thời điểm đo đường huyết.', 'error'); meal.focus(); return; }
     if (meal.value && !glucose.value) { showLogResult('Đã chọn thời điểm đo thì cần nhập đường huyết.', 'error'); glucose.focus(); return; }
+    if ((systolic.value && !diastolic.value) || (!systolic.value && diastolic.value)) {
+        showLogResult('Huyết áp cần nhập đủ cả tâm thu và tâm trương.', 'error');
+        (systolic.value ? diastolic : systolic).focus();
+        return;
+    }
     const symptoms=symptomInputs.filter(input=>input.checked).map(input=>input.value).join(', ');
     if (!glucose.value&&!systolic.value&&!diastolic.value&&!heartRate.value&&!spo2.value&&!weight.value&&!symptoms&&!note.value.trim()) { showLogResult('Cần nhập ít nhất một chỉ số hoặc ghi chú.', 'error'); return; }
     button.disabled=true; showLogResult('Đang lưu chỉ số...', 'loading');

@@ -112,13 +112,16 @@ public class PatientHealthController extends HttpServlet {
         }
     }
 
-    private void validate(PatientDailyLog log) {
+    void validate(PatientDailyLog log) {
         range(log.getBloodGlucose(), 20, 600, "Đường huyết");
         range(log.getWeight(), 20, 300, "Cân nặng");
         range(log.getSpo2(), 50, 100, "SpO2");
         range(log.getSystolicBp(), 60, 260, "Huyết áp tâm thu");
         range(log.getDiastolicBp(), 30, 180, "Huyết áp tâm trương");
         range(log.getHeartRate(), 30, 220, "Nhịp tim");
+        if ((log.getSystolicBp() == null) != (log.getDiastolicBp() == null)) {
+            throw new IllegalArgumentException("Huyết áp cần nhập đủ cả tâm thu và tâm trương.");
+        }
         if (log.getSystolicBp() != null && log.getDiastolicBp() != null
                 && log.getSystolicBp() <= log.getDiastolicBp()) {
             throw new IllegalArgumentException("Huyết áp tâm thu phải lớn hơn tâm trương.");

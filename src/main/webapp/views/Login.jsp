@@ -81,7 +81,7 @@
     </section>
 </main>
 <script src="${pageContext.request.contextPath}/static/js/main.js?v=20260722-validation2"></script>
-<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260722-validation1"></script>
+<script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260724-validation3"></script>
 <c:if test="${not empty requestScope.lockUntil}">
     <script>
         (function () {

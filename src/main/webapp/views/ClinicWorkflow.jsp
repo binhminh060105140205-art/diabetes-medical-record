@@ -273,7 +273,7 @@
                     <details class="inline-disclosure"><summary class="btn btn-light">Thêm hoặc cập nhật dị ứng</summary>
                         <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="compact-form disclosure-content">
                             <input type="hidden" name="action" value="allergy"><input type="hidden" name="patientId" value="${selectedPatient.patientId}">
-                            <input class="form-control" name="allergen" placeholder="Tác nhân dị ứng" required><input class="form-control" name="reaction" placeholder="Phản ứng">
+                            <input class="form-control" name="allergen" maxlength="150" placeholder="Tác nhân dị ứng" required><input class="form-control" name="reaction" maxlength="255" placeholder="Phản ứng">
                             <select class="form-control" name="severity"><option value="UNKNOWN">Chưa xác định</option><option value="MILD">Nhẹ</option><option value="MODERATE">Trung bình</option><option value="SEVERE">Nặng</option></select>
                             <button class="btn btn-primary" type="submit">Lưu dị ứng</button>
                         </form>
@@ -287,9 +287,9 @@
                         <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="compact-form disclosure-content">
                             <input type="hidden" name="action" value="history"><input type="hidden" name="patientId" value="${selectedPatient.patientId}">
                             <select class="form-control" name="historyType"><option value="PERSONAL">Cá nhân</option><option value="FAMILY">Gia đình</option><option value="SURGICAL">Phẫu thuật</option><option value="LIFESTYLE">Lối sống</option></select>
-                            <input class="form-control" name="conditionName" placeholder="Tên bệnh hoặc tình trạng" required><input class="form-control" type="date" name="diagnosedDate">
+                            <input class="form-control" name="conditionName" maxlength="150" placeholder="Tên bệnh hoặc tình trạng" required><input class="form-control" type="date" name="diagnosedDate" max="${today}">
                             <select class="form-control" name="historyStatus"><option value="ACTIVE">Đang theo dõi</option><option value="RESOLVED">Đã ổn định</option></select>
-                            <textarea class="form-control" name="historyNote" placeholder="Ghi chú"></textarea><button class="btn btn-primary" type="submit">Lưu tiền sử</button>
+                            <textarea class="form-control" name="historyNote" maxlength="500" placeholder="Ghi chú"></textarea><button class="btn btn-primary" type="submit">Lưu tiền sử</button>
                         </form>
                     </details>
                 </section>

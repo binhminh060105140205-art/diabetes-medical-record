@@ -86,7 +86,15 @@ public final class Validators {
     }
 
     public static String address(String value) {
-        return max(value, 255, "Địa chỉ");
+        String cleaned = max(value, 255, "Địa chỉ");
+        if (!cleaned.isEmpty() && cleaned.length() < 5) {
+            throw new IllegalArgumentException("Địa chỉ phải có từ 5 đến 255 ký tự.");
+        }
+        return cleaned;
+    }
+
+    public static String requiredAddress(String value) {
+        return address(required(value, "Địa chỉ"));
     }
 
     public static String insurance(String value) {
