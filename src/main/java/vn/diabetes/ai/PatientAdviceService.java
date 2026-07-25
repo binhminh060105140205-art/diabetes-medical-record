@@ -56,18 +56,50 @@ public class PatientAdviceService {
         String severity = maxSeverity(generated.severity(), prepared.severityFloor());
         boolean doctorRecommendation = generated.doctorRecommendation()
                 || prepared.doctorRecommendationFloor() || "high".equals(severity);
-        List<String> advice = new ArrayList<>(generated.advice());
-        if (doctorRecommendation && advice.stream().noneMatch(this::isContactAdvice)) {
-            advice.add("[LIEN_HE] Nên liên hệ bác sĩ hoặc phòng khám để được hướng dẫn phù hợp.");
-        }
-        return new PatientAdvice(generated.summary(), advice.stream().distinct().limit(8).toList(),
+        List<String> advice = normalizeAdviceGroups(generated.advice(), prepared.fallbackAdvice());
+        return new PatientAdvice(generated.summary(), advice,
                 severity, doctorRecommendation, "OPENAI", false);
     }
 
-    private boolean isContactAdvice(String value) {
-        String lower = value == null ? "" : value.toLowerCase();
-        return lower.contains("[lien_he]") || lower.contains("liên hệ bác sĩ")
-                || lower.contains("liên hệ phòng khám") || lower.contains("liên hệ cơ sở y tế");
+    private List<String> normalizeAdviceGroups(List<String> generated, List<String> fallback) {
+        List<String> candidates = new ArrayList<>(generated);
+        candidates.addAll(fallback);
+        List<String> advice = new ArrayList<>();
+        appendGroup(advice, candidates, List.of("[THEO_DOI]"), 2);
+        appendGroup(advice, candidates, List.of("[DIEU_TRI]"), 1);
+        appendGroup(advice, candidates, List.of("[AN_UONG]"), 3);
+        appendGroup(advice, candidates, List.of("[VAN_DONG]", "[CHAM_SOC]"), 3);
+        appendGroup(advice, candidates, List.of("[LIEN_HE]"), 1);
+        for (String value : candidates) {
+            if (advice.size() >= 10) break;
+            if (!hasKnownPrefix(value) && value != null && !value.isBlank() && !advice.contains(value)) {
+                advice.add(value);
+            }
+        }
+        return List.copyOf(advice);
+    }
+
+    private void appendGroup(List<String> target, List<String> candidates,
+            List<String> prefixes, int maximum) {
+        int added = 0;
+        for (String value : candidates) {
+            if (added >= maximum || target.size() >= 10) break;
+            if (matchesPrefix(value, prefixes) && !target.contains(value)) {
+                target.add(value);
+                added++;
+            }
+        }
+    }
+
+    private boolean hasKnownPrefix(String value) {
+        return matchesPrefix(value, List.of("[THEO_DOI]", "[DIEU_TRI]", "[AN_UONG]",
+                "[VAN_DONG]", "[CHAM_SOC]", "[LIEN_HE]"));
+    }
+
+    private boolean matchesPrefix(String value, List<String> prefixes) {
+        if (value == null) return false;
+        String normalized = value.trim().toUpperCase();
+        return prefixes.stream().anyMatch(normalized::startsWith);
     }
 
     private String maxSeverity(String left, String right) {

@@ -124,9 +124,7 @@ function refreshAppointmentDateTimeValidity(control) {
     const value = new Date(control.value);
     const minutes = value.getHours() * 60 + value.getMinutes();
     let message = '';
-    if (value.getDay() === 0) {
-        message = 'Phòng khám nghỉ Chủ nhật.';
-    } else if (value.getMinutes() % 30 !== 0) {
+    if (value.getMinutes() % 30 !== 0) {
         message = 'Giờ khám phải theo khung 30 phút.';
     } else if (!((minutes >= 450 && minutes <= 690)
             || (minutes >= 780 && minutes <= 1020))) {
@@ -146,17 +144,6 @@ function refreshRequestedDateValidity(control) {
     if (error) {
         error.textContent = '';
         error.hidden = true;
-    }
-    if (!control.value) return;
-
-    const selected = new Date(control.value + 'T00:00:00');
-    if (selected.getDay() !== 0) return;
-
-    const message = 'Phòng khám nghỉ Chủ nhật.';
-    control.setCustomValidity(message);
-    if (error) {
-        error.textContent = message;
-        error.hidden = false;
     }
 }
 

@@ -48,9 +48,9 @@
                 <span class="hero-badge"><i></i> Phòng khám chuyên khoa nội tiết</span>
                 <h1>Chăm sóc chủ động.<br><span>Sống khỏe mỗi ngày.</span></h1>
                 <p class="hero-desc">Kết nối lịch hẹn, lượt khám, xét nghiệm và hồ sơ sức khỏe trong một hành trình rõ ràng — để người bệnh an tâm và đội ngũ y tế phối hợp tốt hơn.</p>
-                <div class="hero-buttons">
-                    <a class="home-btn home-btn-primary home-btn-large" href="${pageContext.request.contextPath}/Login">Đăng nhập hệ thống <span>→</span></a>
-                </div>
+                <c:if test="${empty sessionScope.user}"><div class="hero-buttons">
+                    <a class="home-btn home-btn-primary home-btn-large" href="${pageContext.request.contextPath}/Register">Đăng ký hồ sơ bệnh nhân <span>→</span></a>
+                </div></c:if>
                 <div class="hero-trust">
                     <span><b>✓</b> Lịch hẹn rõ ràng</span><span><b>✓</b> Hồ sơ tập trung</span><span><b>✓</b> Theo dõi liên tục</span>
                 </div>
@@ -75,7 +75,7 @@
     </section>
 
     <section class="home-quick" aria-label="Truy cập nhanh">
-        <a class="quick-pill quick-featured" href="${pageContext.request.contextPath}/Login"><span class="quick-icon">01</span><div><strong>Đăng nhập hệ thống</strong><small>Dành cho người dùng đã có tài khoản</small></div><b>→</b></a>
+        <a class="quick-pill quick-featured" href="#services"><span class="quick-icon">01</span><div><strong>Xem dịch vụ</strong><small>Các bước chăm sóc trong DiaCare</small></div><b>↓</b></a>
         <a class="quick-pill" href="#workflow"><span class="quick-icon">02</span><div><strong>Xem quy trình</strong><small>6 bước khám liên thông</small></div><b>↓</b></a>
     </section>
 
@@ -102,7 +102,7 @@
 
     <section class="hosp-section workflow-section" id="workflow">
         <div class="workflow-wrap">
-            <div class="section-header section-header-left"><span class="section-kicker">QUY TRÌNH NGOẠI TRÚ</span><h2 class="section-title">Mỗi bước đều rõ ràng</h2><p class="section-desc">Luồng khám được tối giản để người bệnh biết mình đang ở đâu và cần làm gì tiếp theo.</p><a class="home-btn home-btn-primary" href="${pageContext.request.contextPath}/Login">Bắt đầu với DiaCare <span>→</span></a></div>
+        <div class="section-header section-header-left"><span class="section-kicker">QUY TRÌNH NGOẠI TRÚ</span><h2 class="section-title">Mỗi bước đều rõ ràng</h2><p class="section-desc">Luồng khám được tối giản để người bệnh biết mình đang ở đâu và cần làm gì tiếp theo.</p><a class="home-btn home-btn-primary" href="#about">Tìm hiểu DiaCare <span>↓</span></a></div>
             <div class="workflow-steps">
                 <div class="workflow-step"><span>01</span><div><h3>Đặt lịch</h3><p>Chọn bác sĩ và thời gian phù hợp.</p></div></div>
                 <div class="workflow-step"><span>02</span><div><h3>Tiếp nhận</h3><p>Xác nhận lịch và cấp số hàng đợi.</p></div></div>
@@ -117,7 +117,7 @@
     <section class="hosp-section about-section" id="about">
         <div class="about-panel">
             <div class="about-copy"><span class="section-kicker">VỀ DIAcare</span><h2>Dữ liệu rõ ràng.<br><em>Chăm sóc gần gũi.</em></h2><p>DiaCare giúp đội ngũ y tế dành ít thời gian hơn cho việc tìm kiếm thông tin và nhiều thời gian hơn để lắng nghe người bệnh.</p><div class="about-points"><span>Hồ sơ nhất quán</span><span>Quy trình dễ hiểu</span><span>Trải nghiệm thân thiện</span></div></div>
-            <div class="about-contact"><small>LIÊN HỆ</small><span>diabetesclinic@gmail.com</span><a class="home-btn home-btn-light" href="${pageContext.request.contextPath}/Login">Đăng nhập hệ thống <b>→</b></a></div>
+        <div class="about-contact"><small>LIÊN HỆ</small><span>diabetesclinic@gmail.com</span></div>
         </div>
     </section>
 </main>
@@ -125,7 +125,7 @@
 <footer class="hosp-footer">
     <div class="footer-container">
         <div class="footer-brand"><div class="brand-logo">+</div><div><h3>DiaCare</h3><p>Hệ thống quản lý hồ sơ và điều hành khám bệnh tiểu đường dành cho phòng khám ngoại trú.</p></div></div>
-        <div><h3>Truy cập nhanh</h3><ul><li><a href="#services">Dịch vụ</a></li><li><a href="#workflow">Quy trình khám</a></li><li><a href="${pageContext.request.contextPath}/Login">Đăng nhập</a></li></ul></div>
+        <div><h3>Truy cập nhanh</h3><ul><li><a href="#home">Trang chủ</a></li><li><a href="#services">Dịch vụ</a></li><li><a href="#workflow">Quy trình khám</a></li></ul></div>
         <div><h3>Liên hệ</h3><ul><li>Hà Nội, Việt Nam</li><li>diabetesclinic@gmail.com</li></ul></div>
     </div>
     <div class="footer-bottom">© 2026 DiaCare · Chăm sóc tiểu đường toàn diện</div>

@@ -2,9 +2,12 @@ package models;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class DiabetesProfile {
+    private static final DateTimeFormatter DATE_FORMAT =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private int patientId;
     private String diabetesType;    // TYPE_1, TYPE_2, UNKNOWN
     private LocalDate diagnosisDate;
@@ -30,6 +33,9 @@ public class DiabetesProfile {
     public void setDiabetesType(String v)          { this.diabetesType = v; }
     public LocalDate getDiagnosisDate()            { return diagnosisDate; }
     public void setDiagnosisDate(LocalDate v)      { this.diagnosisDate = v; }
+    public String getDiagnosisDateLabel() {
+        return diagnosisDate == null ? "—" : diagnosisDate.format(DATE_FORMAT);
+    }
     public String getTreatmentMethod()             { return treatmentMethod; }
     public void setTreatmentMethod(String v)       { this.treatmentMethod = v; }
     public Double getHba1cTarget()                 { return hba1cTarget; }

@@ -16,7 +16,6 @@
 <main class="page-wrapper app-workspace">
     <div class="workspace-heading">
         <div><span class="workspace-kicker">KHÔNG GIAN BÁC SĨ</span><h1>Chào buổi làm việc, <c:out value="${sessionScope.user.fullName}"/></h1></div>
-        <div class="heading-actions"><a class="btn btn-primary" href="${pageContext.request.contextPath}/ClinicWorkflow?view=encounters">Mở danh sách lượt khám</a></div>
     </div>
 
     <section class="metric-grid doctor-metrics">
@@ -49,9 +48,9 @@
 
     <div class="dashboard-layout">
         <section class="card dashboard-main">
-            <div class="panel-heading"><div><span class="panel-eyebrow urgent-text">ƯU TIÊN HÔM NAY</span><h2>Bệnh nhân chờ kết luận</h2></div><a href="${pageContext.request.contextPath}/ClinicWorkflow?view=encounters">Xem hàng đợi →</a></div>
+            <div class="panel-heading"><div><span class="panel-eyebrow urgent-text">ƯU TIÊN HÔM NAY</span><h2>Bệnh nhân chờ kết luận</h2></div></div>
             <div class="table-scroll"><table class="modern-table"><thead><tr><th>Bệnh án</th><th>Bệnh nhân</th><th>Lý do khám</th><th>Thời gian</th><th></th></tr></thead><tbody>
-            <c:forEach var="r" items="${pendingRecords}"><tr><td><span class="record-code">#${r.recordId}</span></td><td><a class="patient-link" href="${pageContext.request.contextPath}/PatientHistory?patientId=${r.patientId}"><c:out value="${r.patientName}" default="Bệnh nhân #${r.patientId}"/></a></td><td><c:out value="${r.reasonForVisit}"/></td><td>${r.visitDateLabel}</td><td><div class="row-actions"><a href="${pageContext.request.contextPath}/RecordDetail?id=${r.recordId}">Xem</a><a class="primary" href="${pageContext.request.contextPath}/ClinicWorkflow?view=encounters">Tiếp tục xử lý</a></div></td></tr></c:forEach>
+            <c:forEach var="r" items="${pendingRecords}"><tr><td><span class="record-code">#${r.recordId}</span></td><td><a class="patient-link" href="${pageContext.request.contextPath}/PatientHistory?patientId=${r.patientId}"><c:out value="${r.patientName}" default="Bệnh nhân #${r.patientId}"/></a></td><td><c:out value="${r.reasonForVisit}"/></td><td>${r.visitDateLabel}</td><td><form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="inline-form"><input type="hidden" name="action" value="status"><input type="hidden" name="encounterId" value="${r.encounterId}"><input type="hidden" name="recordId" value="${r.recordId}"><input type="hidden" name="status" value="IN_CONSULTATION"><button type="submit" class="btn btn-primary btn-sm">Bắt đầu / mở bệnh án</button></form></td></tr></c:forEach>
             <c:if test="${empty pendingRecords}"><tr><td colspan="5" class="empty-state success-empty"><strong>Không còn bệnh án chờ kết luận</strong></td></tr></c:if>
             </tbody></table></div>
         </section>

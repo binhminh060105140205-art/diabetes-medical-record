@@ -17,8 +17,8 @@ class AppointmentRulesTest {
     }
 
     @Test
-    void rejectsSunday() {
-        assertThrows(IllegalArgumentException.class, () -> AppointmentRules.validate(
+    void acceptsSundayAppointment() {
+        assertDoesNotThrow(() -> AppointmentRules.validate(
                 LocalDateTime.of(2026, 7, 19, 9, 0), now));
     }
 
@@ -47,11 +47,28 @@ class AppointmentRulesTest {
     }
 
     @Test
-    void acceptsSimpleDateRequestAndRejectsSunday() {
+    void acceptsSameDayAndSundayRequestsWithinNinetyDays() {
         assertDoesNotThrow(() -> AppointmentRules.validateRequestedDate(
-                now.toLocalDate().plusDays(1), now.toLocalDate()));
+                now.toLocalDate(), now.toLocalDate()));
+        assertDoesNotThrow(() -> AppointmentRules.validateRequestedDate(
+                LocalDate.of(2026, 7, 19), now.toLocalDate()));
         assertThrows(IllegalArgumentException.class, () -> AppointmentRules.validateRequestedDate(
-                java.time.LocalDate.of(2026, 7, 19), now.toLocalDate()));
+                now.toLocalDate().minusDays(1), now.toLocalDate()));
+        assertThrows(IllegalArgumentException.class, () -> AppointmentRules.validateRequestedDate(
+                now.toLocalDate().plusDays(91), now.toLocalDate()));
+    }
+
+    @Test
+    void acceptsJulyTwentyFifthAndSundayTwentySixthForDemo() {
+        LocalDateTime demoNow = LocalDateTime.of(2026, 7, 25, 8, 0);
+        assertDoesNotThrow(() -> AppointmentRules.validateRequestedDate(
+                LocalDate.of(2026, 7, 25), demoNow.toLocalDate()));
+        assertDoesNotThrow(() -> AppointmentRules.validateRequestedDate(
+                LocalDate.of(2026, 7, 26), demoNow.toLocalDate()));
+        assertDoesNotThrow(() -> AppointmentRules.validate(
+                LocalDateTime.of(2026, 7, 25, 9, 0), demoNow));
+        assertDoesNotThrow(() -> AppointmentRules.validate(
+                LocalDateTime.of(2026, 7, 26, 9, 0), demoNow));
     }
 
     @Test
@@ -87,11 +104,15 @@ class AppointmentRulesTest {
     }
 
     @Test
-    void onlyAllowsCheckInOnAppointmentDate() {
-        LocalDate today = LocalDate.of(2026, 7, 21);
+    void allowsFlexibleCheckInDatesForLocalDemo() {
+        LocalDate today = LocalDate.of(2026, 7, 24);
         assertDoesNotThrow(() -> AppointmentRules.validateCheckInDate(
-                LocalDateTime.of(2026, 7, 21, 10, 0), today));
-        assertThrows(IllegalArgumentException.class, () -> AppointmentRules.validateCheckInDate(
-                LocalDateTime.of(2026, 7, 22, 10, 0), today));
+                LocalDateTime.of(2026, 7, 24, 10, 0), today));
+        assertDoesNotThrow(() -> AppointmentRules.validateCheckInDate(
+                LocalDateTime.of(2026, 7, 25, 10, 0), today));
+        assertDoesNotThrow(() -> AppointmentRules.validateCheckInDate(
+                LocalDateTime.of(2026, 7, 26, 10, 0), today));
+        assertThrows(IllegalArgumentException.class,
+                () -> AppointmentRules.validateCheckInDate(null, today));
     }
 }

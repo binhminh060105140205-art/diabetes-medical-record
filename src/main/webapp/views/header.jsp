@@ -16,10 +16,10 @@
         <c:choose>
             <c:when test="${not empty sessionScope.user}">
                 <span class="header-session"><span class="session-dot" aria-hidden="true"></span>Phiên làm việc an toàn</span>
-                <a href="${pageContext.request.contextPath}/Settings" class="header-profile-link">
+                <div class="header-profile-summary" aria-label="Người dùng đang đăng nhập">
                     <span><c:out value="${sessionScope.user.fullName}"/></span>
-                    <small>Cài đặt tài khoản</small>
-                </a>
+                    <small>Đang đăng nhập</small>
+                </div>
                 <form action="${pageContext.request.contextPath}/Logout" method="post" class="header-logout-form">
                     <button type="submit" class="header-logout">Đăng xuất</button>
                 </form>

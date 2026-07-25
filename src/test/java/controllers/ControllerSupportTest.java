@@ -74,7 +74,7 @@ class ControllerSupportTest {
         assertEquals(LocalDateTime.of(2026, 7, 21, 13, 0),
                 ControllerSupport.nextAppointmentSlot(
                         LocalDateTime.of(2026, 7, 21, 11, 50)));
-        assertEquals(LocalDateTime.of(2026, 7, 27, 7, 30),
+        assertEquals(LocalDateTime.of(2026, 7, 26, 7, 30),
                 ControllerSupport.nextAppointmentSlot(
                         LocalDateTime.of(2026, 7, 25, 17, 1)));
     }

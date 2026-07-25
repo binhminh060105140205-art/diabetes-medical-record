@@ -16,7 +16,7 @@
 <jsp:include page="header.jsp"/>
 <jsp:include page="topnav.jsp"/>
 <div class="page-wrapper">
-    <div class="page-heading"><div><div class="eyebrow">QUẢN LÝ NHÂN SỰ</div><h1 class="page-title">Tạo tài khoản nhân viên hoặc bác sĩ</h1><p class="text-muted">Thông tin hành nghề chỉ xuất hiện khi chọn vai trò Bác sĩ.</p></div><a class="btn btn-light" href="${pageContext.request.contextPath}/AdminDashboard">Quay lại tài khoản</a></div>
+    <div class="page-heading"><div><div class="eyebrow">QUẢN LÝ NHÂN SỰ</div><h1 class="page-title">Tạo tài khoản nhân viên hoặc bác sĩ</h1><p class="text-muted">Thông tin hành nghề chỉ xuất hiện khi chọn vai trò Bác sĩ.</p></div></div>
 
     <c:if test="${not empty toastMessage}">
         <div class="alert alert-success"><c:out value="${toastMessage}"/></div>

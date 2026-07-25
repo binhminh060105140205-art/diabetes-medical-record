@@ -4,7 +4,7 @@
 <!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Sức khỏe hôm nay — DiaCare</title><link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260722-web-audit2"><link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/patient-care-path.css?v=20260721-patient1"></head>
 <body><jsp:include page="header.jsp"/><jsp:include page="topnav.jsp"/>
-<main class="page-wrapper patient-today-page"><div class="page-heading"><div><div class="eyebrow">THEO DÕI HẰNG NGÀY</div><h1 class="page-title">Sức khỏe hôm nay</h1></div><a class="btn btn-light" href="${pageContext.request.contextPath}/PatientJournal">Nhật ký 30 ngày</a></div>
+<main class="page-wrapper patient-today-page"><div class="page-heading"><div><div class="eyebrow">THEO DÕI HẰNG NGÀY</div><h1 class="page-title">Sức khỏe hôm nay</h1></div><a class="btn btn-light" href="#daily-health-entry">📝 Nhập chỉ số</a></div>
 <c:if test="${not empty msg}"><div class="alert alert-info"><c:out value="${msg}"/></div></c:if>
 <c:if test="${not empty diabetesProfile}">
 <section class="patient-overview">
@@ -19,11 +19,11 @@
 <c:if test="${not empty patient}">
 <section class="card ai-advice-card" id="daily-advice">
     <div class="ai-advice-heading">
-        <div><div class="eyebrow">TRỢ LÝ SỨC KHỎE</div><h2>Lời khuyên hôm nay</h2></div>
-        <span class="ai-advice-icon" aria-hidden="true">✦</span>
+        <div><div class="eyebrow">TRỢ LÝ SỨC KHỎE</div><h2>Lời khuyên hôm nay</h2><p>Gợi ý dễ thực hiện về theo dõi, thuốc, dinh dưỡng, vận động và dấu hiệu cần liên hệ bác sĩ.</p></div>
+        <span class="ai-advice-icon" aria-hidden="true">🩺</span>
     </div>
-    <label class="ai-consent"><input type="checkbox" id="aiConsent"> <span>Tôi đồng ý dùng dữ liệu sức khỏe đã ẩn danh để tạo lời khuyên.</span></label>
-    <div class="ai-advice-actions"><button type="button" class="btn btn-primary" id="aiAdviceButton" onclick="loadPatientAdvice()">Nhận lời khuyên</button></div>
+    <label class="ai-consent"><input type="checkbox" id="aiConsent"> <span>🔒 Tôi đồng ý dùng dữ liệu sức khỏe đã ẩn danh để tạo lời khuyên hỗ trợ.</span></label>
+    <div class="ai-advice-actions"><button type="button" class="btn btn-primary" id="aiAdviceButton" onclick="loadPatientAdvice()">✨ Tạo lời khuyên chi tiết</button></div>
     <div class="ai-advice-result" id="aiAdviceResult" hidden aria-live="polite">
         <div class="ai-advice-result-head"><strong id="aiAdviceSummary"></strong><span id="aiAdviceSeverity" class="ai-severity"></span></div>
         <div id="aiAdviceItems" class="ai-advice-groups"></div><p id="aiAdviceDoctor" class="ai-doctor-note" hidden></p><small id="aiAdviceSource"></small>
@@ -31,7 +31,7 @@
 </section>
 
 </c:if>
-<c:if test="${not empty patient}"><section class="card daily-entry-card daily-entry-full"><div class="card-title">Nhập chỉ số hôm nay <c:if test="${not empty todayLog}"><span class="status-pill status-COMPLETED">Đã nhập</span></c:if></div>
+<c:if test="${not empty patient}"><section class="card daily-entry-card daily-entry-full" id="daily-health-entry"><div class="card-title">Nhập chỉ số hôm nay <c:if test="${not empty todayLog}"><span class="status-pill status-COMPLETED">Đã nhập</span></c:if></div>
 <div class="form-group"><label>Thời điểm đo đường huyết</label><select id="log_meal" class="form-control"><option value="">Chọn thời điểm</option><option value="FASTING" ${todayLog.mealType=='FASTING'?'selected':''}>Lúc đói</option><option value="AFTER_MEAL" ${todayLog.mealType=='AFTER_MEAL'?'selected':''}>Sau ăn</option><option value="BEDTIME" ${todayLog.mealType=='BEDTIME'?'selected':''}>Trước khi ngủ</option><option value="OTHER" ${todayLog.mealType=='OTHER'?'selected':''}>Khác</option></select></div>
 <div class="form-group"><label>Đường huyết (mg/dL)</label><input type="number" min="20" max="600" step="0.1" id="log_bg" class="form-control" value="${todayLog.bloodGlucose}" placeholder="Ví dụ: 105"></div>
 <div class="two-column"><div class="form-group"><label>Huyết áp tâm thu</label><input type="number" min="60" max="260" id="log_sbp" class="form-control" value="${todayLog.systolicBp}" placeholder="120"></div><div class="form-group"><label>Huyết áp tâm trương</label><input type="number" min="30" max="180" id="log_dbp" class="form-control" value="${todayLog.diastolicBp}" placeholder="80"></div></div>
@@ -92,10 +92,26 @@ function showLogResult(message,type){
     result.hidden=!message;
 }
 const adviceGroups=[
-    {key:'monitoring',title:'Theo dõi hôm nay',marker:'01',prefixes:['THEO_DOI'],keywords:['duong huyet','huyet ap','chi so','hba1c','theo doi','ghi lai ket qua','thoi diem do']},
-    {key:'treatment',title:'Thuốc và ăn uống',marker:'02',prefixes:['DIEU_TRI','AN_UONG'],keywords:['insulin','thuoc','dieu tri','an dung bua','bua an','thuc pham','nuoc ngot','tra sua','tinh bot']},
-    {key:'care',title:'Vận động và chăm sóc',marker:'03',prefixes:['VAN_DONG','CHAM_SOC'],keywords:['van dong','di bo','nghi ngoi','ban chan','ngu du','nguoi than','da sach']},
-    {key:'contact',title:'Khi cần liên hệ bác sĩ',marker:'!',prefixes:['LIEN_HE'],keywords:['lien he','phong kham','tai kham','nhan vien y te','hoi bac si']}
+    {
+        key:'monitoring',title:'Theo dõi chỉ số',marker:'🩺',prefixes:['THEO_DOI'],
+        keywords:['duong huyet','huyet ap','chi so','hba1c','theo doi','ghi lai ket qua','thoi diem do']
+    },
+    {
+        key:'treatment',title:'Thuốc và insulin',marker:'💊',prefixes:['DIEU_TRI'],
+        keywords:['insulin','thuoc','dieu tri','lieu dung','mui tiem']
+    },
+    {
+        key:'nutrition',title:'Ăn uống và dinh dưỡng',marker:'🥗',prefixes:['AN_UONG'],
+        keywords:['an dung bua','bua an','thuc pham','rau','ca','thit nac','dau phu','nuoc ngot','tra sua','tinh bot']
+    },
+    {
+        key:'care',title:'Vận động và chăm sóc',marker:'🚶',prefixes:['VAN_DONG','CHAM_SOC'],
+        keywords:['van dong','di bo','nghi ngoi','ban chan','ngu du','nguoi than','da sach']
+    },
+    {
+        key:'contact',title:'Khi cần liên hệ bác sĩ',marker:'🚨',prefixes:['LIEN_HE'],
+        keywords:['lien he','phong kham','tai kham','nhan vien y te','hoi bac si']
+    }
 ];
 function normalizeAdvice(value){
     return value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\u0111/g,'d').replace(/\u0110/g,'D').toLowerCase();
@@ -116,7 +132,7 @@ function renderAdviceGroups(values){
     (Array.isArray(values)?values:[]).forEach(value=>{
         const parsed=splitAdvice(value);
         if(!parsed.text)return;
-        const group=parsed.group||adviceGroups.slice(0,3).reduce((smallest,current)=>grouped.get(current.key).length<grouped.get(smallest.key).length?current:smallest);
+        const group=parsed.group||adviceGroups.slice(0,4).reduce((smallest,current)=>grouped.get(current.key).length<grouped.get(smallest.key).length?current:smallest);
         grouped.get(group.key).push(parsed.text);
     });
     const sections=adviceGroups.filter(group=>grouped.get(group.key).length).map(group=>{
@@ -134,7 +150,7 @@ async function loadPatientAdvice(){
     const severity=document.getElementById('aiAdviceSeverity'),doctor=document.getElementById('aiAdviceDoctor'),source=document.getElementById('aiAdviceSource');
     severity.textContent='';severity.className='ai-severity';doctor.hidden=true;doctor.textContent='';source.textContent='';items.replaceChildren();
     if(!consent.checked){box.hidden=false;summary.textContent='Vui lòng đọc và đánh dấu đồng ý trước khi tiếp tục.';return;}
-    button.disabled=true;button.textContent='Đang phân tích...';box.hidden=false;summary.textContent='Đang tạo lời khuyên an toàn cho hôm nay...';
+    button.disabled=true;button.textContent='Đang phân tích...';box.hidden=false;summary.textContent='Đang phân tích chỉ số và xây dựng hướng dẫn phù hợp cho hôm nay...';
     try{
         const response=await fetch(CTX+'/api/patient/ai-advice',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({consent:true})});
         const data=await response.json();if(!response.ok)throw new Error(data.error||'Không thể tạo lời khuyên.');
@@ -143,6 +159,6 @@ async function loadPatientAdvice(){
         doctor.hidden=!data.doctorRecommendation;doctor.textContent=data.doctorRecommendation?'Nếu cảm thấy không khỏe hoặc triệu chứng tiếp diễn, hãy liên hệ bác sĩ/phòng khám.':'';
         source.textContent=(data.source==='OPENAI'?'Lời khuyên từ hệ thống phân tích tự động':'Lời khuyên từ bộ quy tắc an toàn nội bộ')+(data.cached?' · đã lưu trong ngày':'');
     }catch(error){summary.textContent=error.message;items.replaceChildren();}
-    finally{button.disabled=false;button.textContent='Nhận lời khuyên';}
+    finally{button.disabled=false;button.textContent='✨ Tạo lại lời khuyên chi tiết';}
 }
 </script></body></html>

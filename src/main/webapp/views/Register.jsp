@@ -39,6 +39,6 @@
         </div>
     </section>
 </main>
-<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260722-validation2"></script><script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260724-validation3"></script>
+<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260725-local-demo1"></script><script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260724-validation3"></script>
 </body>
 </html>

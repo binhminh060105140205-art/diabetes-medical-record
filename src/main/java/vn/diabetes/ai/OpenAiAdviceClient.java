@@ -103,8 +103,8 @@ public class OpenAiAdviceClient {
         if (!List.of("low", "medium", "high").contains(severity)) severity = "medium";
         List<String> advice = new ArrayList<>();
         for (JsonNode item : node.path("advice")) {
-            String value = clean(item.asText(), 300);
-            if (!value.isBlank() && advice.size() < 8) advice.add(value);
+            String value = clean(item.asText(), 500);
+            if (!value.isBlank() && advice.size() < 10) advice.add(value);
         }
         if (summary.isBlank() || advice.isEmpty()) throw new IllegalStateException("Incomplete OpenAI advice");
         return new GeneratedAdvice(summary, advice, severity, node.path("doctor_recommendation").asBoolean(false));
@@ -121,7 +121,7 @@ public class OpenAiAdviceClient {
         ObjectNode properties = schema.putObject("properties");
         properties.putObject("summary").put("type", "string").put("maxLength", 350);
         ObjectNode advice = properties.putObject("advice");
-        advice.put("type", "array").put("minItems", 6).put("maxItems", 8);
+        advice.put("type", "array").put("minItems", 8).put("maxItems", 10);
         advice.putObject("items").put("type", "string").put("maxLength", 500);
         ObjectNode severity = properties.putObject("severity");
         severity.put("type", "string");

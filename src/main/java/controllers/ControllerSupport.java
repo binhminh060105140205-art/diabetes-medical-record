@@ -4,7 +4,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -122,9 +121,6 @@ final class ControllerSupport {
             candidate = candidate.plusMinutes(AppointmentRules.SLOT_MINUTES - remainder);
         }
 
-        while (candidate.getDayOfWeek() == DayOfWeek.SUNDAY) {
-            candidate = candidate.plusDays(1).with(AppointmentRules.OPEN_TIME);
-        }
         LocalTime time = candidate.toLocalTime();
         if (time.isBefore(AppointmentRules.OPEN_TIME)) {
             return candidate.with(AppointmentRules.OPEN_TIME);
@@ -135,7 +131,6 @@ final class ControllerSupport {
         }
         if (time.isAfter(AppointmentRules.CLOSE_TIME.minusMinutes(AppointmentRules.SLOT_MINUTES))) {
             candidate = candidate.plusDays(1).with(AppointmentRules.OPEN_TIME);
-            if (candidate.getDayOfWeek() == DayOfWeek.SUNDAY) candidate = candidate.plusDays(1);
         }
         return candidate;
     }
@@ -146,7 +141,6 @@ final class ControllerSupport {
         int firstOffset = includeToday ? 0 : 1;
         for (int offset = firstOffset; offset <= AppointmentRules.MAX_ADVANCE_DAYS; offset++) {
             LocalDate date = today.plusDays(offset);
-            if (date.getDayOfWeek() == DayOfWeek.SUNDAY) continue;
             String prefix = offset == 0 ? "Hôm nay — " : offset == 1 ? "Ngày mai — " : "";
             Map<String, String> option = new LinkedHashMap<>();
             option.put("value", date.toString());

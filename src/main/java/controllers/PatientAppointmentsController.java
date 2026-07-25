@@ -43,9 +43,9 @@ public class PatientAppointmentsController extends HttpServlet {
                 ControllerSupport.PATIENT_ID_SESSION_KEY, data.patientId());
         request.setAttribute("appointments", data.appointments());
         request.setAttribute("appointmentDates",
-                ControllerSupport.appointmentDateOptions(false));
+                ControllerSupport.appointmentDateOptions(true));
         LocalDate today = AppointmentRules.nowInVietnam().toLocalDate();
-        request.setAttribute("minAppointmentDate", today.plusDays(1));
+        request.setAttribute("minAppointmentDate", today);
         request.setAttribute("maxAppointmentDate", today.plusDays(AppointmentRules.MAX_ADVANCE_DAYS));
         request.getRequestDispatcher("views/PatientAppointmentsSimple.jsp")
                 .forward(request, response);

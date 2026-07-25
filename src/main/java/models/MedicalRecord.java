@@ -7,6 +7,8 @@ import java.time.format.DateTimeFormatter;
 public class MedicalRecord {
     private static final DateTimeFormatter VISIT_DATE_FORMAT =
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+    private static final DateTimeFormatter DATE_FORMAT =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private int recordId;
     private int patientId;
     private String patientName;
@@ -86,6 +88,9 @@ public class MedicalRecord {
 
     public LocalDate getFollowUpDate()          { return followUpDate; }
     public void setFollowUpDate(LocalDate v)    { this.followUpDate = v; }
+    public String getFollowUpDateLabel() {
+        return followUpDate == null ? "Theo chỉ định" : followUpDate.format(DATE_FORMAT);
+    }
 
     public String getDoctorNote()               { return doctorNote; }
     public void setDoctorNote(String v)         { this.doctorNote = v; }

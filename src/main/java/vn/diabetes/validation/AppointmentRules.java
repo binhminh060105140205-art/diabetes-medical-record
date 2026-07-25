@@ -1,6 +1,5 @@
 package vn.diabetes.validation;
 
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -29,9 +28,6 @@ public final class AppointmentRules {
         if (appointmentAt == null || !appointmentAt.isAfter(now.plusMinutes(15))) {
             throw new IllegalArgumentException("Lịch hẹn phải sau hiện tại ít nhất 15 phút.");
         }
-        if (appointmentAt.getDayOfWeek() == DayOfWeek.SUNDAY) {
-            throw new IllegalArgumentException("Phòng khám nghỉ Chủ nhật.");
-        }
         if (ChronoUnit.DAYS.between(now.toLocalDate(), appointmentAt.toLocalDate()) > MAX_ADVANCE_DAYS) {
             throw new IllegalArgumentException("Chỉ được đặt lịch trong 90 ngày tới.");
         }
@@ -48,11 +44,8 @@ public final class AppointmentRules {
     }
 
     public static void validateRequestedDate(LocalDate preferredDate, LocalDate today) {
-        if (preferredDate == null || !preferredDate.isAfter(today)) {
-            throw new IllegalArgumentException("Ngày khám phải bắt đầu từ ngày mai.");
-        }
-        if (preferredDate.getDayOfWeek() == DayOfWeek.SUNDAY) {
-            throw new IllegalArgumentException("Phòng khám nghỉ Chủ nhật.");
+        if (preferredDate == null || preferredDate.isBefore(today)) {
+            throw new IllegalArgumentException("Ngày khám không được trước ngày hiện tại.");
         }
         if (ChronoUnit.DAYS.between(today, preferredDate) > MAX_ADVANCE_DAYS) {
             throw new IllegalArgumentException("Chỉ được đăng ký khám trong 90 ngày tới.");
@@ -80,8 +73,8 @@ public final class AppointmentRules {
     }
 
     public static void validateCheckInDate(LocalDateTime appointmentAt, LocalDate today) {
-        if (appointmentAt == null || today == null || !appointmentAt.toLocalDate().equals(today)) {
-            throw new IllegalArgumentException("Chỉ được ghi nhận đến khám trong ngày hẹn.");
+        if (appointmentAt == null || today == null) {
+            throw new IllegalArgumentException("Lịch hẹn không có ngày giờ hợp lệ.");
         }
     }
 

@@ -107,7 +107,6 @@ public class ClinicWorkflowController extends HttpServlet {
             request.setAttribute("appointmentTimeSlots",
                     ControllerSupport.appointmentTimeOptions());
             LocalDateTime now = AppointmentRules.nowInVietnam();
-            request.setAttribute("appointmentToday", now.toLocalDate().toString());
             request.setAttribute("appointmentMinDateTime",
                     ControllerSupport.appointmentDateTimeInputValue(
                             ControllerSupport.nextAppointmentSlot(now)));
@@ -266,7 +265,8 @@ public class ClinicWorkflowController extends HttpServlet {
         }
         service.setEncounterStatus(
                 encounterId, status, user.getUserId());
-        return "encounters";
+        int recordId = ControllerSupport.positiveIdOrZero(request.getParameter("recordId"));
+        return recordId > 0 ? "record:" + recordId : "encounters";
     }
 
     private String addAllergy(HttpServletRequest request, User user,
@@ -371,6 +371,14 @@ public class ClinicWorkflowController extends HttpServlet {
 
     private void redirectToWorkflow(HttpServletRequest request, HttpServletResponse response,
             String view) throws IOException {
+        if (view != null && view.startsWith("record:")) {
+            int recordId = ControllerSupport.positiveIdOrZero(view.substring("record:".length()));
+            if (recordId > 0) {
+                response.sendRedirect(request.getContextPath()
+                        + "/MedicalRecordForm?recordId=" + recordId + "&tab=4");
+                return;
+            }
+        }
         String patientId = request.getParameter("patientId");
         int parsedPatientId = ControllerSupport.positiveIdOrZero(patientId);
         String patientQuery = parsedPatientId == 0 ? "" : "&patientId=" + parsedPatientId;

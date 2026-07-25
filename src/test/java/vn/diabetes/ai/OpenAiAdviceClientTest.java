@@ -29,4 +29,26 @@ class OpenAiAdviceClientTest {
                 "https://api.openai.com/v1/responses", 20);
         assertFalse(client.isConfigured());
     }
+
+    @Test
+    void limitsParsedAdviceToTenItems() throws Exception {
+        OpenAiAdviceClient client = new OpenAiAdviceClient(json, "", "gpt-5.6-terra",
+                "https://api.openai.com/v1/responses", 20);
+        var generated = json.createObjectNode();
+        generated.put("summary", "Kế hoạch hôm nay.");
+        var advice = generated.putArray("advice");
+        for (int index = 1; index <= 12; index++) advice.add("Lời khuyên số " + index);
+        generated.put("severity", "low");
+        generated.put("doctor_recommendation", false);
+
+        var root = json.createObjectNode();
+        var content = root.putArray("output").addObject().putArray("content").addObject();
+        content.put("type", "output_text");
+        content.put("text", json.writeValueAsString(generated));
+
+        var result = client.parseResponse(json.writeValueAsString(root));
+
+        assertEquals(10, result.advice().size());
+        assertEquals("Lời khuyên số 10", result.advice().get(9));
+    }
 }

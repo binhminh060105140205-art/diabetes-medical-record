@@ -24,17 +24,6 @@
 
     <c:if test="${not empty workflowFlash}"><div class="alert alert-info"><c:out value="${workflowFlash}"/></div></c:if>
 
-    <nav class="module-tabs" aria-label="Các khu vực điều hành">
-        <c:if test="${sessionScope.user.role=='STAFF'||sessionScope.user.role=='ADMIN'}">
-            <a class="${view=='appointments'?'active':''}" href="${pageContext.request.contextPath}/ClinicWorkflow?view=appointments">Lịch hẹn</a>
-        </c:if>
-        <a class="${view=='encounters'?'active':''}" href="${pageContext.request.contextPath}/ClinicWorkflow?view=encounters">Lượt khám</a>
-        <c:if test="${sessionScope.user.role=='DOCTOR'}">
-            <a class="${view=='clinical'?'active':''}" href="${pageContext.request.contextPath}/ClinicWorkflow?view=clinical">Dị ứng & tiền sử</a>
-        </c:if>
-        <a class="${view=='labs'?'active':''}" href="${pageContext.request.contextPath}/ClinicWorkflow?view=labs">Xét nghiệm</a>
-    </nav>
-
     <c:if test="${view=='appointments'}">
         <c:if test="${sessionScope.user.role=='STAFF'||sessionScope.user.role=='ADMIN'}">
             <details class="card disclosure-card">
@@ -70,7 +59,7 @@
                             <input id="appointmentAt" class="form-control appointment-datetime-input" type="datetime-local"
                                    name="appointmentAt" min="${appointmentMinDateTime}" max="${appointmentMaxDateTime}"
                                    step="1800" required>
-                            <small>Chọn theo khung 30 phút, từ 07:30–11:30 hoặc 13:00–17:00; phòng khám nghỉ Chủ nhật.</small>
+                            <small>Chọn theo khung 30 phút, từ 07:30–11:30 hoặc 13:00–17:00.</small>
                         </div>
                         <div class="form-group appointment-form-wide">
                             <label class="required">Lý do khám</label>
@@ -157,16 +146,11 @@
                                     </c:when>
                                     <c:when test="${a.status=='BOOKED'||a.status=='CONFIRMED'}">
                                         <div class="table-actions">
-                                            <c:choose>
-                                                <c:when test="${fn:substring(a.appointment_at,0,10)==appointmentToday}">
-                                                    <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="inline-form">
-                                                        <input type="hidden" name="action" value="checkIn">
-                                                        <input type="hidden" name="appointmentId" value="${a.appointment_id}">
-                                                        <button type="submit" class="btn btn-success btn-sm">Ghi nhận đến khám</button>
-                                                    </form>
-                                                </c:when>
-                                                <c:otherwise><span class="text-muted">Tiếp nhận đúng ngày hẹn</span></c:otherwise>
-                                            </c:choose>
+                                            <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="inline-form">
+                                                <input type="hidden" name="action" value="checkIn">
+                                                <input type="hidden" name="appointmentId" value="${a.appointment_id}">
+                                                <button type="submit" class="btn btn-success btn-sm">Ghi nhận đến khám</button>
+                                            </form>
                                             <details class="row-disclosure align-right">
                                                 <summary class="btn btn-light btn-sm">Tùy chọn</summary>
                                                 <div class="row-disclosure-panel">

@@ -13,7 +13,7 @@
 <jsp:include page="header.jsp"/>
 <jsp:include page="topnav.jsp"/>
 <div class="page-wrapper">
-    <div class="page-heading"><div><div class="eyebrow">HỒ SƠ BỆNH NHÂN</div><h1 class="page-title">Cập nhật thông tin bệnh nhân</h1><p class="text-muted">Kiểm tra số điện thoại và thông tin nhận diện trước khi lưu.</p></div><a class="btn btn-light" href="${pageContext.request.contextPath}/StaffDashboard#patients">Quay lại danh sách</a></div>
+    <div class="page-heading"><div><div class="eyebrow">HỒ SƠ BỆNH NHÂN</div><h1 class="page-title">Cập nhật thông tin bệnh nhân</h1><p class="text-muted">Kiểm tra số điện thoại và thông tin nhận diện trước khi lưu.</p></div></div>
 
     <c:if test="${not empty err}">
         <div class="alert alert-danger"><c:out value="${err}"/></div>

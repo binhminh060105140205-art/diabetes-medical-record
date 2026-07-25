@@ -18,9 +18,13 @@ class PatientAdviceRuleEngineTest {
 
         assertTrue(type1.fallbackAdvice().stream().anyMatch(value -> value.contains("insulin")));
         assertTrue(type1.fallbackAdvice().stream().anyMatch(value -> value.contains("hạ đường huyết")));
-        assertTrue(type2.fallbackAdvice().stream().anyMatch(value -> value.contains("đồ uống nhiều đường")));
-        assertTrue(type1.fallbackAdvice().size() >= 6);
-        assertTrue(type2.fallbackAdvice().size() >= 6);
+        assertTrue(type2.fallbackAdvice().stream().anyMatch(value -> value.contains("nước ngọt")));
+        assertTrue(type2.fallbackAdvice().stream().anyMatch(value -> value.contains("rau không tinh bột")));
+        assertTrue(type2.fallbackAdvice().stream().anyMatch(value -> value.contains("thịt nạc")));
+        assertTrue(type1.fallbackAdvice().size() >= 8 && type1.fallbackAdvice().size() <= 10);
+        assertTrue(type2.fallbackAdvice().size() >= 8 && type2.fallbackAdvice().size() <= 10);
+        assertTrue(countAdvice(type1, "[AN_UONG]") >= 2);
+        assertTrue(countAdvice(type2, "[AN_UONG]") >= 2);
         assertNotEquals(type1.fallbackAdvice(), type2.fallbackAdvice());
     }
 
@@ -76,5 +80,9 @@ class PatientAdviceRuleEngineTest {
         return new PatientAdviceRepository.Snapshot(999, LocalDate.now().minusYears(76), type,
                 LocalDate.now().minusYears(8), treatment, 7.0, 7.4, logs,
                 List.of("Tăng huyết áp"), null);
+    }
+
+    private long countAdvice(PatientAdviceRuleEngine.Prepared prepared, String prefix) {
+        return prepared.fallbackAdvice().stream().filter(value -> value.startsWith(prefix)).count();
     }
 }

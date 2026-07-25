@@ -875,21 +875,31 @@ td{border-bottom-color:#eef0f6;color:#333d59}tbody tr:hover{background:#f8f8ff}
 .ai-advice-heading h2{margin:4px 0 6px;color:#29345d;font-size:25px}
 .ai-advice-heading p{max-width:760px;color:var(--dc-muted);line-height:1.65}
 .ai-advice-icon{width:52px;height:52px;display:grid;place-items:center;flex:0 0 auto;border-radius:18px 18px 18px 6px;color:#fff;font-size:25px;background:linear-gradient(135deg,var(--dc-primary),var(--dc-accent));box-shadow:0 10px 24px rgba(73,70,183,.22)}
-.ai-consent{margin:18px 0 14px;padding:15px 17px;display:flex;align-items:flex-start;gap:11px;border:1px solid #e0e1f1;border-radius:14px;background:#fff;color:#48516c;font-size:13px;line-height:1.55;cursor:pointer}
+.ai-consent{margin:18px 0 14px;padding:15px 17px;display:flex;align-items:flex-start;gap:11px;border:1px solid #e0e1f1;border-radius:14px;background:#fff;color:#48516c;font-size:16px;line-height:1.55;cursor:pointer}
 .ai-consent input{width:18px;height:18px;margin-top:2px;accent-color:var(--dc-primary);flex:0 0 auto}
 .ai-advice-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .ai-advice-result{margin-top:18px;padding:18px;border:1px solid #dcdef0;border-radius:16px;background:#fff}
 .ai-advice-result-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .ai-advice-result strong{color:#29345d;font-size:17px;line-height:1.5}
-.ai-advice-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin:17px 0 13px}
+.ai-advice-groups{display:grid;grid-template-columns:1fr;gap:14px;margin:17px 0 13px}
 .ai-advice-section{overflow:hidden;border:1px solid #e1e4f4;border-radius:14px;background:#fbfcff}
 .ai-advice-section-head{display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid #e8eaf5;background:linear-gradient(135deg,#f2f5ff,#f8f5ff)}
-.ai-advice-section-marker{width:29px;height:29px;display:grid;place-items:center;flex:0 0 auto;border-radius:9px;color:#fff;background:linear-gradient(135deg,#4058c7,#7753d0);font-size:10px;font-weight:900;letter-spacing:.02em}
-.ai-advice-section h3{margin:0;color:#29345d;font-size:14px;line-height:1.35}
+.ai-advice-section-marker{width:40px;height:40px;display:grid;place-items:center;flex:0 0 auto;border-radius:12px;color:#fff;background:linear-gradient(135deg,#4058c7,#7753d0);font-size:21px;font-weight:900;letter-spacing:.02em}
+.ai-advice-section h3{margin:0;color:#29345d;font-size:17px;line-height:1.35}
 .ai-advice-section ul{margin:0;padding:5px 14px 7px;list-style:none}
-.ai-advice-section li{position:relative;padding:10px 4px 10px 18px;color:#304267;font-size:14px;line-height:1.55}
+.ai-advice-section li{position:relative;padding:12px 5px 12px 21px;color:#304267;font-size:16px;line-height:1.65}
 .ai-advice-section li+li{border-top:1px solid #e9ebf5}
 .ai-advice-section li:before{content:"";position:absolute;left:3px;top:18px;width:6px;height:6px;border-radius:50%;background:#5b68cf}
+.ai-advice-section-treatment{border-color:#d9dcf5;background:#fbfbff}
+.ai-advice-section-treatment .ai-advice-section-marker{background:#5969c7}
+.ai-advice-section-nutrition{border-color:#cfe8d8;background:#fbfffc}
+.ai-advice-section-nutrition .ai-advice-section-head{border-bottom-color:#dceee2;background:#effaf3}
+.ai-advice-section-nutrition .ai-advice-section-marker{background:#23845b}
+.ai-advice-section-nutrition li:before{background:#23845b}
+.ai-advice-section-care{border-color:#eadfcf;background:#fffdf9}
+.ai-advice-section-care .ai-advice-section-head{border-bottom-color:#eee2d2;background:#fff8ee}
+.ai-advice-section-care .ai-advice-section-marker{background:#b87420}
+.ai-advice-section-care li:before{background:#b87420}
 .ai-advice-section-contact{border-color:#f1d6d7;background:#fffafa}
 .ai-advice-section-contact .ai-advice-section-head{border-bottom-color:#f2dddd;background:#fff3f3}
 .ai-advice-section-contact .ai-advice-section-marker{background:#c33b4f}
@@ -905,7 +915,7 @@ td{border-bottom-color:#eef0f6;color:#333d59}tbody tr:hover{background:#f8f8ff}
 .daily-entry-card .daily-log-message.is-success{color:#0d704f;border-color:#8ed5bc;background:#ecfbf5}
 .daily-entry-card .daily-log-message.is-success:before{content:"OK";background:#13845f;font-size:9px}
 .daily-entry-card .daily-log-message.is-loading{color:#3347a7;border-color:#c7cff5;background:#f2f5ff}
-@media(max-width:700px){.ai-advice-heading h2{font-size:21px}.ai-advice-icon{width:44px;height:44px}.ai-advice-result-head{display:block}.ai-severity{display:inline-block;margin-top:10px}.ai-advice-groups{grid-template-columns:1fr}.daily-entry-card .daily-log-message{font-size:14px;padding:12px 13px}}
+@media(max-width:700px){.ai-advice-heading h2{font-size:21px}.ai-advice-icon{width:44px;height:44px}.ai-advice-result-head{display:block}.ai-severity{display:inline-block;margin-top:10px}.ai-advice-section li{font-size:15px}.daily-entry-card .daily-log-message{font-size:14px;padding:12px 13px}}
 
 /* Medical-record timeline shares the same blue-violet design system. */
 .record-timeline{position:relative;margin:24px 0 0 14px;padding-left:32px;border-left:3px solid #d7dcf8}
@@ -1021,7 +1031,7 @@ body:not(.auth-body):not(.register-body) { display: flex; min-height: 100vh; fle
     background: #5fe0b7;
     box-shadow: 0 0 0 4px rgba(95, 224, 183, .13);
 }
-.header-profile-link {
+.header-profile-summary {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
@@ -1029,9 +1039,8 @@ body:not(.auth-body):not(.register-body) { display: flex; min-height: 100vh; fle
     line-height: 1.25;
     text-decoration: none;
 }
-.header-profile-link span { max-width: 230px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 800; }
-.header-profile-link small { color: #d9dcff; font-size: 9px; }
-.header-profile-link:hover { color: #fff; text-decoration: none; }
+.header-profile-summary span { max-width: 230px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 800; }
+.header-profile-summary small { color: #d9dcff; font-size: 9px; }
 .header-logout-form { margin: 0; }
 .header-logout {
     border: 1px solid rgba(255,255,255,.5);
@@ -1640,8 +1649,8 @@ body.is-navigating:after {
     .site-header { height: 64px; padding: 0 13px; }
     .site-header ~ .page-wrapper { margin-top: 64px; }
     .header-session { display: none; }
-    .header-profile-link span { max-width: 130px; }
-    .header-profile-link small { display: none; }
+    .header-profile-summary span { max-width: 130px; }
+    .header-profile-summary small { display: none; }
     .page-wrapper, .app-workspace { padding: 21px 13px 36px; }
     .page-heading, .workspace-heading, .patient-summary-bar, .section-header, .operations-toolbar { align-items: stretch; flex-direction: column; }
     .heading-actions, .section-actions, .form-actions { width: 100%; }
@@ -1678,7 +1687,7 @@ body.is-navigating:after {
     .row-disclosure .request-assignment-form, .row-disclosure .result-form { grid-template-columns: 1fr; }
 }
 @media (max-width: 460px) {
-    .header-title small, .header-profile-link { display: none; }
+    .header-title small, .header-profile-summary { display: none; }
     .btn { width: 100%; }
     .row-actions .btn, .row-actions a, .inline-form .btn { width: auto; }
 }

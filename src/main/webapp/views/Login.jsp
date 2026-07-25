@@ -12,9 +12,9 @@
 <body class="auth-body">
 <main class="auth-shell">
     <section class="auth-visual">
-        <a class="auth-brand" href="${pageContext.request.contextPath}/">
+        <div class="auth-brand">
             <span>+</span><div><strong>DiaCare</strong><small>Chăm sóc tiểu đường toàn diện</small></div>
-        </a>
+        </div>
         <div class="auth-copy">
             <div class="auth-label">HỒ SƠ SỨC KHỎE ĐIỆN TỬ</div>
             <h1>Mỗi dữ liệu đúng chỗ.<br>Mỗi quyết định đúng lúc.</h1>
@@ -80,7 +80,7 @@
         <footer>© 2026 DiaCare</footer>
     </section>
 </main>
-<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260722-validation2"></script>
+<script src="${pageContext.request.contextPath}/static/js/main.js?v=20260725-local-demo1"></script>
 <script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260724-validation3"></script>
 <c:if test="${not empty requestScope.lockUntil}">
     <script>

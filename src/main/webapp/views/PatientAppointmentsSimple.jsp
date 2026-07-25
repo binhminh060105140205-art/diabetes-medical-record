@@ -37,8 +37,7 @@
                         <label class="sr-only" for="preferredDate">Ngày khám</label>
                         <input id="preferredDate" class="form-control booking-date-input" type="date" name="preferredDate"
                                min="${minAppointmentDate}" max="${maxAppointmentDate}" required>
-                        <small class="form-hint">Từ ngày mai, không nhận Chủ nhật và không quá 90 ngày.</small>
-                        <small class="booking-date-error" data-date-validation role="alert" hidden></small>
+                        <small class="form-hint">Có thể chọn từ hôm nay, kể cả Chủ nhật, và không quá 90 ngày.</small>
                     </div>
                 </div>
 
