@@ -40,7 +40,7 @@ public final class LabResultCsvImporter {
         return parseCsv(new ByteArrayInputStream(bytes));
     }
 
-    /** Parses one uploaded result file and attaches it to the record selected on screen. */
+    /** Parses one bundled result file and attaches it to the record selected on screen. */
     public static List<LabResultImportRow> parseForRecord(InputStream input, int recordId)
             throws IOException {
         if (recordId <= 0) {

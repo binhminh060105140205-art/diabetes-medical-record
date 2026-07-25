@@ -46,7 +46,7 @@ class LabResultCsvImporterTest {
     }
 
     @Test
-    void importsUploadedHappyCaseForSelectedRecord() throws Exception {
+    void importsBundledHappyCaseForSelectedRecord() throws Exception {
         String text = "# happy case\n"
                 + "blood_glucose = 6.2\n"
                 + "hba1c = 6.8\n"

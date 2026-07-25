@@ -302,8 +302,7 @@
             <div class="operations-toolbar"><label class="table-filter"><span class="sr-only">Tìm xét nghiệm</span><input type="search" data-table-filter="labTable" placeholder="Tìm bệnh nhân, mã xét nghiệm, ưu tiên hoặc trạng thái"></label></div>
             <c:if test="${sessionScope.user.role=='STAFF'||sessionScope.user.role=='ADMIN'}">
                 <div class="lab-import-panel">
-                    <form method="post" enctype="multipart/form-data"
-                          action="${pageContext.request.contextPath}/LabResultImport"
+                    <form method="post" action="${pageContext.request.contextPath}/LabResultImport"
                           class="lab-import-form" data-lab-import-form>
                         <label class="lab-import-field" for="labImportRecord">
                             <span>Bệnh nhân / bệnh án</span>
@@ -314,12 +313,11 @@
                                 </c:forEach>
                             </select>
                         </label>
-                        <label class="lab-import-field" for="labImportFile">
-                            <span>File kết quả</span>
-                            <input class="form-control" id="labImportFile" type="file" name="resultFile"
-                                   accept=".txt,.csv,text/plain,text/csv" required data-lab-import-file>
-                        </label>
-                        <a class="btn btn-light" href="${pageContext.request.contextPath}/static/templates/lab-results-import.txt" download="lab-results-happy-case.txt">File mẫu</a>
+                        <div class="lab-import-source" role="note">
+                            <span>File kết quả mặc định</span>
+                            <strong>src/main/resources/lab-results/default-lab-results.txt</strong>
+                            <small>Sửa chỉ số trong file này; hệ thống tự đọc file khi import.</small>
+                        </div>
                         <button class="btn btn-primary" type="submit" disabled data-lab-import-submit>Import kết quả</button>
                     </form>
                 </div>
@@ -405,6 +403,6 @@
 
 <jsp:include page="footer.jsp"/>
 <script src="${pageContext.request.contextPath}/static/js/diabetes-routing.js?v=20260721-web-audit1" defer></script>
-<script src="${pageContext.request.contextPath}/static/js/lab-result-import.js?v=20260722-lab-compact1" defer></script>
+<script src="${pageContext.request.contextPath}/static/js/lab-result-import.js?v=20260725-default-file1" defer></script>
 </body>
 </html>

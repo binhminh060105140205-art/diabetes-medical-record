@@ -1,0 +1,10 @@
+# FILE KẾT QUẢ XÉT NGHIỆM MẶC ĐỊNH CHO DEMO LOCAL.
+# Sửa các chỉ số bên dưới rồi chạy lại ứng dụng trước khi bấm "Import kết quả".
+# Không thêm record_id; hệ thống tự gắn dữ liệu vào bệnh án được chọn trên màn hình Staff.
+# Có thể để trống chỉ số chưa có bằng cú pháp: (để trống)
+blood_glucose = 6.2
+hba1c = 6.8
+cholesterol = (để trống)
+triglyceride = (để trống)
+hdl_c = (để trống)
+ldl_c = (để trống)
