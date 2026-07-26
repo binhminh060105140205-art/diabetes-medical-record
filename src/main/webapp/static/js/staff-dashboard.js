@@ -23,7 +23,7 @@
 
     // Nút "Tiếp nhận bệnh nhân mới" chỉ mở form và đưa con trỏ vào ô đầu tiên.
     // Khi nhân viên bấm nút tạo, form mới gửi sang /PatientForm để tạo tài khoản và hồ sơ.
-    document.querySelectorAll('[data-open-intake]').forEach(function (button) {
+    document.querySelectorAll('[data-open-intake-trigger]').forEach(function (button) {
         button.addEventListener('click', function (event) {
             event.preventDefault();
             openIntake(true);
@@ -40,7 +40,7 @@
     window.addEventListener('pageshow', resetIntakeState);
     intake.addEventListener('focusin', resetIntakeState);
 
-    if (workspace.dataset.openIntake === 'true') intake.hidden = false;
+    if (workspace.dataset.intakeOpen === 'true') intake.hidden = false;
     if (workspace.dataset.scrollIntake === 'true') {
         window.addEventListener('load', function () { openIntake(false); });
     }

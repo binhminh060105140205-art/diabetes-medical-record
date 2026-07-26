@@ -7,13 +7,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Tiếp nhận bệnh nhân — DiaCare</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260722-web-audit2">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260726-staff-intake-fix1">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
 <jsp:include page="topnav.jsp"/>
 
-    <main class="page-wrapper app-workspace staff-patient-workspace" data-open-intake="${showIntakeForm == true || param.newPatient == '1'}" data-scroll-intake="${showIntakeForm == true}">
+    <main class="page-wrapper app-workspace staff-patient-workspace" data-intake-open="${showIntakeForm == true || param.newPatient == '1'}" data-scroll-intake="${showIntakeForm == true}">
     <div class="workspace-heading">
         <div>
             <span class="workspace-kicker">NHÂN VIÊN TIẾP NHẬN</span>
@@ -24,7 +24,7 @@
             <c:if test="${pendingAppointmentRequests > 0}"><a class="btn btn-warning"
                href="${pageContext.request.contextPath}/ClinicWorkflow?view=appointments">⏳ ${pendingAppointmentRequests} lịch chờ xác nhận</a></c:if>
             <%-- Nút mở form chỉ điều khiển giao diện; submit bên dưới mới đi qua PatientFormController. --%>
-            <a class="btn btn-primary" href="#new-patient" data-open-intake>＋ Tiếp nhận bệnh nhân mới</a>
+            <a class="btn btn-primary" href="#new-patient" data-open-intake-trigger>＋ Tiếp nhận bệnh nhân mới</a>
         </div>
     </div>
 
@@ -202,7 +202,7 @@
     </section>
 </main>
 
-<script src="${pageContext.request.contextPath}/static/js/staff-dashboard.js?v=20260726-review1"></script>
+<script src="${pageContext.request.contextPath}/static/js/staff-dashboard.js?v=20260726-staff-intake-fix2"></script>
 <script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260724-validation3"></script>
 <jsp:include page="footer.jsp"/>
 </body>
