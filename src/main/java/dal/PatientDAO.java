@@ -51,6 +51,7 @@ public class PatientDAO extends DBContext {
 
     /** Only exposes patients who have been assigned to the signed-in doctor. */
     public List<Patient> listForDoctorSelection(int doctorUserId) {
+        // Danh sách trong màn hình hồ sơ của bác sĩ chỉ trả bệnh nhân đã từng được phân công hoặc có lịch liên quan.
         List<Patient> list = new ArrayList<>();
         String sql = """
                 SELECT DISTINCT p.patient_id,p.full_name,p.phone,
@@ -123,6 +124,7 @@ public class PatientDAO extends DBContext {
 
     /** Loads a filtered count and one page in one database round-trip. */
     public PatientListData loadPatientList(String keyword, int page, int pageSize) {
+        // Staff tìm bệnh nhân bằng một truy vấn phân trang; kết quả này nuôi cả bảng và tổng số trang trên dashboard.
         boolean searching = keyword != null && !keyword.isBlank();
         String where = searching
                 ? " WHERE COALESCE(u.status,'ACTIVE') <> 'DELETED' AND "
@@ -236,6 +238,7 @@ public class PatientDAO extends DBContext {
 
     /** Loads every read-only section of the patient home page in one database round-trip. */
     public PatientDashboardData loadPatientDashboard(int userId) {
+        // Trang "Sức khỏe hôm nay" lấy hồ sơ, bệnh sử tiểu đường và chỉ số mới nhất trong một lần đọc dữ liệu.
         String sql = """
             SELECT p.*,
                    COALESCE(dp.diabetes_type,'UNKNOWN') dp_type,

@@ -12,7 +12,7 @@ import vn.diabetes.validation.Validators;
 
 /**
  * Staff handles intake; the assigned doctor maintains the diabetes profile
- * and completes the consultation. Lab results are entered in ClinicWorkflow.
+ * and completes the consultation. Staff can enter or import lab results from the record tab.
  */
 @WebServlet("/MedicalRecordForm")
 public class MedicalRecordFormController extends HttpServlet {

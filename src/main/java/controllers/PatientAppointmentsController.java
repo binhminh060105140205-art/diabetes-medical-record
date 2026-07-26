@@ -39,11 +39,10 @@ public class PatientAppointmentsController extends HttpServlet {
                     "Tài khoản chưa liên kết hồ sơ bệnh nhân");
             return;
         }
-        request.getSession().setAttribute(
-                ControllerSupport.PATIENT_ID_SESSION_KEY, data.patientId());
+
+        request.getSession().setAttribute(ControllerSupport.PATIENT_ID_SESSION_KEY, data.patientId());
         request.setAttribute("appointments", data.appointments());
-        request.setAttribute("appointmentDates",
-                ControllerSupport.appointmentDateOptions(true));
+        request.setAttribute("appointmentDates", ControllerSupport.appointmentDateOptions(true));
         LocalDate today = AppointmentRules.nowInVietnam().toLocalDate();
         request.setAttribute("minAppointmentDate", today);
         request.setAttribute("maxAppointmentDate", today.plusDays(AppointmentRules.MAX_ADVANCE_DAYS));
@@ -65,42 +64,50 @@ public class PatientAppointmentsController extends HttpServlet {
         ClinicWorkflowService service = new ClinicWorkflowService(workflow);
         try {
             if ("cancel".equals(request.getParameter("action"))) {
-                service.cancelOwnAppointment(
-                        ControllerSupport.positiveId(request.getParameter("appointmentId"), "Lịch hẹn"),
-                        user.getUserId(), user.getUserId());
-                ControllerSupport.flash(request, "appointmentFlash", "Đã hủy lịch hẹn.");
-                ControllerSupport.flash(request, "appointmentFlashType", "success");
-                redirectToPage(request, response);
-                return;
+                cancelAppointment(request, service, user);
+                flash(request, "Đã hủy lịch hẹn.", "success");
+            } else {
+                createAppointmentRequest(request, workflow, service, user);
+                flash(request,
+                        "Đã gửi yêu cầu. Nhân viên sẽ xác nhận bác sĩ và giờ khám cụ thể.", "success");
             }
-
-            Integer patientId = workflow.patientIdForUser(user.getUserId());
-            if (patientId == null) {
-                throw new IllegalArgumentException("Tài khoản chưa liên kết hồ sơ bệnh nhân.");
-            }
-            String reason = ControllerSupport.clean(request.getParameter("reason"));
-            if (!PATIENT_REASONS.contains(reason)) {
-                throw new IllegalArgumentException("Vui lòng chọn một lý do khám trong danh sách.");
-            }
-
-            service.createAppointmentRequest(
-                    patientId,
-                    parseDate(request.getParameter("preferredDate")),
-                    ControllerSupport.clean(request.getParameter("preferredPeriod")),
-                    reason, null, user.getUserId());
-            ControllerSupport.flash(request, "appointmentFlash",
-                    "Đã gửi yêu cầu. Nhân viên sẽ xác nhận bác sĩ và giờ khám cụ thể.");
-            ControllerSupport.flash(request, "appointmentFlashType", "success");
         } catch (IllegalArgumentException error) {
-            ControllerSupport.flash(request, "appointmentFlash",
-                    "Không thể đặt lịch: " + error.getMessage());
-            ControllerSupport.flash(request, "appointmentFlashType", "danger");
+            flash(request, "Không thể đặt lịch: " + error.getMessage(), "danger");
         } catch (IllegalStateException error) {
-            ControllerSupport.flash(request, "appointmentFlash",
-                    "Không thể xử lý lịch hẹn lúc này. Vui lòng tải lại trang và thử lại.");
-            ControllerSupport.flash(request, "appointmentFlashType", "danger");
+            flash(request,
+                    "Không thể xử lý lịch hẹn lúc này. Vui lòng tải lại trang và thử lại.", "danger");
         }
         redirectToPage(request, response);
+    }
+
+    // Nút "Hủy yêu cầu / lịch" chỉ được phép hủy lịch của chính bệnh nhân đang đăng nhập.
+    private void cancelAppointment(HttpServletRequest request, ClinicWorkflowService service,
+            User user) {
+        int appointmentId = ControllerSupport.positiveId(
+                request.getParameter("appointmentId"), "Lịch hẹn");
+        service.cancelOwnAppointment(appointmentId, user.getUserId(), user.getUserId());
+    }
+
+    // Nút "Gửi yêu cầu" tạo trạng thái REQUESTED; nhân viên mới là người phân công bác sĩ và giờ cụ thể.
+    private void createAppointmentRequest(HttpServletRequest request, ClinicWorkflowDAO workflow,
+            ClinicWorkflowService service, User user) {
+        Integer patientId = workflow.patientIdForUser(user.getUserId());
+        if (patientId == null) {
+            throw new IllegalArgumentException("Tài khoản chưa liên kết hồ sơ bệnh nhân.");
+        }
+        String reason = ControllerSupport.clean(request.getParameter("reason"));
+        if (!PATIENT_REASONS.contains(reason)) {
+            throw new IllegalArgumentException("Vui lòng chọn một lý do khám trong danh sách.");
+        }
+        service.createAppointmentRequest(patientId,
+                parseDate(request.getParameter("preferredDate")),
+                ControllerSupport.clean(request.getParameter("preferredPeriod")),
+                reason, null, user.getUserId());
+    }
+
+    private void flash(HttpServletRequest request, String message, String type) {
+        ControllerSupport.flash(request, "appointmentFlash", message);
+        ControllerSupport.flash(request, "appointmentFlashType", type);
     }
 
     private LocalDate parseDate(String value) {

@@ -4,6 +4,7 @@ import java.sql.Date;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -49,6 +50,7 @@ public class ClinicWorkflowService {
 
     public void createAppointmentRequest(int patientId, LocalDate preferredDate,
             String preferredPeriod, String reason, String note, int actor) {
+        // Yêu cầu từ trang bệnh nhân chỉ ghi ngày/buổi mong muốn; chưa phân công bác sĩ ở bước này.
         positive(patientId, "Bệnh nhân");
         preferredPeriod = preferredPeriod == null ? "" : preferredPeriod.trim().toUpperCase();
         AppointmentRules.validateRequestedDate(preferredDate, clock.get().toLocalDate());
@@ -84,6 +86,7 @@ public class ClinicWorkflowService {
     }
 
     public void checkIn(int id, int actor) {
+        // Check-in chuyển lịch đã xác nhận thành lượt khám; gateway đảm bảo tạo encounter trong một transaction.
         positive(id, "Lịch hẹn");
         gateway.checkIn(id, actor);
     }
@@ -136,22 +139,44 @@ public class ClinicWorkflowService {
 
     public void createLabOrder(int encounterId, int doctorId, String code,
             String name, String priority, String note, int actor) {
-        code = code == null ? "" : code.trim().toUpperCase();
-        name = LAB_TESTS.get(code);
-        if (name == null) throw new IllegalArgumentException("Xét nghiệm không nằm trong danh mục hỗ trợ.");
+        createLabOrders(encounterId, doctorId, new String[]{code}, priority, note, actor);
+    }
+
+    public void createLabOrders(int encounterId, int doctorId, String[] codes,
+            String priority, String note, int actor) {
+        // Một lần chỉ định có thể có nhiều mã xét nghiệm; loại trùng trước khi ghi từng order xuống database.
+        if (codes == null || codes.length == 0) {
+            throw new IllegalArgumentException("Vui lòng chọn ít nhất một xét nghiệm.");
+        }
         priority = priority == null ? "ROUTINE" : priority.trim().toUpperCase();
         if (!Set.of("ROUTINE", "URGENT").contains(priority))
             throw new IllegalArgumentException("Mức ưu tiên xét nghiệm không hợp lệ.");
         positive(encounterId, "Lượt khám");
         positive(doctorId, "Bác sĩ");
-        gateway.createLabOrder(encounterId, doctorId,
-                Validators.required(code, "Mã xét nghiệm"),
-                Validators.required(name, "Tên xét nghiệm"), priority,
-                Validators.max(note, 500, "Ghi chú"), actor);
+
+        Set<String> uniqueCodes = new LinkedHashSet<>();
+        for (String rawCode : codes) {
+            String code = rawCode == null ? "" : rawCode.trim().toUpperCase();
+            String name = LAB_TESTS.get(code);
+            if (name == null) {
+                throw new IllegalArgumentException("Xét nghiệm không nằm trong danh mục hỗ trợ.");
+            }
+            uniqueCodes.add(code);
+        }
+
+        if (uniqueCodes.isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng chọn ít nhất một xét nghiệm.");
+        }
+        String validatedNote = Validators.max(note, 500, "Ghi chú");
+        for (String code : uniqueCodes) {
+            gateway.createLabOrder(encounterId, doctorId, code, LAB_TESTS.get(code),
+                    priority, validatedNote, actor);
+        }
     }
 
     public void resultLab(int orderId, String value, String unit,
             String range, String flag, int actor) {
+        // Staff nhập hoặc import kết quả sau khi xét nghiệm; service kiểm tra cờ và giới hạn chuỗi trước khi lưu.
         flag = flag == null ? "NORMAL" : flag.trim().toUpperCase();
         if (!Set.of("NORMAL", "HIGH", "LOW", "CRITICAL").contains(flag))
             throw new IllegalArgumentException("Cờ kết quả không hợp lệ.");

@@ -23,7 +23,7 @@ public class StaffDashboardController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        // Query parameters may contain Vietnamese names; decode them before reading keyword.
+        // Staff mở dashboard: controller đọc từ khóa, phân trang và lấy dữ liệu bảng bệnh nhân từ PatientDAO.
         request.setCharacterEncoding("UTF-8");
         User user = ControllerSupport.currentUser(request);
         if (!ControllerSupport.hasRole(user, "STAFF")) {

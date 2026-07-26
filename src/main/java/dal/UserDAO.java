@@ -4,7 +4,6 @@ import models.User;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-import vn.diabetes.auth.Passwords;
 
 public class UserDAO extends DBContext {
     private User mapRow(ResultSet rs) throws SQLException {
@@ -114,7 +113,7 @@ public class UserDAO extends DBContext {
         try (PreparedStatement statement = connection.prepareStatement(
                 sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, u.getUsername());
-            statement.setString(2, Passwords.encode(u.getPassword()));
+            statement.setString(2, u.getPassword());
             statement.setString(3, u.getFullName());
             statement.setString(4, u.getPhone());
             statement.setString(5, u.getRole());
@@ -160,8 +159,7 @@ public class UserDAO extends DBContext {
         String sql = "UPDATE Users SET username=?, password=?, full_name=?, phone=?, email=?, dob=?, gender=?, address=?, cccd=? WHERE user_id=?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, u.getUsername());
-            statement.setString(2, Passwords.isEncoded(u.getPassword())
-                    ? u.getPassword() : Passwords.encode(u.getPassword()));
+            statement.setString(2, u.getPassword());
             statement.setString(3, u.getFullName());
             statement.setString(4, u.getPhone());
             statement.setString(5, u.getEmail());

@@ -290,6 +290,17 @@
                             <div class="form-actions"><button type="submit" class="btn btn-primary" disabled data-require-any-submit>Lưu kết quả xét nghiệm</button></div>
                             <small class="form-hint">Nhập ít nhất một chỉ số đúng theo chỉ định để bật nút lưu.</small>
                         </form>
+
+                        <div class="lab-import-card">
+                            <div>
+                                <strong>Nhập nhanh theo phiếu xét nghiệm</strong>
+                                <small>Hệ thống tự đọc file mẫu trong mã nguồn và gắn kết quả vào bệnh án #${record.recordId}.</small>
+                            </div>
+                            <form method="post" action="${pageContext.request.contextPath}/LabResultImport" class="lab-import-inline-form">
+                                <input type="hidden" name="recordId" value="${record.recordId}">
+                                <button class="btn btn-primary" type="submit">Import kết quả</button>
+                            </form>
+                        </div>
                     </c:if>
 
                     <c:if test="${sessionScope.user.role!='STAFF'}">

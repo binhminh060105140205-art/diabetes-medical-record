@@ -1,0 +1,17 @@
+-- Local classroom/demo configuration: store passwords directly as requested.
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_PADDING ON;
+SET ANSI_WARNINGS ON;
+SET ARITHABORT ON;
+SET CONCAT_NULL_YIELDS_NULL ON;
+SET NUMERIC_ROUNDABORT OFF;
+
+UPDATE users
+SET password = CASE UPPER(role)
+    WHEN 'ADMIN' THEN N'Admin@123'
+    WHEN 'STAFF' THEN N'Staff@123'
+    WHEN 'DOCTOR' THEN N'Doctor@123'
+    WHEN 'PATIENT' THEN N'Patient@123'
+    ELSE password
+END;

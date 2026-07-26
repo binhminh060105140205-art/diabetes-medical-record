@@ -263,6 +263,7 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
 
     public void createAppointmentRequest(int patientId, LocalDate preferredDate,
             String preferredPeriod, String reason, String note, int actor) {
+        // Ghi yêu cầu từ trang bệnh nhân; chỉ cần ngày/buổi, sau đó staff mới phân công bác sĩ và giờ cụ thể.
         inTransaction("Không thể gửi yêu cầu khám.", () -> {
             try (PreparedStatement lock = connection.prepareStatement("""
                     SELECT p.patient_id FROM patients p WITH (UPDLOCK,HOLDLOCK)
@@ -462,6 +463,7 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
     }
 
     public void checkIn(int appointmentId, int actor) {
+        // Khóa lịch để tránh hai staff check-in cùng lúc, rồi tạo encounter và số thứ tự trong cùng transaction.
         inTransaction("Ghi nhận đến khám thất bại", () -> {
             Map<String, Object> appointment = lockAppointment(appointmentId);
             validateCheckIn(appointment);
@@ -578,6 +580,7 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
           ORDER BY e.check_in_at DESC""", doctorId);
     }
     public void setEncounterStatus(int encounterId,String status,int actor) {
+        // Cập nhật bước của lượt khám; trạng thái COMPLETED chỉ đi qua transaction kết luận để không bỏ qua hồ sơ.
         if (!ENCOUNTER_STATUSES.contains(status)) {
             throw new IllegalArgumentException("Trạng thái không hợp lệ");
         }
@@ -988,6 +991,7 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
 
     /** The encounter only becomes lab-complete after its assigned doctor reviews every result. */
     public void reviewLabResults(int encounterId, int doctorId, int actor) {
+        // Bác sĩ review toàn bộ kết quả; chỉ khi không còn order chưa review thì lượt khám mới được chuyển tiếp.
         inTransaction("Không thể xác nhận kết quả xét nghiệm.", () -> {
             List<Map<String, Object>> state = query("""
                     SELECT COALESCE(SUM(CASE WHEN status IN ('ORDERED','COLLECTED') THEN 1 ELSE 0 END),0) pending,

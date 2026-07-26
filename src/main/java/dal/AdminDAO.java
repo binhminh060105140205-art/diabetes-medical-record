@@ -13,7 +13,6 @@ import java.util.Locale;
 import java.util.Map;
 import models.Doctor;
 import models.User;
-import vn.diabetes.auth.Passwords;
 
 /** Database operations used only by administrator tools. */
 public class AdminDAO extends DBContext {
@@ -35,7 +34,7 @@ public class AdminDAO extends DBContext {
             try (PreparedStatement statement = connection.prepareStatement(
                     userSql, Statement.RETURN_GENERATED_KEYS)) {
                 statement.setString(1, user.getUsername());
-                statement.setString(2, Passwords.encode(user.getPassword()));
+                statement.setString(2, user.getPassword());
                 statement.setString(3, user.getFullName());
                 statement.setString(4, user.getPhone());
                 statement.setString(5, user.getRole());

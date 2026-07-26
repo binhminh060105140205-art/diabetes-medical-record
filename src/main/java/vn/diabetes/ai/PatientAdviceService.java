@@ -22,12 +22,14 @@ public class PatientAdviceService {
     }
 
     public PatientAdvice getDailyAdvice(int userId) {
+        // Snapshot là dữ liệu đã được gom từ hồ sơ, chỉ số hằng ngày và bệnh kèm theo của bệnh nhân.
         PatientAdviceRepository.Snapshot snapshot = repository.findSnapshotByUserId(userId)
                 .orElseThrow(() -> new NoSuchElementException("Chưa có hồ sơ bệnh nhân."));
         PatientAdviceRuleEngine.Prepared prepared = rules.prepare(snapshot);
         PatientAdviceRepository.Cache cache = snapshot.cache();
         if (cache != null && prepared.sourceHash().equals(cache.sourceHash())
                 && (!cache.fallback() || !openAi.isConfigured())) {
+            // Nếu dữ liệu chưa đổi, trả lại kết quả trong ngày để trang phản hồi nhanh và không gọi AI lặp lại.
             return new PatientAdvice(cache.summary(), cache.advice(), cache.severity(),
                     cache.doctorRecommendation(), cache.fallback() ? "LOCAL_RULES" : "OPENAI", true);
         }
@@ -42,6 +44,7 @@ public class PatientAdviceService {
         }
 
         boolean fallback = generated == null;
+        // Khi AI lỗi hoặc chưa cấu hình, bộ luật nội bộ vẫn phải trả lời được; mergeSafety giữ lại cảnh báo bắt buộc.
         PatientAdvice result = fallback
                 ? new PatientAdvice(prepared.fallbackSummary(), prepared.fallbackAdvice(),
                         prepared.severityFloor(), prepared.doctorRecommendationFloor(), "LOCAL_RULES", false)

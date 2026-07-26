@@ -166,11 +166,6 @@ public class MedicalRecordDAO extends DBContext {
                    lh.blood_glucose lh_blood_glucose,lh.hba1c lh_hba1c,
                    lh.cholesterol lh_cholesterol,lh.triglyceride lh_triglyceride,
                    lh.hdl_c lh_hdl_c,lh.ldl_c lh_ldl_c,lh.measured_at lh_measured_at,
-                   (SELECT STRING_AGG(CONCAT(l.test_name, ': ',
-                           COALESCE(l.result_value,'Chưa có kết quả'),
-                           CASE WHEN l.result_unit IS NULL THEN '' ELSE CONCAT(' ',l.result_unit) END), ' | ')
-                           WITHIN GROUP (ORDER BY l.ordered_at)
-                    FROM lab_orders l WHERE l.encounter_id=r.encounter_id) lab_summary,
                    d.user_id d_user_id,d.specialty d_specialty,d.license_no d_license_no,
                    d.face_image_path d_face_image_path,d.cccd_image_path d_cccd_image_path,
                    d.cccd_back_image_path d_cccd_back_image_path,
@@ -231,7 +226,6 @@ public class MedicalRecordDAO extends DBContext {
                         if (target instanceof Number number) diabetesProfile.setHba1cTarget(number.doubleValue());
                         Timestamp profileUpdatedAt = rows.getTimestamp("dp_updated_at");
                         if (profileUpdatedAt != null) diabetesProfile.setUpdatedAt(profileUpdatedAt.toLocalDateTime());
-                        labSummary = rows.getString("lab_summary");
                         if (rows.getObject("d_user_id") != null) {
                             doctor = new Doctor();
                             doctor.setDoctorId(record.getDoctorId());
@@ -296,6 +290,7 @@ public class MedicalRecordDAO extends DBContext {
                 }
                 List<Map<String, Object>> labOrders = record == null
                         ? new ArrayList<>() : loadLabOrders(record.getEncounterId());
+                labSummary = summarizeLabOrders(labOrders);
                 return new MedicalRecordFormData(record, patient, doctor, indicator, latestIndicator,
                         diabetesProfile, labSummary, prescriptions, labOrders);
             }
@@ -340,6 +335,23 @@ public class MedicalRecordDAO extends DBContext {
             }
         }
         return orders;
+    }
+
+    private String summarizeLabOrders(List<Map<String, Object>> labOrders) {
+        if (labOrders == null || labOrders.isEmpty()) return null;
+        StringBuilder summary = new StringBuilder();
+        for (Map<String, Object> order : labOrders) {
+            if (summary.length() > 0) summary.append(" | ");
+            summary.append(String.valueOf(order.get("test_name"))).append(": ");
+            Object value = order.get("result_value");
+            summary.append(value == null || String.valueOf(value).isBlank()
+                    ? "Chưa có kết quả" : String.valueOf(value));
+            Object unit = order.get("result_unit");
+            if (unit != null && !String.valueOf(unit).isBlank()) {
+                summary.append(' ').append(unit);
+            }
+        }
+        return summary.toString();
     }
 
     /** Loads doctor identity, metrics and dashboard records in one database round-trip. */

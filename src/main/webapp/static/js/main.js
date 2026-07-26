@@ -1,35 +1,6 @@
 if (!window.__diaCareMainLoaded) {
 window.__diaCareMainLoaded = true;
 
-// ================================================
-
-//  main.js — DiabetesMedicalRecord
-// ================================================
-
-// Auto-calculate BMI when height/weight change
-document.addEventListener('DOMContentLoaded', function () {
-    const heightInput = document.querySelector('[name=height]');
-    const weightInput = document.querySelector('[name=weight]');
-    const bmiDisplay  = document.getElementById('bmiDisplay');
-
-    function calcBMI() {
-        if (!heightInput || !weightInput || !bmiDisplay) return;
-        const h = parseFloat(heightInput.value);
-        const w = parseFloat(weightInput.value);
-        if (h > 0 && w > 0) {
-            const bmi = w / ((h / 100) * (h / 100));
-            bmiDisplay.value = bmi.toFixed(1);
-            // Color coding
-            if (bmi >= 30)       bmiDisplay.style.color = '#dc3545';
-            else if (bmi >= 25)  bmiDisplay.style.color = '#fd7e14';
-            else                 bmiDisplay.style.color = '#198754';
-        }
-    }
-
-    if (heightInput) heightInput.addEventListener('input', calcBMI);
-    if (weightInput) weightInput.addEventListener('input', calcBMI);
-});
-
 // Replace browser-dependent English validation bubbles with consistent
 // Vietnamese messages shown next to the field on every form.
 function validationFieldLabel(control) {
@@ -199,6 +170,24 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 
+// Form chỉ định xét nghiệm cho chọn nhiều ô. Giữ ô đầu tiên ở trạng thái
+// required cho tới khi bác sĩ đã chọn ít nhất một xét nghiệm.
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-required-checkbox-group]').forEach(function (group) {
+        const checkboxes = Array.from(group.querySelectorAll('input[type=checkbox]'));
+        if (!checkboxes.length) return;
+        const refresh = function () {
+            checkboxes[0].required = !checkboxes.some(function (checkbox) {
+                return checkbox.checked;
+            });
+        };
+        checkboxes.forEach(function (checkbox) {
+            checkbox.addEventListener('change', refresh);
+        });
+        refresh();
+    });
+});
+
 // Keep staged workflow actions unavailable until every required prerequisite is valid.
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('form[data-gated-submit]').forEach(function (form) {
@@ -247,29 +236,76 @@ document.addEventListener('DOMContentLoaded', function () {
     if (activeLink) activeLink.scrollIntoView({ block: 'nearest' });
 });
 
-// Lightweight client-side filtering for operational tables. Server-side search
-// remains the source of truth on paginated screens.
+// Lightweight client-side filtering and paging for operational tables.
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('[data-table-filter]').forEach(function (input) {
         const table = document.getElementById(input.dataset.tableFilter);
         if (!table) return;
         const rows = Array.from(table.querySelectorAll('tbody tr[data-search-row]'));
-        const empty = document.querySelector('[data-filter-empty="' + input.dataset.tableFilter + '"]');
+        const empty = document.querySelector('[data-filter-empty="' + table.id + '"]');
+        const pagination = document.querySelector('[data-table-pagination="' + table.id + '"]');
+        const pageSize = Number(table.dataset.pageSize || 0);
+        let currentPage = 1;
         const searchText = function (value) {
             return String(value || '').toLocaleLowerCase('vi').normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
+                .replace(/[\u0300-\u036f]/g, '').replace(/Ä‘/g, 'd');
         };
-        const filter = function () {
+        const appendPageButton = function (label, page, disabled, active, labelText) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'pagination-link' + (active ? ' active' : '');
+            button.textContent = label;
+            button.disabled = disabled;
+            button.setAttribute('aria-label', labelText);
+            if (!disabled && !active) {
+                button.addEventListener('click', function () {
+                    currentPage = page;
+                    applyFilterAndPaging();
+                });
+            }
+            pagination.appendChild(button);
+        };
+        const renderPagination = function (totalMatches, totalPages) {
+            if (!pagination || !pageSize || totalMatches <= pageSize) {
+                if (pagination) {
+                    pagination.hidden = true;
+                    pagination.replaceChildren();
+                }
+                return;
+            }
+            pagination.hidden = false;
+            pagination.replaceChildren();
+            appendPageButton('‹', Math.max(1, currentPage - 1), currentPage === 1, false, 'Trang trước');
+            for (let page = 1; page <= totalPages; page += 1) {
+                appendPageButton(String(page), page, false, page === currentPage, 'Trang ' + page);
+            }
+            appendPageButton('›', Math.min(totalPages, currentPage + 1), currentPage === totalPages, false, 'Trang sau');
+            const info = document.createElement('span');
+            info.className = 'pagination-info';
+            info.textContent = 'Trang ' + currentPage + '/' + totalPages + ' · ' + totalMatches + ' lịch';
+            pagination.appendChild(info);
+        };
+        const applyFilterAndPaging = function () {
             const query = searchText(input.value.trim());
-            let visible = 0;
-            rows.forEach(function (row) {
-                const match = !query || searchText(row.textContent).includes(query);
-                row.hidden = !match;
-                if (match) visible += 1;
+            const matchedRows = rows.filter(function (row) {
+                return !query || searchText(row.textContent).includes(query);
             });
-            if (empty) empty.hidden = visible !== 0;
+            const totalPages = pageSize ? Math.max(1, Math.ceil(matchedRows.length / pageSize)) : 1;
+            currentPage = Math.min(currentPage, totalPages);
+            const firstVisible = pageSize ? (currentPage - 1) * pageSize : 0;
+            const lastVisible = pageSize ? firstVisible + pageSize : matchedRows.length;
+            rows.forEach(function (row) {
+                const matchIndex = matchedRows.indexOf(row);
+                row.hidden = matchIndex < 0 || matchIndex < firstVisible || matchIndex >= lastVisible;
+            });
+            if (empty) empty.hidden = matchedRows.length !== 0;
+            renderPagination(matchedRows.length, totalPages);
         };
-        input.addEventListener('input', filter);
+        input.addEventListener('input', function () {
+            currentPage = 1;
+            applyFilterAndPaging();
+        });
+        applyFilterAndPaging();
     });
 });
 
@@ -306,39 +342,6 @@ document.addEventListener('click', function (event) {
 window.addEventListener('pageshow', function () {
     clearTimeout(navigationFeedbackTimer);
     document.body.classList.remove('is-navigating');
-});
-
-// Tab switching (for MedicalRecordForm)
-function showTab(n) {
-    document.querySelectorAll('.tab-panel').forEach(function(p) {
-        p.classList.remove('active');
-    });
-    document.querySelectorAll('.tab-btn').forEach(function(b) {
-        b.classList.remove('active');
-    });
-    const panel = document.getElementById('tab' + n);
-    const btn   = document.querySelectorAll('.tab-btn')[n - 1];
-    if (panel) panel.classList.add('active');
-    if (btn)   btn.classList.add('active');
-    // Persist tab in URL without reload
-    const url = new URL(window.location.href);
-    url.searchParams.set('tab', n);
-    window.history.replaceState({}, '', url);
-}
-
-// Confirm before dangerous action
-function confirmAction(msg) {
-    return confirm(msg || 'Bạn có chắc chắn không?');
-}
-
-// Highlight active nav link
-document.addEventListener('DOMContentLoaded', function () {
-    const path = window.location.pathname;
-    document.querySelectorAll('.topnav a').forEach(function (a) {
-        if (a.getAttribute('href') && path.includes(a.getAttribute('href').replace(/.*\//, ''))) {
-            a.classList.add('active');
-        }
-    });
 });
 
 // Auto-dismiss alerts after 5s

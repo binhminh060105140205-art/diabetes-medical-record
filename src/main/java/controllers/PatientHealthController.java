@@ -13,7 +13,7 @@ import java.util.Set;
 import models.PatientDailyLog;
 import models.User;
 
-/** Patient self-monitoring. A future local AI model can consume this data separately. */
+/** Nhận và kiểm tra nhật ký sức khỏe hằng ngày do bệnh nhân tự nhập. */
 @WebServlet(urlPatterns = {"/PatientHealth", "/PatientAI"})
 public class PatientHealthController extends HttpServlet {
     private static final Set<String> MEAL_TYPES =
@@ -28,6 +28,7 @@ public class PatientHealthController extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException {
+        // Nút "Lưu chỉ số hôm nay" gửi action=saveLog; controller kiểm tra dữ liệu rồi gọi DAO lưu nhật ký.
         request.setCharacterEncoding("UTF-8");
         response.setContentType("application/json;charset=UTF-8");
         User user = ControllerSupport.currentUser(request);
@@ -51,6 +52,7 @@ public class PatientHealthController extends HttpServlet {
 
     private void saveLog(HttpServletRequest request, HttpServletResponse response, int patientId)
             throws IOException {
+        // Tạo model từ các ô nhập, kiểm tra quan hệ giữa các chỉ số rồi mới ghi xuống database.
         try {
             PatientDailyLog log = new PatientDailyLog();
             log.setPatientId(patientId);
@@ -59,7 +61,6 @@ public class PatientHealthController extends HttpServlet {
             log.setDiastolicBp(integer(request, "diastolicBp", "Huyết áp tâm trương"));
             log.setWeight(decimal(request, "weight", "Cân nặng"));
             log.setHeartRate(integer(request, "heartRate", "Nhịp tim"));
-            log.setSpo2(decimal(request, "spo2", "SpO2"));
             log.setMealType(text(request, "mealType"));
             log.setSymptoms(text(request, "symptoms"));
             log.setNote(text(request, "note"));
@@ -113,9 +114,9 @@ public class PatientHealthController extends HttpServlet {
     }
 
     void validate(PatientDailyLog log) {
+        // Các giới hạn này bảo vệ dữ liệu trước khi nhật ký được dùng cho lịch sử và lời khuyên sức khỏe.
         range(log.getBloodGlucose(), 20, 600, "Đường huyết");
         range(log.getWeight(), 20, 300, "Cân nặng");
-        range(log.getSpo2(), 50, 100, "SpO2");
         range(log.getSystolicBp(), 60, 260, "Huyết áp tâm thu");
         range(log.getDiastolicBp(), 30, 180, "Huyết áp tâm trương");
         range(log.getHeartRate(), 30, 220, "Nhịp tim");
@@ -143,7 +144,7 @@ public class PatientHealthController extends HttpServlet {
         }
         boolean hasMeasurement = log.getBloodGlucose() != null || log.getSystolicBp() != null
                 || log.getDiastolicBp() != null || log.getWeight() != null
-                || log.getHeartRate() != null || log.getSpo2() != null;
+                || log.getHeartRate() != null;
         boolean hasNote = log.getSymptoms() != null || log.getNote() != null;
         if (!hasMeasurement && !hasNote) {
             throw new IllegalArgumentException("Cần nhập ít nhất một chỉ số hoặc ghi chú.");

@@ -30,6 +30,7 @@ public class PatientAdviceRuleEngine {
     public PatientAdviceRuleEngine(ObjectMapper json) { this.json = json; }
 
     public Prepared prepare(PatientAdviceRepository.Snapshot snapshot) {
+        // Chuẩn hóa snapshot thành dữ liệu an toàn: bỏ chỉ số ngoài khoảng, gom xu hướng và đếm triệu chứng lặp lại.
         List<ValidLog> valid = snapshot.logs().stream().map(this::validate).toList();
         ValidLog latest = valid.stream().filter(ValidLog::hasAnyValue).findFirst().orElse(null);
         List<Double> glucoseValues = valid.stream().map(ValidLog::bloodGlucose).filter(v -> v != null).toList();
@@ -56,6 +57,7 @@ public class PatientAdviceRuleEngine {
                 (int) valid.stream().filter(ValidLog::hasAnyValue).count());
 
         String severity = severity(context);
+        // Mức độ và cảnh báo bác sĩ được tính trước khi gọi AI để không phụ thuộc hoàn toàn vào câu trả lời sinh ra.
         boolean doctorRecommendation = !"low".equals(severity) &&
                 ("high".equals(severity) || repeatedSymptoms || isRepeatedOutlier(glucoseValues));
         List<String> fallback = fallbackAdvice(context, doctorRecommendation);

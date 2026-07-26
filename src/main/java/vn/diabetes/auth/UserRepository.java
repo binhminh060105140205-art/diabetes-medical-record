@@ -43,9 +43,9 @@ public class UserRepository {
                 }).optional();
     }
 
-    public void updatePassword(int userId, String encodedPassword) {
+    public void updatePassword(int userId, String password) {
         jdbc.sql("UPDATE users SET password=:password WHERE user_id=:id")
-                .param("password", encodedPassword).param("id", userId).update();
+                .param("password", password).param("id", userId).update();
     }
 
     public LoginSecurityState getLoginSecurityState(int userId) {

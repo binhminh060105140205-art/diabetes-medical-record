@@ -14,7 +14,7 @@ import models.User;
 import org.springframework.core.io.ClassPathResource;
 import util.LabResultCsvImporter;
 
-/** Imports the bundled result file into the medical record selected by staff. */
+/** Imports the bundled result file into the selected medical record. */
 @WebServlet("/LabResultImport")
 public class LabResultImportController extends HttpServlet {
     static final String DEFAULT_RESULTS_RESOURCE =
@@ -30,35 +30,37 @@ public class LabResultImportController extends HttpServlet {
             return;
         }
 
+        int recordId = ControllerSupport.positiveIdOrZero(request.getParameter("recordId"));
+        String redirect = recordId > 0
+                ? request.getContextPath() + "/MedicalRecordForm?recordId=" + recordId + "&tab=3"
+                : request.getContextPath() + "/ClinicWorkflow?view=labs";
         try {
-            int recordId = ControllerSupport.positiveId(
-                    request.getParameter("recordId"), "Mã bệnh án");
-            List<LabResultImportRow> rows;
+            recordId = ControllerSupport.positiveId(request.getParameter("recordId"), "Mã bệnh án");
             try (InputStream input = defaultResultsInput()) {
-                rows = LabResultCsvImporter.parseForRecord(input, recordId);
+                List<LabResultImportRow> rows = LabResultCsvImporter.parseForRecord(input, recordId);
+                int imported = new ClinicWorkflowDAO()
+                        .importStructuredLabResults(rows, user.getUserId());
+                ControllerSupport.flash(request, "recordSuccess",
+                        "Đã import " + imported + " dòng kết quả vào bệnh án #" + recordId
+                                + ". Kết quả đang chờ bác sĩ xác nhận.");
             }
-            int imported = new ClinicWorkflowDAO()
-                    .importStructuredLabResults(rows, user.getUserId());
-            ControllerSupport.flash(request, "workflowFlash",
-                    "Đã import " + imported + " dòng kết quả từ file mặc định cho bệnh án #" + recordId
-                    + ". Kết quả đang chờ bác sĩ xác nhận.");
         } catch (IllegalArgumentException error) {
-            ControllerSupport.flash(request, "workflowFlash",
-                    "Không thể import từ file mặc định: " + error.getMessage());
+            ControllerSupport.flash(request, "recordFlash",
+                    "Không thể import kết quả: " + error.getMessage());
         } catch (IllegalStateException | IOException error) {
-            ControllerSupport.flash(request, "workflowFlash",
-                    "Không thể đọc file kết quả mặc định. Vui lòng kiểm tra file trong src và thử lại.");
+            ControllerSupport.flash(request, "recordFlash",
+                    "Không thể đọc file kết quả mẫu. Vui lòng tải lại trang và thử lại.");
         }
-        response.sendRedirect(request.getContextPath() + "/ClinicWorkflow?view=labs");
-    }
-
-    InputStream defaultResultsInput() throws IOException {
-        return new ClassPathResource(DEFAULT_RESULTS_RESOURCE).getInputStream();
+        response.sendRedirect(redirect);
     }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
-        response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+        response.sendRedirect(request.getContextPath() + "/ClinicWorkflow?view=labs");
+    }
+
+    InputStream defaultResultsInput() throws IOException {
+        return new ClassPathResource(DEFAULT_RESULTS_RESOURCE).getInputStream();
     }
 }

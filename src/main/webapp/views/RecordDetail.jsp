@@ -13,7 +13,7 @@
 <jsp:include page="topnav.jsp"/>
 <div class="page-wrapper">
     <div class="page-heading"><div><div class="eyebrow">CHI TIẾT LẦN KHÁM</div><h1 class="page-title">Bệnh án #${detail.record.recordId}</h1><p class="text-muted">Ngày khám ${detail.record.visitDateLabel} · <span class="status-pill status-${detail.record.status}">${detail.record.status=='COMPLETED'?'Đã hoàn tất':'Đang xử lý'}</span></p></div><div class="heading-actions"><a href="${pageContext.request.contextPath}/PatientHistory?patientId=${detail.patient.patientId}" class="btn btn-light">Lịch sử khám</a></div></div>
-    <div class="patient-summary-bar"><strong><c:out value="${detail.patient.fullName}"/></strong><div class="patient-summary-meta"><span>SĐT: <c:out value="${detail.patient.phone}" default="—"/></span><span>BHYT: <c:out value="${detail.patient.healthInsuranceNo}" default="—"/></span><span>Bác sĩ: <c:out value="${detail.doctor.fullName}"/></span></div></div>
+    <div class="patient-summary-bar"><strong><c:out value="${detail.patient.fullName}"/></strong><div class="patient-summary-meta"><span>SĐT: <c:out value="${detail.patient.phone}" default="—"/></span><span>BHYT: <c:out value="${detail.patient.healthInsuranceNo}" default="—"/></span><span>Bác sĩ: <c:out value="${detail.doctor.fullName}" default="Chưa phân công"/></span></div></div>
 
     <c:if test="${not empty diabetesProfile}">
     <div class="card accent-card">
@@ -38,7 +38,7 @@
             <tr><th>Địa chỉ</th><td colspan="3"><c:out value="${detail.patient.address}"/></td></tr>
             <tr><th>Số BHYT</th><td><c:out value="${detail.patient.healthInsuranceNo}"/></td>
                 <th>Ngày khám</th><td>${detail.record.visitDateLabel}</td></tr>
-            <tr><th>Bác sĩ khám</th><td colspan="3"><c:out value="${detail.doctor.fullName}"/> — <c:out value="${detail.doctor.specialty}"/></td></tr>
+            <tr><th>Bác sĩ khám</th><td colspan="3"><c:choose><c:when test="${not empty detail.doctor}"><c:out value="${detail.doctor.fullName}"/> — <c:out value="${detail.doctor.specialty}"/></c:when><c:otherwise>Chưa phân công</c:otherwise></c:choose></td></tr>
         </table>
     </div>
 
@@ -117,10 +117,36 @@
         </div>
     </div>
     </c:if>
-
-    <!-- IV. DOCTOR CONCLUSION -->
+    <!-- IV. LAB RESULTS -->
     <div class="card">
-        <div class="card-title">IV. Kết luận của Bác sĩ</div>
+        <div class="card-title">IV. Kết quả xét nghiệm</div>
+        <c:choose>
+            <c:when test="${empty labOrders}">
+                <div class="alert alert-info">Lượt khám này không có chỉ định xét nghiệm.</div>
+            </c:when>
+            <c:otherwise>
+                <div class="table-scroll">
+                    <table>
+                        <thead><tr><th>Xét nghiệm</th><th>Kết quả</th><th>Khoảng tham chiếu</th><th>Trạng thái</th></tr></thead>
+                        <tbody>
+                        <c:forEach items="${labOrders}" var="lab">
+                            <tr>
+                                <td><strong><c:out value="${lab.test_name}"/></strong><small class="table-sub"><c:out value="${lab.test_code}"/></small></td>
+                                <td><c:choose><c:when test="${not empty lab.result_value}"><strong><c:out value="${lab.result_value}"/> <c:out value="${lab.result_unit}"/></strong></c:when><c:otherwise><span class="text-muted">Chưa có kết quả</span></c:otherwise></c:choose></td>
+                                <td><c:out value="${lab.reference_range}" default="—"/></td>
+                                <td><span class="status-pill status-${lab.status}">${lab.status=='ORDERED'?'Chờ kết quả':lab.status=='COLLECTED'?'Đã lấy mẫu':lab.status=='RESULTED'?'Chờ bác sĩ xác nhận':lab.status=='REVIEWED'?'Đã xác nhận':lab.status=='CANCELLED'?'Đã hủy':'Đang xử lý'}</span></td>
+                            </tr>
+                        </c:forEach>
+                        </tbody>
+                    </table>
+                </div>
+            </c:otherwise>
+        </c:choose>
+    </div>
+
+    <!-- V. DOCTOR CONCLUSION -->
+    <div class="card">
+        <div class="card-title">V. Kết luận của Bác sĩ</div>
         <c:choose>
             <c:when test="${detail.record.status == 'COMPLETED'}">
                 <table class="detail-table">

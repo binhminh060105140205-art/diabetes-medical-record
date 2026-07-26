@@ -86,8 +86,8 @@
                     <input type="search" data-table-filter="appointmentTable" placeholder="Tìm theo bệnh nhân, điện thoại, bác sĩ hoặc trạng thái">
                 </label>
             </div>
-            <div class="table-scroll">
-                <table id="appointmentTable">
+            <div class="table-scroll appointment-table-scroll">
+                <table id="appointmentTable" data-page-size="8">
                     <thead><tr><th>Ngày / giờ</th><th>Bệnh nhân</th><th>Bác sĩ</th><th>Lý do</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
                     <tbody>
                     <c:forEach var="a" items="${appointments}">
@@ -189,6 +189,7 @@
                     <tr data-filter-empty="appointmentTable" hidden><td colspan="6" class="empty-filter">Không có lịch phù hợp với nội dung tìm kiếm.</td></tr>
                     </tbody>
                 </table>
+                <div class="pagination-container appointment-pagination" data-table-pagination="appointmentTable" aria-label="Phân trang lịch hẹn" hidden></div>
             </div>
         </section>
     </c:if>
@@ -288,8 +289,7 @@
                 <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="form-grid" data-gated-submit>
                     <input type="hidden" name="action" value="labOrder">
                     <div class="form-group"><label class="required">Lượt khám</label><select class="form-control" name="encounterId" required><option value="">Chọn lượt đang khám</option><c:forEach var="e" items="${encounters}"><c:if test="${e.status=='IN_CONSULTATION'||e.status=='WAITING_LAB'}"><option value="${e.encounter_id}">#${e.queue_number} — <c:out value="${e.patient_name}"/> — ${e.diabetes_type=='TYPE_1'?'Típ 1':e.diabetes_type=='TYPE_2'?'Típ 2':'Chưa phân loại'}</option></c:if></c:forEach></select></div>
-                    <div class="form-group"><label class="required">Xét nghiệm</label><select class="form-control" name="testCode" required><option value="GLU">Đường huyết</option><option value="HBA1C">Đường huyết trung bình HbA1c</option><option value="KETONE">Ketone máu/nước tiểu (ưu tiên típ 1 khi có nguy cơ)</option><option value="LIPID">Bộ xét nghiệm mỡ máu (ưu tiên típ 2)</option><option value="CRE">Creatinin đánh giá chức năng thận</option><option value="UACR">Tỷ lệ albumin và creatinin niệu</option></select></div>
-                    <input type="hidden" name="testName" value="catalog">
+                    <div class="form-group lab-test-picker"><label class="required">Xét nghiệm</label><div class="lab-test-grid" data-required-checkbox-group><c:forEach var="test" items="${labTests}" varStatus="loop"><label class="choice-tile lab-test-choice"><input type="checkbox" name="testCode" value="${test.key}" <c:if test="${loop.first}">required</c:if>><span><strong><c:out value="${test.value}"/></strong><small>${test.key}</small></span></label></c:forEach></div><small class="lab-test-help">Có thể chọn nhiều xét nghiệm trong cùng một lần chỉ định.</small></div>
                     <div class="form-group"><label>Ưu tiên</label><select class="form-control" name="priority"><option value="ROUTINE">Thông thường</option><option value="URGENT">Khẩn</option></select></div>
                     <div class="form-group"><label>Ghi chú lâm sàng</label><input class="form-control" name="clinicalNote" maxlength="500"></div>
                     <div class="form-actions"><button class="btn btn-primary" type="submit">Tạo chỉ định</button></div>
@@ -300,28 +300,6 @@
         <section class="card">
             <div class="section-header"><div><h2>Chỉ định và kết quả xét nghiệm</h2><p>${sessionScope.user.role=='DOCTOR'?'Theo dõi kết quả để tiếp tục kết luận.':'Ưu tiên chỉ định chưa có kết quả và mức khẩn.'}</p></div><span class="data-count">${fn:length(labOrders)} chỉ định</span></div>
             <div class="operations-toolbar"><label class="table-filter"><span class="sr-only">Tìm xét nghiệm</span><input type="search" data-table-filter="labTable" placeholder="Tìm bệnh nhân, mã xét nghiệm, ưu tiên hoặc trạng thái"></label></div>
-            <c:if test="${sessionScope.user.role=='STAFF'||sessionScope.user.role=='ADMIN'}">
-                <div class="lab-import-panel">
-                    <form method="post" action="${pageContext.request.contextPath}/LabResultImport"
-                          class="lab-import-form" data-lab-import-form>
-                        <label class="lab-import-field" for="labImportRecord">
-                            <span>Bệnh nhân / bệnh án</span>
-                            <select class="form-control" id="labImportRecord" name="recordId" required data-lab-import-record>
-                                <option value="">Chọn bệnh án đang chờ kết quả</option>
-                                <c:forEach var="record" items="${labImportRecords}">
-                                    <option value="${record.record_id}"><c:out value="${record.patient_name}"/> — Bệnh án #${record.record_id} — <c:out value="${record.pending_tests}"/></option>
-                                </c:forEach>
-                            </select>
-                        </label>
-                        <div class="lab-import-source" role="note">
-                            <span>File kết quả mặc định</span>
-                            <strong>src/main/resources/lab-results/default-lab-results.txt</strong>
-                            <small>Sửa chỉ số trong file này; hệ thống tự đọc file khi import.</small>
-                        </div>
-                        <button class="btn btn-primary" type="submit" disabled data-lab-import-submit>Import kết quả</button>
-                    </form>
-                </div>
-            </c:if>
             <div class="table-scroll">
                 <table id="labTable">
                     <thead><tr><th>Bệnh nhân</th><th>Xét nghiệm</th><th>Ưu tiên</th><th>Kết quả</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>

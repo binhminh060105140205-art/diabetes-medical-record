@@ -23,7 +23,7 @@ class AuthenticationServiceTest {
     @Test
     void authenticatesPasswordAndClearsPreviousFailures() {
         UserRepository repository = mock(UserRepository.class);
-        User user = userWithPassword(1, Passwords.encode("Staff@123"));
+        User user = userWithPassword(1, "Staff@123");
         when(repository.findActiveByUsername("staff01")).thenReturn(Optional.of(user));
         when(repository.getLoginSecurityState(1))
                 .thenReturn(new UserRepository.LoginSecurityState(2, null));
@@ -38,7 +38,7 @@ class AuthenticationServiceTest {
     }
 
     @Test
-    void upgradesLegacyPlainTextPasswordAfterSuccessfulLogin() {
+    void keepsPlainTextPasswordAfterSuccessfulLogin() {
         UserRepository repository = mock(UserRepository.class);
         User user = userWithPassword(2, "Legacy@123");
         when(repository.findActiveByUsername("legacy02")).thenReturn(Optional.of(user));
@@ -49,7 +49,7 @@ class AuthenticationServiceTest {
                 new AuthenticationService(repository).login("legacy02", "Legacy@123");
 
         assertTrue(result.successful());
-        verify(repository).updatePassword(eq(2), any());
+        verify(repository, never()).updatePassword(eq(2), any());
     }
 
     @Test
@@ -121,7 +121,7 @@ class AuthenticationServiceTest {
     @Test
     void locksAfterFiveConsecutiveFailuresAndRejectsCorrectPasswordDuringLock() {
         UserRepository repository = mock(UserRepository.class);
-        User user = userWithPassword(12, Passwords.encode("Correct@123"));
+        User user = userWithPassword(12, "Correct@123");
         AtomicInteger failures = new AtomicInteger();
         AtomicReference<Instant> lockUntil = new AtomicReference<>();
 

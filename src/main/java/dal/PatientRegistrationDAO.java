@@ -7,7 +7,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.time.LocalDate;
-import vn.diabetes.auth.Passwords;
 
 /** Creates the portal account and patient profile atomically. */
 public class PatientRegistrationDAO extends DBContext implements vn.diabetes.service.PatientRegistrationGateway {
@@ -29,7 +28,7 @@ public class PatientRegistrationDAO extends DBContext implements vn.diabetes.ser
                     INSERT INTO users(username,password,full_name,phone,role,status,email,dob,gender,address)
                     VALUES(?,?,?,?, 'PATIENT','ACTIVE',?,?,?,?)""", Statement.RETURN_GENERATED_KEYS)) {
                 ps.setString(1, username);
-                ps.setString(2, Passwords.encode(password));
+                ps.setString(2, password);
                 ps.setString(3, fullName);
                 ps.setString(4, phone);
                 nullable(ps, 5, email);

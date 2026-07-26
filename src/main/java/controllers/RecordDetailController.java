@@ -56,6 +56,8 @@ public class RecordDetailController extends HttpServlet {
         detail.setDoctor(data.doctor());
         detail.setIndicator(data.indicator());
         request.setAttribute("prescriptionItems", data.prescriptionItems());
+        request.setAttribute("labOrders", data.labOrders());
+        request.setAttribute("labSummary", data.labSummary());
 
         request.setAttribute("detail", detail);
         request.setAttribute("diabetesProfile", data.diabetesProfile());

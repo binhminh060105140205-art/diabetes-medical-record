@@ -13,7 +13,7 @@
 <jsp:include page="header.jsp"/>
 <jsp:include page="topnav.jsp"/>
 
-<main class="page-wrapper app-workspace staff-patient-workspace">
+    <main class="page-wrapper app-workspace staff-patient-workspace" data-open-intake="${showIntakeForm == true || param.newPatient == '1'}" data-scroll-intake="${showIntakeForm == true}">
     <div class="workspace-heading">
         <div>
             <span class="workspace-kicker">NHÂN VIÊN TIẾP NHẬN</span>
@@ -23,6 +23,7 @@
         <div class="heading-actions">
             <c:if test="${pendingAppointmentRequests > 0}"><a class="btn btn-warning"
                href="${pageContext.request.contextPath}/ClinicWorkflow?view=appointments">⏳ ${pendingAppointmentRequests} lịch chờ xác nhận</a></c:if>
+            <%-- Nút mở form chỉ điều khiển giao diện; submit bên dưới mới đi qua PatientFormController. --%>
             <a class="btn btn-primary" href="#new-patient" data-open-intake>＋ Tiếp nhận bệnh nhân mới</a>
         </div>
     </div>
@@ -45,6 +46,7 @@
                 <strong>Kiểm tra trước khi tạo</strong>
                 <span>Tìm bằng số điện thoại, BHYT hoặc CCCD ở danh sách bên dưới để tránh hồ sơ trùng.</span>
             </div>
+            <%-- Submit -> PatientFormController: kiểm tra trùng dữ liệu, tạo user PATIENT rồi tạo hồ sơ bệnh nhân. --%>
             <form action="${pageContext.request.contextPath}/PatientForm" method="post"
                   data-validate="patient" class="patient-intake-form" novalidate>
                 <div class="patient-intake-grid">
@@ -200,34 +202,7 @@
     </section>
 </main>
 
-<script>
-document.querySelectorAll('[data-open-intake]').forEach(function (button) {
-    button.addEventListener('click', function (event) {
-        event.preventDefault();
-        var intake = document.getElementById('new-patient');
-        if (intake) {
-            intake.hidden = false;
-            intake.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            var firstField = intake.querySelector('input,select,textarea');
-            if (firstField) firstField.focus({ preventScroll: true });
-        }
-    });
-});
-document.querySelectorAll('[data-close-intake]').forEach(function (button) {
-    button.addEventListener('click', function () {
-        var intake = document.getElementById('new-patient');
-        if (intake) intake.hidden = true;
-    });
-});
-var intake = document.getElementById('new-patient');
-var shouldOpenIntake = ${showIntakeForm == true || param.newPatient == '1'};
-if (intake && shouldOpenIntake) intake.hidden = false;
-if (${showIntakeForm == true}) {
-    window.addEventListener('load', function () {
-        document.getElementById('new-patient').scrollIntoView({ block: 'start' });
-    });
-}
-</script>
+<script src="${pageContext.request.contextPath}/static/js/staff-dashboard.js?v=20260726-review1"></script>
 <script src="${pageContext.request.contextPath}/static/js/validate.js?v=20260724-validation3"></script>
 <jsp:include page="footer.jsp"/>
 </body>

@@ -16,13 +16,7 @@ import models.User;
 import vn.diabetes.service.ClinicWorkflowService;
 import vn.diabetes.validation.AppointmentRules;
 
-/**
- * Coordinates the outpatient workflow screens.
- *
- * <p>The controller only translates HTTP parameters into service calls. Business
- * validation remains in {@link ClinicWorkflowService} and the database gateway.
- * Keeping each action in a named method makes the role rules easy to review.</p>
- */
+/** Điều phối các màn hình lịch hẹn, hàng đợi, khám bệnh và xét nghiệm. */
 @WebServlet("/ClinicWorkflow")
 public class ClinicWorkflowController extends HttpServlet {
 
@@ -33,6 +27,7 @@ public class ClinicWorkflowController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        // Sidebar gửi view vào đây; controller tải đúng dữ liệu cho vai trò rồi chuyển sang ClinicWorkflow.jsp.
         User user = ControllerSupport.currentUser(request);
         if (!ControllerSupport.hasRole(user, "ADMIN", "STAFF", "DOCTOR")) {
             ControllerSupport.redirectToLogin(request, response);
@@ -59,6 +54,7 @@ public class ClinicWorkflowController extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException {
+        // Mọi nút nghiệp vụ trong ClinicWorkflow.jsp gửi action về đây; executeAction định tuyến sang service tương ứng.
         request.setCharacterEncoding("UTF-8");
         User user = ControllerSupport.currentUser(request);
         if (!ControllerSupport.hasRole(user, "ADMIN", "STAFF", "DOCTOR")) {
@@ -182,6 +178,7 @@ public class ClinicWorkflowController extends HttpServlet {
         String action = request.getParameter("action");
         if (action == null) throw forbiddenAction();
 
+        // Tên action là cầu nối dễ review giữa từng form trên JSP và hàm xử lý bên dưới.
         return switch (action) {
             case "createAppointment" -> createAppointment(request, user, service);
             case "assignAppointmentRequest" -> assignAppointment(request, user, service);
@@ -246,6 +243,7 @@ public class ClinicWorkflowController extends HttpServlet {
     private String checkIn(HttpServletRequest request, User user,
             ClinicWorkflowService service) {
         requireReception(user);
+        // Staff/Admin bấm "Check-in"; service kiểm tra lịch rồi DAO tạo encounter và số thứ tự hàng đợi.
         service.checkIn(positiveParameter(request, "appointmentId"), user.getUserId());
         return "encounters";
     }
@@ -302,14 +300,14 @@ public class ClinicWorkflowController extends HttpServlet {
     private String createLabOrder(HttpServletRequest request, User user,
             ClinicWorkflowDAO workflow, ClinicWorkflowService service) {
         requireDoctor(user);
+        // Bác sĩ chọn một hoặc nhiều testCode; service kiểm tra danh mục rồi tạo từng chỉ định cho cùng encounter.
         int encounterId = positiveParameter(request, "encounterId");
         int doctorId = requireAssignedDoctor(request, user, workflow, encounterId);
 
-        service.createLabOrder(
+        service.createLabOrders(
                 encounterId,
                 doctorId,
-                ControllerSupport.requiredParameter(request, "testCode"),
-                ControllerSupport.requiredParameter(request, "testName"),
+                request.getParameterValues("testCode"),
                 request.getParameter("priority"),
                 request.getParameter("clinicalNote"),
                 user.getUserId());
