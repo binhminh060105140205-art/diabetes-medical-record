@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class MedicalRecordDAO extends DBContext {
     private MedicalRecord mapRow(ResultSet rs) throws SQLException {
@@ -623,7 +624,8 @@ public class MedicalRecordDAO extends DBContext {
                     throw new IllegalArgumentException(
                             "Lượt khám không tồn tại hoặc không thuộc bác sĩ phụ trách.");
                 }
-                if (!"IN_CONSULTATION".equals(rows.getString("status"))) {
+                if (!Set.of("IN_CONSULTATION", "LAB_COMPLETED")
+                        .contains(rows.getString("status"))) {
                     throw new IllegalArgumentException(
                             "Bác sĩ cần bắt đầu hoặc tiếp tục lượt khám trước khi kết luận.");
                 }
@@ -639,7 +641,7 @@ public class MedicalRecordDAO extends DBContext {
         try (PreparedStatement encounter = connection.prepareStatement("""
                 UPDATE encounters
                 SET status='COMPLETED',completed_at=CURRENT_TIMESTAMP
-                WHERE encounter_id=? AND status='IN_CONSULTATION'
+                WHERE encounter_id=? AND status IN ('IN_CONSULTATION','LAB_COMPLETED')
                 """);
              PreparedStatement appointment = connection.prepareStatement("""
                 UPDATE a SET status='COMPLETED'

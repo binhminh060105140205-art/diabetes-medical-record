@@ -8,7 +8,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Điều hành khám — DiaCare</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260722-appointment4">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260726-lab-order-layout2">
 </head>
 <body>
 <jsp:include page="header.jsp"/>
@@ -286,12 +286,50 @@
         <c:if test="${sessionScope.user.role=='DOCTOR'}">
             <section class="card">
                 <div class="section-header"><div><h2>Tạo chỉ định xét nghiệm</h2><p>Chỉ định được gắn với đúng lượt khám đang phụ trách.</p></div></div>
-                <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="form-grid" data-gated-submit>
+                <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="lab-order-form" data-gated-submit>
                     <input type="hidden" name="action" value="labOrder">
-                    <div class="form-group"><label class="required">Lượt khám</label><select class="form-control" name="encounterId" required><option value="">Chọn lượt đang khám</option><c:forEach var="e" items="${encounters}"><c:if test="${e.status=='IN_CONSULTATION'||e.status=='WAITING_LAB'}"><option value="${e.encounter_id}">#${e.queue_number} — <c:out value="${e.patient_name}"/> — ${e.diabetes_type=='TYPE_1'?'Típ 1':e.diabetes_type=='TYPE_2'?'Típ 2':'Chưa phân loại'}</option></c:if></c:forEach></select></div>
-                    <div class="form-group lab-test-picker"><label class="required">Xét nghiệm</label><div class="lab-test-grid" data-required-checkbox-group><c:forEach var="test" items="${labTests}" varStatus="loop"><label class="choice-tile lab-test-choice"><input type="checkbox" name="testCode" value="${test.key}" <c:if test="${loop.first}">required</c:if>><span><strong><c:out value="${test.value}"/></strong><small>${test.key}</small></span></label></c:forEach></div><small class="lab-test-help">Có thể chọn nhiều xét nghiệm trong cùng một lần chỉ định.</small></div>
-                    <div class="form-group"><label>Ưu tiên</label><select class="form-control" name="priority"><option value="ROUTINE">Thông thường</option><option value="URGENT">Khẩn</option></select></div>
-                    <div class="form-group"><label>Ghi chú lâm sàng</label><input class="form-control" name="clinicalNote" maxlength="500"></div>
+                    <div class="lab-order-fields">
+                        <div class="form-group">
+                            <label class="required">Lượt khám</label>
+                            <select class="form-control" name="encounterId" required>
+                                <option value="">Chọn lượt đang khám</option>
+                                <c:forEach var="e" items="${encounters}">
+                                    <c:if test="${e.status=='IN_CONSULTATION'||e.status=='WAITING_LAB'}">
+                                        <option value="${e.encounter_id}">#${e.queue_number} — <c:out value="${e.patient_name}"/> — ${e.diabetes_type=='TYPE_1'?'Típ 1':e.diabetes_type=='TYPE_2'?'Típ 2':'Chưa phân loại'}</option>
+                                    </c:if>
+                                </c:forEach>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Ưu tiên</label>
+                            <select class="form-control" name="priority">
+                                <option value="ROUTINE">Thông thường</option>
+                                <option value="URGENT">Khẩn</option>
+                            </select>
+                        </div>
+                        <div class="form-group lab-order-note">
+                            <label for="clinical-note">Ghi chú lâm sàng</label>
+                            <input id="clinical-note" class="form-control" name="clinicalNote" maxlength="500" placeholder="Ví dụ: Theo dõi đường huyết lúc đói">
+                        </div>
+                    </div>
+                    <div class="form-group lab-test-picker">
+                        <div class="lab-test-picker-heading">
+                            <div>
+                                <label class="required">Xét nghiệm</label>
+                                <small>Chọn một hoặc nhiều chỉ số cần thực hiện trong lượt khám này.</small>
+                            </div>
+                            <span class="lab-test-badge">Chọn nhiều</span>
+                        </div>
+                        <div class="lab-test-grid" data-required-checkbox-group>
+                            <c:forEach var="test" items="${labTests}">
+                                <label class="choice-tile lab-test-choice">
+                                    <input type="checkbox" name="testCode" value="${test.key}">
+                                    <span><strong><c:out value="${test.value}"/></strong><small>${test.key}</small></span>
+                                </label>
+                            </c:forEach>
+                        </div>
+                        <small class="lab-test-help">Có thể chọn nhiều xét nghiệm trong cùng một lần chỉ định.</small>
+                    </div>
                     <div class="form-actions"><button class="btn btn-primary" type="submit">Tạo chỉ định</button></div>
                 </form>
             </section>

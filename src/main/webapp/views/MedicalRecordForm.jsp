@@ -95,7 +95,7 @@
     <c:when test="${sessionScope.user.role == 'STAFF' && (empty record || record.status!='COMPLETED')}">
         <div class="card">
             <div class="card-title">I. Thông tin khám ban đầu</div>
-            <form action="${pageContext.request.contextPath}/MedicalRecordForm" method="post" data-gated-submit>
+            <form action="${pageContext.request.contextPath}/MedicalRecordForm" method="post" class="medical-record-form">
                 <input type="hidden" name="action" value="saveBasic">
                 <input type="hidden" name="patientId" value="${patient.patientId}">
                 <input type="hidden" name="recordId" value="${record.recordId}">
@@ -178,7 +178,7 @@
     <c:when test="${sessionScope.user.role == 'STAFF' && record.status!='COMPLETED'}">
         <div class="card">
             <div class="card-title">II. Chỉ số lâm sàng <span class="role-inline-note">Nhân viên nhập</span></div>
-            <form action="${pageContext.request.contextPath}/MedicalRecordForm" method="post" data-gated-submit>
+            <form action="${pageContext.request.contextPath}/MedicalRecordForm" method="post" class="medical-record-form">
                 <input type="hidden" name="action" value="saveClinical">
                 <input type="hidden" name="recordId" value="${record.recordId}">
 
