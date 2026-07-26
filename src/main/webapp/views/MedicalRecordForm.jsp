@@ -259,22 +259,15 @@
                     <div class="empty-state">Bác sĩ chưa tạo chỉ định xét nghiệm cho lượt khám này.</div>
                 </c:when>
                 <c:otherwise>
-                    <div class="table-scroll lab-order-summary">
-                        <table>
-                            <thead><tr><th>Xét nghiệm</th><th>Kết quả</th><th>Trạng thái</th></tr></thead>
-                            <tbody>
-                            <c:forEach var="lab" items="${labOrders}">
-                                <tr>
-                                    <td><strong><c:out value="${lab.test_name}"/></strong><small class="table-sub"><c:out value="${lab.test_code}"/></small></td>
-                                    <td><c:choose><c:when test="${not empty lab.result_value}"><c:out value="${lab.result_value}"/> <c:out value="${lab.result_unit}"/></c:when><c:otherwise>Chưa nhập</c:otherwise></c:choose></td>
-                                    <td><span class="status-pill status-${lab.status}">${lab.status=='ORDERED'?'Chờ kết quả':lab.status=='RESULTED'?'Chờ bác sĩ xác nhận':lab.status=='REVIEWED'?'Đã xác nhận':lab.status=='CANCELLED'?'Đã hủy':'Đang xử lý'}</span></td>
-                                </tr>
-                            </c:forEach>
-                            </tbody>
-                        </table>
-                    </div>
+                    <c:if test="${sessionScope.user.role=='STAFF' && record.status!='COMPLETED' && !labReviewed && (orderedGlucose||orderedHba1c||orderedCholesterol||orderedTriglyceride||orderedHdlC||orderedLdlC)}">
+                        <div class="lab-import-card">
+                            <form method="post" action="${pageContext.request.contextPath}/LabResultImport" class="lab-import-inline-form">
+                                <input type="hidden" name="recordId" value="${record.recordId}">
+                                <button class="btn btn-primary" type="submit">Import kết quả</button>
+                            </form>
+                            <small>File nhập chỉ số: <code>src/main/resources/lab-results/default-lab-results.txt</code></small>
+                        </div>
 
-                    <c:if test="${sessionScope.user.role=='STAFF' && record.status!='COMPLETED' && !labReviewed && (orderedGlucose||orderedHba1c||orderedLipid)}">
                         <form action="${pageContext.request.contextPath}/MedicalRecordForm" method="post"
                               class="lab-values-form" data-require-any>
                             <input type="hidden" name="action" value="saveLabResults">
@@ -282,25 +275,13 @@
                             <div class="lab-values-grid">
                                 <c:if test="${orderedGlucose}"><div class="form-group"><label>Đường huyết lúc đói (mmol/L)</label><input type="number" step="0.01" min="1" max="40" name="bloodGlucose" class="form-control" value="${indicator.bloodGlucose}" placeholder="5.6" data-any-value></div></c:if>
                                 <c:if test="${orderedHba1c}"><div class="form-group"><label>HbA1c (%)</label><input type="number" step="0.01" min="2" max="20" name="hba1c" class="form-control" value="${indicator.hba1c}" placeholder="6.5" data-any-value></div></c:if>
-                                <c:if test="${orderedLipid}"><div class="form-group"><label>Cholesterol (mmol/L)</label><input type="number" step="0.01" min="0.1" max="30" name="cholesterol" class="form-control" value="${indicator.cholesterol}" placeholder="5.0" data-any-value></div>
-                                <div class="form-group"><label>Triglyceride (mmol/L)</label><input type="number" step="0.01" min="0.1" max="30" name="triglyceride" class="form-control" value="${indicator.triglyceride}" placeholder="1.7" data-any-value></div>
-                                <div class="form-group"><label>HDL-C (mmol/L)</label><input type="number" step="0.01" min="0.1" max="15" name="hdlC" class="form-control" value="${indicator.hdlC}" placeholder="1.3" data-any-value></div>
-                                <div class="form-group"><label>LDL-C (mmol/L)</label><input type="number" step="0.01" min="0.1" max="20" name="ldlC" class="form-control" value="${indicator.ldlC}" placeholder="2.6" data-any-value></div></c:if>
+                                <c:if test="${orderedCholesterol}"><div class="form-group"><label>Cholesterol (mmol/L)</label><input type="number" step="0.01" min="0.1" max="30" name="cholesterol" class="form-control" value="${indicator.cholesterol}" placeholder="5.0" data-any-value></div></c:if>
+                                <c:if test="${orderedTriglyceride}"><div class="form-group"><label>Triglyceride (mmol/L)</label><input type="number" step="0.01" min="0.1" max="30" name="triglyceride" class="form-control" value="${indicator.triglyceride}" placeholder="1.7" data-any-value></div></c:if>
+                                <c:if test="${orderedHdlC}"><div class="form-group"><label>HDL-C (mmol/L)</label><input type="number" step="0.01" min="0.1" max="15" name="hdlC" class="form-control" value="${indicator.hdlC}" placeholder="1.3" data-any-value></div></c:if>
+                                <c:if test="${orderedLdlC}"><div class="form-group"><label>LDL-C (mmol/L)</label><input type="number" step="0.01" min="0.1" max="20" name="ldlC" class="form-control" value="${indicator.ldlC}" placeholder="2.6" data-any-value></div></c:if>
                             </div>
                             <div class="form-actions"><button type="submit" class="btn btn-primary" disabled data-require-any-submit>Lưu kết quả xét nghiệm</button></div>
-                            <small class="form-hint">Nhập ít nhất một chỉ số đúng theo chỉ định để bật nút lưu.</small>
                         </form>
-
-                        <div class="lab-import-card">
-                            <div>
-                                <strong>Nhập nhanh theo phiếu xét nghiệm</strong>
-                                <small>Hệ thống tự đọc file mẫu trong mã nguồn và gắn kết quả vào bệnh án #${record.recordId}.</small>
-                            </div>
-                            <form method="post" action="${pageContext.request.contextPath}/LabResultImport" class="lab-import-inline-form">
-                                <input type="hidden" name="recordId" value="${record.recordId}">
-                                <button class="btn btn-primary" type="submit">Import kết quả</button>
-                            </form>
-                        </div>
                     </c:if>
 
                     <c:if test="${sessionScope.user.role!='STAFF'}">

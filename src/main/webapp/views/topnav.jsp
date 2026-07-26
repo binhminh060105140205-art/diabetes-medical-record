@@ -46,7 +46,6 @@
             <a class="${uri.contains('ClinicWorkflow') && param.view=='labs'?'active':''}" href="${pageContext.request.contextPath}/ClinicWorkflow?view=labs"><span>◇</span><b>Chỉ định xét nghiệm</b></a>
             <div class="sidebar-label">HỒ SƠ LÂM SÀNG</div>
             <a class="${uri.contains('PatientList')?'active':''}" href="${pageContext.request.contextPath}/PatientList"><span>♙</span><b>Hồ sơ bệnh nhân</b></a>
-            <a class="${uri.contains('ClinicWorkflow') && param.view=='clinical'?'active':''}" href="${pageContext.request.contextPath}/ClinicWorkflow?view=clinical"><span>◎</span><b>Dị ứng & tiền sử</b></a>
         </c:when>
         <c:when test="${sessionScope.user.role=='PATIENT'}">
             <div class="sidebar-label">HÔM NAY</div>

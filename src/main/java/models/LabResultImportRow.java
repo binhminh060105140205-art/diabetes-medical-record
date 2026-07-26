@@ -15,4 +15,15 @@ public record LabResultImportRow(
         return bloodGlucose != null || hba1c != null || cholesterol != null
                 || triglyceride != null || hdlC != null || ldlC != null;
     }
+
+    public int valueCount() {
+        int count = 0;
+        if (bloodGlucose != null) count++;
+        if (hba1c != null) count++;
+        if (cholesterol != null) count++;
+        if (triglyceride != null) count++;
+        if (hdlC != null) count++;
+        if (ldlC != null) count++;
+        return count;
+    }
 }

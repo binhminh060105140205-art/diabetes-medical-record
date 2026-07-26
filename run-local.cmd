@@ -52,7 +52,7 @@ echo [INFO] Dang clean va khoi dong ung dung tren http://localhost:8082 ...
 start "" /b powershell.exe -NoProfile -WindowStyle Hidden -Command ^
     "$url='http://localhost:8082'; for($i=0;$i -lt 90;$i++){ try { $response=Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 1; if($response.StatusCode -ge 200){ Start-Process $url; break } } catch {} ; Start-Sleep -Seconds 1 }"
 
-call "%~dp0mvnw.cmd" -DskipTests clean spring-boot:run
+call "%~dp0mvnw.cmd" -Dmaven.test.skip=true clean spring-boot:run
 set "APP_EXIT=%ERRORLEVEL%"
 
 echo.

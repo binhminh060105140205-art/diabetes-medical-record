@@ -13,6 +13,9 @@ import java.util.Map;
 import java.util.Set;
 
 public class MedicalRecordDAO extends DBContext {
+    private static final String SUPPORTED_LAB_CODES_SQL =
+            "(N'GLU_FASTING',N'HBA1C',N'CHOLESTEROL',N'TRIGLYCERIDE',N'HDL_C',N'LDL_C')";
+
     private MedicalRecord mapRow(ResultSet rs) throws SQLException {
         MedicalRecord r = new MedicalRecord();
         r.setRecordId(rs.getInt("record_id"));
@@ -313,24 +316,44 @@ public class MedicalRecordDAO extends DBContext {
     private List<Map<String, Object>> loadLabOrders(int encounterId) throws SQLException {
         List<Map<String, Object>> orders = new ArrayList<>();
         if (encounterId <= 0) return orders;
-        try (PreparedStatement ps = connection.prepareStatement("""
-                SELECT lab_order_id,encounter_id,test_code,test_name,status,priority,
-                       result_value,result_unit,reference_range,result_flag,ordered_at,resulted_at
-                FROM lab_orders WHERE encounter_id=? ORDER BY ordered_at,lab_order_id""")) {
+        String sql = """
+                SELECT MIN(l.lab_order_id) lab_order_id,
+                       l.encounter_id,
+                       N'Bộ 6 chỉ số ban đầu' test_name,
+                       STRING_AGG(l.test_code, ', ') WITHIN GROUP (ORDER BY l.test_code) test_codes,
+                       CASE
+                           WHEN SUM(CASE WHEN l.status IN ('ORDERED','COLLECTED') THEN 1 ELSE 0 END)>0 THEN 'ORDERED'
+                           WHEN SUM(CASE WHEN l.status='RESULTED' THEN 1 ELSE 0 END)>0 THEN 'RESULTED'
+                           ELSE 'REVIEWED'
+                       END status,
+                       CASE WHEN MAX(CASE WHEN l.priority='URGENT' THEN 1 ELSE 0 END)=1
+                            THEN 'URGENT' ELSE 'ROUTINE' END priority,
+                       NULLIF(CONCAT_WS(N' | ',
+                           CASE WHEN MAX(h.blood_glucose) IS NOT NULL THEN CONCAT(N'Đường huyết lúc đói: ', CONVERT(nvarchar(30), MAX(h.blood_glucose)), N' mmol/L') END,
+                           CASE WHEN MAX(h.hba1c) IS NOT NULL THEN CONCAT(N'HbA1c: ', CONVERT(nvarchar(30), MAX(h.hba1c)), N' %') END,
+                           CASE WHEN MAX(h.cholesterol) IS NOT NULL THEN CONCAT(N'Cholesterol: ', CONVERT(nvarchar(30), MAX(h.cholesterol)), N' mmol/L') END,
+                           CASE WHEN MAX(h.triglyceride) IS NOT NULL THEN CONCAT(N'Triglyceride: ', CONVERT(nvarchar(30), MAX(h.triglyceride)), N' mmol/L') END,
+                           CASE WHEN MAX(h.hdl_c) IS NOT NULL THEN CONCAT(N'HDL-C: ', CONVERT(nvarchar(30), MAX(h.hdl_c)), N' mmol/L') END,
+                           CASE WHEN MAX(h.ldl_c) IS NOT NULL THEN CONCAT(N'LDL-C: ', CONVERT(nvarchar(30), MAX(h.ldl_c)), N' mmol/L') END
+                       ), N'') result_value
+                FROM lab_orders l
+                LEFT JOIN medicalrecords m ON m.encounter_id=l.encounter_id
+                LEFT JOIN healthindicators h ON h.record_id=m.record_id
+                WHERE l.encounter_id=? AND l.status<>N'CANCELLED'
+                  AND l.test_code IN """ + SUPPORTED_LAB_CODES_SQL + """
+                GROUP BY l.encounter_id""";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, encounterId);
             try (ResultSet rows = ps.executeQuery()) {
                 while (rows.next()) {
                     Map<String, Object> item = new LinkedHashMap<>();
                     item.put("lab_order_id", rows.getInt("lab_order_id"));
                     item.put("encounter_id", rows.getInt("encounter_id"));
-                    item.put("test_code", rows.getString("test_code"));
                     item.put("test_name", rows.getString("test_name"));
+                    item.put("test_codes", rows.getString("test_codes"));
                     item.put("status", rows.getString("status"));
                     item.put("priority", rows.getString("priority"));
                     item.put("result_value", rows.getString("result_value"));
-                    item.put("result_unit", rows.getString("result_unit"));
-                    item.put("reference_range", rows.getString("reference_range"));
-                    item.put("result_flag", rows.getString("result_flag"));
                     orders.add(item);
                 }
             }

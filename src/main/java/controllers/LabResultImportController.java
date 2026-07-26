@@ -41,7 +41,7 @@ public class LabResultImportController extends HttpServlet {
                 int imported = new ClinicWorkflowDAO()
                         .importStructuredLabResults(rows, user.getUserId());
                 ControllerSupport.flash(request, "recordSuccess",
-                        "Đã import " + imported + " dòng kết quả vào bệnh án #" + recordId
+                        "Đã import " + imported + " chỉ số vào bệnh án #" + recordId
                                 + ". Kết quả đang chờ bác sĩ xác nhận.");
             }
         } catch (IllegalArgumentException error) {

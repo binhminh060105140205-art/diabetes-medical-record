@@ -16,6 +16,8 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
     private static final Set<String> ENCOUNTER_STATUSES = Set.of(
             "WAITING_TRIAGE", "WAITING_DOCTOR", "IN_CONSULTATION", "WAITING_LAB",
             "LAB_COMPLETED", "COMPLETED", "CANCELLED");
+    private static final String SUPPORTED_LAB_CODES_SQL =
+            "(N'GLU_FASTING',N'HBA1C',N'CHOLESTEROL',N'TRIGLYCERIDE',N'HDL_C',N'LDL_C')";
 
     private List<Map<String, Object>> query(String sql, Object... arguments) {
         List<Map<String, Object>> rows = new ArrayList<>();
@@ -749,29 +751,53 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
         }
     }
     public List<Map<String, Object>> labOrders() {
-        return query("""
-                SELECT TOP 50 l.*,m.record_id,p.full_name patient_name,u.full_name doctor_name,
-                       COALESCE(dp.diabetes_type,'UNKNOWN') diabetes_type FROM lab_orders l
-                JOIN patients p ON p.patient_id=l.patient_id
-                LEFT JOIN diabetes_profiles dp ON dp.patient_id=p.patient_id
-                JOIN doctors d ON d.doctor_id=l.doctor_id
-                JOIN users u ON u.user_id=d.user_id
-                LEFT JOIN medicalrecords m ON m.encounter_id=l.encounter_id
-                WHERE l.status<>'CANCELLED'
-                ORDER BY l.ordered_at DESC""");
+        return groupedLabOrders("");
     }
 
     public List<Map<String, Object>> labOrdersForDoctor(int doctorId) {
-        return query("""
-                SELECT TOP 50 l.*,m.record_id,p.full_name patient_name,u.full_name doctor_name,
-                       COALESCE(dp.diabetes_type,'UNKNOWN') diabetes_type FROM lab_orders l
+        return groupedLabOrders(" AND l.doctor_id=?", doctorId);
+    }
+
+    private List<Map<String, Object>> groupedLabOrders(String filter, Object... arguments) {
+        String sql = """
+                SELECT TOP 50
+                       MIN(l.lab_order_id) lab_order_id,
+                       l.encounter_id,
+                       MAX(m.record_id) record_id,
+                       MAX(l.patient_id) patient_id,
+                       MAX(p.full_name) patient_name,
+                       MAX(u.full_name) doctor_name,
+                       MAX(COALESCE(dp.diabetes_type,'UNKNOWN')) diabetes_type,
+                       N'Bộ 6 chỉ số ban đầu' test_name,
+                       STRING_AGG(l.test_code, ', ') WITHIN GROUP (ORDER BY l.test_code) test_codes,
+                       CASE
+                           WHEN SUM(CASE WHEN l.status IN ('ORDERED','COLLECTED') THEN 1 ELSE 0 END)>0 THEN 'ORDERED'
+                           WHEN SUM(CASE WHEN l.status='RESULTED' THEN 1 ELSE 0 END)>0 THEN 'RESULTED'
+                           ELSE 'REVIEWED'
+                       END status,
+                       CASE WHEN MAX(CASE WHEN l.priority='URGENT' THEN 1 ELSE 0 END)=1
+                            THEN 'URGENT' ELSE 'ROUTINE' END priority,
+                       MAX(l.ordered_at) ordered_at,
+                       NULLIF(CONCAT_WS(N' | ',
+                           CASE WHEN MAX(h.blood_glucose) IS NOT NULL THEN CONCAT(N'Đường huyết lúc đói: ', CONVERT(nvarchar(30), MAX(h.blood_glucose)), N' mmol/L') END,
+                           CASE WHEN MAX(h.hba1c) IS NOT NULL THEN CONCAT(N'HbA1c: ', CONVERT(nvarchar(30), MAX(h.hba1c)), N' %') END,
+                           CASE WHEN MAX(h.cholesterol) IS NOT NULL THEN CONCAT(N'Cholesterol: ', CONVERT(nvarchar(30), MAX(h.cholesterol)), N' mmol/L') END,
+                           CASE WHEN MAX(h.triglyceride) IS NOT NULL THEN CONCAT(N'Triglyceride: ', CONVERT(nvarchar(30), MAX(h.triglyceride)), N' mmol/L') END,
+                           CASE WHEN MAX(h.hdl_c) IS NOT NULL THEN CONCAT(N'HDL-C: ', CONVERT(nvarchar(30), MAX(h.hdl_c)), N' mmol/L') END,
+                           CASE WHEN MAX(h.ldl_c) IS NOT NULL THEN CONCAT(N'LDL-C: ', CONVERT(nvarchar(30), MAX(h.ldl_c)), N' mmol/L') END
+                       ), N'') result_value
+                FROM lab_orders l
                 JOIN patients p ON p.patient_id=l.patient_id
                 LEFT JOIN diabetes_profiles dp ON dp.patient_id=p.patient_id
                 JOIN doctors d ON d.doctor_id=l.doctor_id
                 JOIN users u ON u.user_id=d.user_id
                 LEFT JOIN medicalrecords m ON m.encounter_id=l.encounter_id
-                WHERE l.doctor_id=? AND l.status<>'CANCELLED'
-                ORDER BY l.ordered_at DESC""", doctorId);
+                LEFT JOIN healthindicators h ON h.record_id=m.record_id
+                WHERE l.status<>N'CANCELLED'
+                  AND l.test_code IN """ + SUPPORTED_LAB_CODES_SQL + filter + """
+                GROUP BY l.encounter_id
+                ORDER BY MAX(l.ordered_at) DESC""";
+        return query(sql, arguments);
     }
 
     /** Lists one option per active medical record that still has structured tests to result. */
@@ -786,7 +812,7 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
                 JOIN patients p ON p.patient_id=e.patient_id
                 LEFT JOIN diabetes_profiles dp ON dp.patient_id=p.patient_id
                 WHERE l.status IN ('ORDERED','COLLECTED')
-                  AND l.test_code IN ('GLU','GLU_FASTING','HBA1C','LIPID')
+                  AND l.test_code IN ('GLU_FASTING','HBA1C','CHOLESTEROL','TRIGLYCERIDE','HDL_C','LDL_C')
                   AND e.status NOT IN ('COMPLETED','CANCELLED')
                 GROUP BY m.record_id,p.full_name,dp.diabetes_type
                 ORDER BY m.record_id DESC""");
@@ -848,10 +874,12 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
         LabResultImportRow row = new LabResultImportRow(1, recordId, bloodGlucose, hba1c,
                 cholesterol, triglyceride, hdlC, ldlC);
         inTransaction("Không thể lưu kết quả xét nghiệm.", () -> {
-            validateImportOrders(row, encounterId);
-            saveImportedHealthIndicators(row, actor);
-            saveStructuredResults(recordId, encounterId, actor, bloodGlucose, hba1c,
-                    cholesterol, triglyceride, hdlC, ldlC);
+            LabResultImportRow requestedValues = requestedImportValues(row, encounterId);
+            saveImportedHealthIndicators(requestedValues, actor);
+            saveStructuredResults(recordId, encounterId, actor,
+                    requestedValues.bloodGlucose(), requestedValues.hba1c(),
+                    requestedValues.cholesterol(), requestedValues.triglyceride(),
+                    requestedValues.hdlC(), requestedValues.ldlC());
         });
     }
 
@@ -860,34 +888,39 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
         if (rows == null || rows.isEmpty()) {
             throw new IllegalArgumentException("File chưa có dòng kết quả để import.");
         }
+        int[] importedValues = {0};
         inTransaction("Không thể import kết quả xét nghiệm.", () -> {
             for (LabResultImportRow row : rows) {
                 int encounterId;
                 try {
                     encounterId = openEncounterForRecord(row.recordId());
-                    validateImportOrders(row, encounterId);
-                    saveImportedHealthIndicators(row, actor);
+                    LabResultImportRow requestedValues = requestedImportValues(row, encounterId);
+                    importedValues[0] += requestedValues.valueCount();
+                    saveImportedHealthIndicators(requestedValues, actor);
                     saveStructuredResults(row.recordId(), encounterId, actor,
-                            row.bloodGlucose(), row.hba1c(), row.cholesterol(),
-                            row.triglyceride(), row.hdlC(), row.ldlC());
+                            requestedValues.bloodGlucose(), requestedValues.hba1c(),
+                            requestedValues.cholesterol(), requestedValues.triglyceride(),
+                            requestedValues.hdlC(), requestedValues.ldlC());
                 } catch (IllegalArgumentException error) {
                     throw new IllegalArgumentException(
                             "Dòng " + row.lineNumber() + ": " + error.getMessage(), error);
                 }
             }
             audit(actor, "IMPORT", "LAB_RESULT_FILE", null,
-                    "Import " + rows.size() + " dòng kết quả xét nghiệm");
+                    "Import " + importedValues[0] + " chỉ số xét nghiệm");
         });
-        return rows.size();
+        return importedValues[0];
     }
 
     private int openEncounterForRecord(int recordId) {
-        List<Map<String, Object>> records = query("""
+        String sql = """
                 SELECT r.encounter_id FROM medicalrecords r
                 JOIN encounters e ON e.encounter_id=r.encounter_id
                 WHERE r.record_id=? AND e.status='WAITING_LAB' AND EXISTS (
                     SELECT 1 FROM lab_orders l WHERE l.encounter_id=r.encounter_id
-                      AND l.status IN ('ORDERED','COLLECTED'))""", recordId);
+                      AND l.status IN ('ORDERED','COLLECTED','RESULTED')
+                      AND l.test_code IN """ + SUPPORTED_LAB_CODES_SQL + ")";
+        List<Map<String, Object>> records = query(sql, recordId);
         if (records.isEmpty() || records.get(0).get("encounter_id") == null) {
             throw new IllegalArgumentException(
                     "Bác sĩ chưa tạo chỉ định xét nghiệm hoặc chỉ định đã được xác nhận.");
@@ -895,28 +928,33 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
         return ((Number) records.get(0).get("encounter_id")).intValue();
     }
 
-    private void validateImportOrders(LabResultImportRow row, int encounterId) {
+    private LabResultImportRow requestedImportValues(
+            LabResultImportRow row, int encounterId) {
         Set<String> codes = new HashSet<>();
         for (Map<String, Object> order : query("""
                 SELECT test_code FROM lab_orders
-                WHERE encounter_id=? AND status IN ('ORDERED','COLLECTED')""", encounterId)) {
+                WHERE encounter_id=? AND status IN ('ORDERED','COLLECTED','RESULTED')
+                  AND test_code IN ('GLU_FASTING','HBA1C','CHOLESTEROL','TRIGLYCERIDE','HDL_C','LDL_C')""", encounterId)) {
             codes.add(String.valueOf(order.get("test_code")).toUpperCase(Locale.ROOT));
         }
-        if (row.bloodGlucose() != null && !hasAny(codes, "GLU", "GLU_FASTING")) {
-            throw new IllegalArgumentException("Chưa có chỉ định Đường huyết cho bệnh án này.");
-        }
-        if (row.hba1c() != null && !codes.contains("HBA1C")) {
-            throw new IllegalArgumentException("Chưa có chỉ định HbA1c cho bệnh án này.");
-        }
-        if ((row.cholesterol() != null || row.triglyceride() != null
-                || row.hdlC() != null || row.ldlC() != null) && !codes.contains("LIPID")) {
-            throw new IllegalArgumentException("Chưa có chỉ định bộ mỡ máu cho bệnh án này.");
-        }
+        return filterRequestedValues(row, codes);
     }
 
-    private boolean hasAny(Set<String> values, String... expected) {
-        for (String value : expected) if (values.contains(value)) return true;
-        return false;
+    static LabResultImportRow filterRequestedValues(
+            LabResultImportRow row, Set<String> codes) {
+        LabResultImportRow requestedValues = new LabResultImportRow(
+                row.lineNumber(), row.recordId(),
+                codes.contains("GLU_FASTING") ? row.bloodGlucose() : null,
+                codes.contains("HBA1C") ? row.hba1c() : null,
+                codes.contains("CHOLESTEROL") ? row.cholesterol() : null,
+                codes.contains("TRIGLYCERIDE") ? row.triglyceride() : null,
+                codes.contains("HDL_C") ? row.hdlC() : null,
+                codes.contains("LDL_C") ? row.ldlC() : null);
+        if (!requestedValues.hasAnyValue()) {
+            throw new IllegalArgumentException(
+                    "File không có giá trị phù hợp với các chỉ số bác sĩ đã yêu cầu.");
+        }
+        return requestedValues;
     }
 
     private void saveImportedHealthIndicators(LabResultImportRow row, int actor)
@@ -971,20 +1009,17 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
             Double bloodGlucose, Double hba1c, Double cholesterol, Double triglyceride,
             Double hdlC, Double ldlC) throws SQLException {
         saveStructuredOrder(encounterId, actor, bloodGlucose, "mmol/L", "3.9-7.0",
-                flag(bloodGlucose, 3.9, 7.0), "GLU", "GLU_FASTING");
+                flag(bloodGlucose, 3.9, 7.0), "GLU_FASTING");
         saveStructuredOrder(encounterId, actor, hba1c, "%", "4.0-6.5",
                 flag(hba1c, 4.0, 6.5), "HBA1C");
-
-        String lipidValue = lipidSummary(cholesterol, triglyceride, hdlC, ldlC);
-        if (lipidValue != null) {
-            update("""
-                    UPDATE lab_orders SET result_value=?,result_unit='mmol/L',
-                        reference_range='Theo từng chỉ số',result_flag=?,resulted_by=?,
-                        resulted_at=CURRENT_TIMESTAMP,status='RESULTED'
-                    WHERE encounter_id=? AND test_code='LIPID'
-                      AND status IN ('ORDERED','COLLECTED')""",
-                    lipidValue, lipidFlag(cholesterol, triglyceride, hdlC, ldlC), actor, encounterId);
-        }
+        saveStructuredOrder(encounterId, actor, cholesterol, "mmol/L", "3.0-5.2",
+                flag(cholesterol, 3.0, 5.2), "CHOLESTEROL");
+        saveStructuredOrder(encounterId, actor, triglyceride, "mmol/L", "0.5-1.7",
+                flag(triglyceride, 0.5, 1.7), "TRIGLYCERIDE");
+        saveStructuredOrder(encounterId, actor, hdlC, "mmol/L", "1.0-3.0",
+                flag(hdlC, 1.0, 3.0), "HDL_C");
+        saveStructuredOrder(encounterId, actor, ldlC, "mmol/L", "1.8-3.4",
+                flag(ldlC, 1.8, 3.4), "LDL_C");
         audit(actor, "RESULT", "LAB_ORDER", String.valueOf(encounterId),
                 "Nhập bộ kết quả xét nghiệm từ bệnh án #" + recordId);
     }
@@ -993,11 +1028,12 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
     public void reviewLabResults(int encounterId, int doctorId, int actor) {
         // Bác sĩ review toàn bộ kết quả; chỉ khi không còn order chưa review thì lượt khám mới được chuyển tiếp.
         inTransaction("Không thể xác nhận kết quả xét nghiệm.", () -> {
-            List<Map<String, Object>> state = query("""
+            String stateSql = """
                     SELECT COALESCE(SUM(CASE WHEN status IN ('ORDERED','COLLECTED') THEN 1 ELSE 0 END),0) pending,
                            COALESCE(SUM(CASE WHEN status IN ('RESULTED','REVIEWED') THEN 1 ELSE 0 END),0) available
                     FROM lab_orders WHERE encounter_id=? AND doctor_id=?
-                      AND status<>'CANCELLED'""", encounterId, doctorId);
+                      AND status<>'CANCELLED' AND test_code IN """ + SUPPORTED_LAB_CODES_SQL;
+            List<Map<String, Object>> state = query(stateSql, encounterId, doctorId);
             Number pending = (Number) state.get(0).get("pending");
             Number available = (Number) state.get(0).get("available");
             if (available.longValue() == 0) {
@@ -1006,10 +1042,11 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
             if (pending.longValue() > 0) {
                 throw new IllegalArgumentException("Vẫn còn chỉ định chưa có kết quả");
             }
-            update("""
+            String reviewSql = """
                     UPDATE lab_orders SET status='REVIEWED'
-                    WHERE encounter_id=? AND doctor_id=? AND status='RESULTED'""",
-                    encounterId, doctorId);
+                    WHERE encounter_id=? AND doctor_id=? AND status='RESULTED'
+                      AND test_code IN """ + SUPPORTED_LAB_CODES_SQL;
+            update(reviewSql, encounterId, doctorId);
             update("""
                     UPDATE encounters SET status='LAB_COMPLETED'
                     WHERE encounter_id=? AND doctor_id=? AND status<>'COMPLETED'""",
@@ -1020,17 +1057,19 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
     }
 
     public boolean hasUnreviewedLabOrders(int encounterId) {
-        return !query("""
+        String sql = """
                 SELECT TOP 1 1 ok FROM lab_orders
                 WHERE encounter_id=? AND status IN ('ORDERED','COLLECTED','RESULTED')
-                """, encounterId).isEmpty();
+                  AND test_code IN """ + SUPPORTED_LAB_CODES_SQL;
+        return !query(sql, encounterId).isEmpty();
     }
 
     public boolean hasOpenLabOrdersForRecord(int recordId) {
-        return !query("""
+        String sql = """
                 SELECT TOP 1 1 ok FROM medicalrecords r JOIN lab_orders l ON l.encounter_id=r.encounter_id
-                WHERE r.record_id=? AND l.status IN ('ORDERED','COLLECTED')""",
-                recordId).isEmpty();
+                WHERE r.record_id=? AND l.status IN ('ORDERED','COLLECTED','RESULTED')
+                  AND l.test_code IN """ + SUPPORTED_LAB_CODES_SQL;
+        return !query(sql, recordId).isEmpty();
     }
 
     private void saveStructuredOrder(int encounterId, int actor, Double value, String unit,
@@ -1048,7 +1087,7 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
         String sql = "UPDATE lab_orders SET result_value=?,result_unit=?,reference_range=?,"
                 + "result_flag=?,resulted_by=?,resulted_at=CURRENT_TIMESTAMP,status='RESULTED' "
                 + "WHERE encounter_id=? AND test_code IN (" + placeholders + ") "
-                + "AND status IN ('ORDERED','COLLECTED')";
+                 + "AND status IN ('ORDERED','COLLECTED','RESULTED')";
         update(sql, parameters.toArray());
     }
 
@@ -1056,23 +1095,6 @@ public class ClinicWorkflowDAO extends DBContext implements vn.diabetes.service.
         if (value == null) return "NORMAL";
         if (value < low) return "LOW";
         if (value > high) return "HIGH";
-        return "NORMAL";
-    }
-
-    private String lipidSummary(Double cholesterol, Double triglyceride, Double hdlC, Double ldlC) {
-        List<String> values = new ArrayList<>();
-        if (cholesterol != null) values.add("Cholesterol " + cholesterol);
-        if (triglyceride != null) values.add("Triglyceride " + triglyceride);
-        if (hdlC != null) values.add("HDL-C " + hdlC);
-        if (ldlC != null) values.add("LDL-C " + ldlC);
-        return values.isEmpty() ? null : String.join("; ", values);
-    }
-
-    private String lipidFlag(Double cholesterol, Double triglyceride, Double hdlC, Double ldlC) {
-        if ((cholesterol != null && cholesterol > 5.2)
-                || (triglyceride != null && triglyceride > 1.7)
-                || (ldlC != null && ldlC > 3.4)
-                || (hdlC != null && hdlC < 1.0)) return "HIGH";
         return "NORMAL";
     }
 

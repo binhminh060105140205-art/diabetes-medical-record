@@ -127,13 +127,12 @@
             <c:otherwise>
                 <div class="table-scroll">
                     <table>
-                        <thead><tr><th>Xét nghiệm</th><th>Kết quả</th><th>Khoảng tham chiếu</th><th>Trạng thái</th></tr></thead>
+                        <thead><tr><th>Bộ xét nghiệm</th><th>Kết quả</th><th>Trạng thái</th></tr></thead>
                         <tbody>
                         <c:forEach items="${labOrders}" var="lab">
                             <tr>
-                                <td><strong><c:out value="${lab.test_name}"/></strong><small class="table-sub"><c:out value="${lab.test_code}"/></small></td>
-                                <td><c:choose><c:when test="${not empty lab.result_value}"><strong><c:out value="${lab.result_value}"/> <c:out value="${lab.result_unit}"/></strong></c:when><c:otherwise><span class="text-muted">Chưa có kết quả</span></c:otherwise></c:choose></td>
-                                <td><c:out value="${lab.reference_range}" default="—"/></td>
+                                <td><strong><c:out value="${lab.test_name}"/></strong><small class="table-sub"><c:out value="${lab.test_codes}"/></small></td>
+                                <td><c:choose><c:when test="${not empty lab.result_value}"><strong><c:out value="${lab.result_value}"/></strong></c:when><c:otherwise><span class="text-muted">Chưa có kết quả</span></c:otherwise></c:choose></td>
                                 <td><span class="status-pill status-${lab.status}">${lab.status=='ORDERED'?'Chờ kết quả':lab.status=='COLLECTED'?'Đã lấy mẫu':lab.status=='RESULTED'?'Chờ bác sĩ xác nhận':lab.status=='REVIEWED'?'Đã xác nhận':lab.status=='CANCELLED'?'Đã hủy':'Đang xử lý'}</span></td>
                             </tr>
                         </c:forEach>

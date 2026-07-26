@@ -236,52 +236,6 @@
         </section>
     </c:if>
 
-    <c:if test="${view=='clinical'}">
-        <section class="card">
-            <div class="section-header"><div><h2>Mở hồ sơ lâm sàng bệnh nhân</h2><p>Tra cứu dị ứng và tiền sử trước khi đưa ra chỉ định điều trị.</p></div></div>
-            <form method="get" class="search-bar" data-gated-submit>
-                <input type="hidden" name="view" value="clinical">
-                <select class="form-control" name="patientId" required>
-                    <option value="">Chọn bệnh nhân</option>
-                    <c:forEach var="p" items="${patients}"><option value="${p.patientId}" ${selectedPatient.patientId==p.patientId?'selected':''}><c:out value="${p.fullName}"/> — <c:out value="${p.phone}"/></option></c:forEach>
-                </select>
-                <button class="btn btn-primary" type="submit">Mở hồ sơ</button>
-            </form>
-        </section>
-        <c:if test="${not empty selectedPatient}">
-            <div class="patient-summary-bar"><strong><c:out value="${selectedPatient.fullName}"/></strong><div class="patient-summary-meta"><span>SĐT: <c:out value="${selectedPatient.phone}"/></span><span>BHYT: <c:out value="${selectedPatient.healthInsuranceNo}"/></span></div></div>
-            <div class="two-column">
-                <section class="card">
-                    <div class="section-header"><div><h2>Dị ứng</h2><p>Thông tin trùng tác nhân sẽ được cập nhật thay vì tạo mới.</p></div></div>
-                    <c:forEach var="a" items="${allergies}"><div class="clinical-item"><strong><c:out value="${a.allergen}"/></strong><span>${a.severity=='MILD'?'Nhẹ':a.severity=='MODERATE'?'Trung bình':a.severity=='SEVERE'?'Nặng':'Chưa xác định'}</span><p><c:out value="${a.reaction}"/></p></div></c:forEach>
-                    <c:if test="${empty allergies}"><div class="empty-filter">Chưa ghi nhận dị ứng.</div></c:if>
-                    <details class="inline-disclosure"><summary class="btn btn-light">Thêm hoặc cập nhật dị ứng</summary>
-                        <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="compact-form disclosure-content">
-                            <input type="hidden" name="action" value="allergy"><input type="hidden" name="patientId" value="${selectedPatient.patientId}">
-                            <input class="form-control" name="allergen" maxlength="150" placeholder="Tác nhân dị ứng" required><input class="form-control" name="reaction" maxlength="255" placeholder="Phản ứng">
-                            <select class="form-control" name="severity"><option value="UNKNOWN">Chưa xác định</option><option value="MILD">Nhẹ</option><option value="MODERATE">Trung bình</option><option value="SEVERE">Nặng</option></select>
-                            <button class="btn btn-primary" type="submit">Lưu dị ứng</button>
-                        </form>
-                    </details>
-                </section>
-                <section class="card">
-                    <div class="section-header"><div><h2>Tiền sử bệnh</h2><p>Ghi nhận tiền sử cá nhân, gia đình, phẫu thuật và lối sống.</p></div></div>
-                    <c:forEach var="h" items="${histories}"><div class="clinical-item"><strong><c:out value="${h.condition_name}"/></strong><span>${h.history_type=='PERSONAL'?'Cá nhân':h.history_type=='FAMILY'?'Gia đình':h.history_type=='SURGICAL'?'Phẫu thuật':'Lối sống'}</span><p><c:out value="${h.note}"/></p></div></c:forEach>
-                    <c:if test="${empty histories}"><div class="empty-filter">Chưa ghi nhận tiền sử.</div></c:if>
-                    <details class="inline-disclosure"><summary class="btn btn-light">Thêm tiền sử</summary>
-                        <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="compact-form disclosure-content">
-                            <input type="hidden" name="action" value="history"><input type="hidden" name="patientId" value="${selectedPatient.patientId}">
-                            <select class="form-control" name="historyType"><option value="PERSONAL">Cá nhân</option><option value="FAMILY">Gia đình</option><option value="SURGICAL">Phẫu thuật</option><option value="LIFESTYLE">Lối sống</option></select>
-                            <input class="form-control" name="conditionName" maxlength="150" placeholder="Tên bệnh hoặc tình trạng" required><input class="form-control" type="date" name="diagnosedDate" max="${today}">
-                            <select class="form-control" name="historyStatus"><option value="ACTIVE">Đang theo dõi</option><option value="RESOLVED">Đã ổn định</option></select>
-                            <textarea class="form-control" name="historyNote" maxlength="500" placeholder="Ghi chú"></textarea><button class="btn btn-primary" type="submit">Lưu tiền sử</button>
-                        </form>
-                    </details>
-                </section>
-            </div>
-        </c:if>
-    </c:if>
-
     <c:if test="${view=='labs'}">
         <c:if test="${sessionScope.user.role=='DOCTOR'}">
             <section class="card">
@@ -336,8 +290,8 @@
         </c:if>
 
         <section class="card">
-            <div class="section-header"><div><h2>Chỉ định và kết quả xét nghiệm</h2><p>${sessionScope.user.role=='DOCTOR'?'Theo dõi kết quả để tiếp tục kết luận.':'Ưu tiên chỉ định chưa có kết quả và mức khẩn.'}</p></div><span class="data-count">${fn:length(labOrders)} chỉ định</span></div>
-            <div class="operations-toolbar"><label class="table-filter"><span class="sr-only">Tìm xét nghiệm</span><input type="search" data-table-filter="labTable" placeholder="Tìm bệnh nhân, mã xét nghiệm, ưu tiên hoặc trạng thái"></label></div>
+            <div class="section-header"><div><h2>Chỉ định và kết quả xét nghiệm</h2><p>${sessionScope.user.role=='DOCTOR'?'Theo dõi bộ 6 chỉ số để tiếp tục kết luận.':'Mỗi bệnh nhân hiển thị một lượt khám, không tách thành nhiều dòng mã xét nghiệm.'}</p></div><span class="data-count">${fn:length(labOrders)} lượt khám</span></div>
+            <div class="operations-toolbar"><label class="table-filter"><span class="sr-only">Tìm xét nghiệm</span><input type="search" data-table-filter="labTable" placeholder="Tìm bệnh nhân, bộ chỉ số hoặc trạng thái"></label></div>
             <div class="table-scroll">
                 <table id="labTable">
                     <thead><tr><th>Bệnh nhân</th><th>Xét nghiệm</th><th>Ưu tiên</th><th>Kết quả</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
@@ -345,65 +299,16 @@
                     <c:forEach var="l" items="${labOrders}">
                         <tr data-search-row>
                             <td><strong><c:out value="${l.patient_name}"/></strong><small class="table-sub">${l.diabetes_type=='TYPE_1'?'Típ 1':l.diabetes_type=='TYPE_2'?'Típ 2':'Chưa phân loại'}<c:if test="${not empty l.record_id}"> · Bệnh án #${l.record_id}</c:if></small></td>
-                            <td><strong><c:out value="${l.test_code}"/></strong><small class="table-sub"><c:out value="${l.test_name}"/></small></td>
+                            <td><strong>Bộ 6 chỉ số ban đầu</strong><small class="table-sub"><c:out value="${l.test_codes}"/></small></td>
                             <td><span class="status-pill ${l.priority=='URGENT'?'status-CRITICAL':''}">${l.priority=='URGENT'?'Khẩn':'Thông thường'}</span></td>
-                            <td><c:choose><c:when test="${not empty l.result_value}"><strong><c:out value="${l.result_value}"/> <c:out value="${l.result_unit}"/></strong><small class="table-sub"><c:out value="${l.reference_range}"/> · <c:out value="${l.result_flag}"/></small></c:when><c:otherwise><span class="text-muted">Chưa có kết quả</span></c:otherwise></c:choose></td>
+                            <td><c:choose><c:when test="${not empty l.result_value}"><strong><c:out value="${l.result_value}"/></strong></c:when><c:otherwise><span class="text-muted">Chưa nhập 6 chỉ số</span></c:otherwise></c:choose></td>
                             <td><span class="status-pill status-${l.status}">${l.status=='ORDERED'?'Chờ kết quả':l.status=='RESULTED'?'Đã có kết quả':l.status=='REVIEWED'?'Đã xem xét':l.status=='CANCELLED'?'Đã hủy':'Đang xử lý'}</span></td>
                             <td>
                                 <c:if test="${sessionScope.user.role=='DOCTOR' && not empty l.record_id}">
                                     <a class="btn btn-light btn-sm" href="${pageContext.request.contextPath}/MedicalRecordForm?recordId=${l.record_id}&tab=3">Mở phiếu xét nghiệm</a>
                                 </c:if>
-                                <c:if test="${sessionScope.user.role=='STAFF' && not empty l.record_id && (l.test_code=='GLU'||l.test_code=='GLU_FASTING'||l.test_code=='HBA1C'||l.test_code=='LIPID') && (l.status=='ORDERED'||l.status=='COLLECTED')}">
-                                    <a class="btn btn-primary btn-sm" href="${pageContext.request.contextPath}/MedicalRecordForm?recordId=${l.record_id}&tab=3">Nhập theo phiếu xét nghiệm</a>
-                                </c:if>
-                                <c:if test="${(sessionScope.user.role=='STAFF'||sessionScope.user.role=='ADMIN') && (empty l.record_id || !(l.test_code=='GLU'||l.test_code=='GLU_FASTING'||l.test_code=='HBA1C'||l.test_code=='LIPID')) && (l.status=='ORDERED'||l.status=='COLLECTED')}">
-                                    <button class="btn btn-primary btn-sm" type="button"
-                                            onclick="document.getElementById('lab-result-${l.lab_order_id}').showModal()">Nhập kết quả</button>
-                                    <dialog class="lab-result-dialog" id="lab-result-${l.lab_order_id}"
-                                            aria-labelledby="lab-result-title-${l.lab_order_id}">
-                                        <div class="lab-result-dialog-header">
-                                            <div>
-                                                <span>NHẬP KẾT QUẢ XÉT NGHIỆM</span>
-                                                <strong id="lab-result-title-${l.lab_order_id}"><c:out value="${l.test_code}"/> · <c:out value="${l.patient_name}"/></strong>
-                                                <small><c:out value="${l.test_name}"/></small>
-                                            </div>
-                                            <button class="dialog-close" type="button"
-                                                    onclick="this.closest('dialog').close()" aria-label="Đóng form">×</button>
-                                        </div>
-                                        <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="result-form lab-result-form">
-                                            <input type="hidden" name="action" value="labResult">
-                                            <input type="hidden" name="labOrderId" value="${l.lab_order_id}">
-                                            <div class="form-group">
-                                                <label class="required">Kết quả</label>
-                                                <input class="form-control" name="resultValue" maxlength="100"
-                                                       placeholder="Ví dụ: 7.2" required autofocus>
-                                            </div>
-                                            <div class="form-group">
-                                                <label>Đơn vị (Unit)</label>
-                                                <input class="form-control" name="resultUnit" maxlength="30"
-                                                       placeholder="Ví dụ: mmol/L, mg/dL hoặc %">
-                                            </div>
-                                            <div class="form-group">
-                                                <label>Khoảng tham chiếu</label>
-                                                <input class="form-control" name="referenceRange" maxlength="100"
-                                                       placeholder="Ví dụ: 3.9–6.1 mmol/L">
-                                            </div>
-                                            <div class="form-group">
-                                                <label>Đánh giá kết quả</label>
-                                                <select class="form-control" name="resultFlag">
-                                                    <option value="NORMAL">Bình thường</option>
-                                                    <option value="LOW">Thấp</option>
-                                                    <option value="HIGH">Cao</option>
-                                                    <option value="CRITICAL">Nguy cấp</option>
-                                                </select>
-                                            </div>
-                                            <div class="lab-result-note">Giữ nguyên các đơn vị chuẩn như <strong>mmol/L</strong>, <strong>mg/dL</strong>, <strong>%</strong>. Kiểm tra lại kết quả trước khi lưu.</div>
-                                            <div class="lab-result-actions">
-                                                <button class="btn btn-light" type="button" onclick="this.closest('dialog').close()">Hủy</button>
-                                                <button class="btn btn-success" type="submit">Lưu kết quả</button>
-                                            </div>
-                                        </form>
-                                    </dialog>
+                                <c:if test="${sessionScope.user.role=='STAFF' && not empty l.record_id && (l.status=='ORDERED'||l.status=='COLLECTED')}">
+                                    <a class="btn btn-primary btn-sm" href="${pageContext.request.contextPath}/MedicalRecordForm?recordId=${l.record_id}&tab=3">Nhập 6 chỉ số</a>
                                 </c:if>
                             </td>
                         </tr>

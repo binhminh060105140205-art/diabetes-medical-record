@@ -579,15 +579,26 @@ public class MedicalRecordFormController extends HttpServlet {
         boolean allReviewed = hasOrders;
         boolean orderedGlucose = false;
         boolean orderedHba1c = false;
-        boolean orderedLipid = false;
+        boolean orderedCholesterol = false;
+        boolean orderedTriglyceride = false;
+        boolean orderedHdlC = false;
+        boolean orderedLdlC = false;
         if (hasOrders) {
             for (java.util.Map<String, Object> order : labOrders) {
                 String status = String.valueOf(order.get("status"));
-                String code = String.valueOf(order.get("test_code"));
-                if (java.util.Set.of("ORDERED", "COLLECTED").contains(status)) {
-                    orderedGlucose |= java.util.Set.of("GLU", "GLU_FASTING").contains(code);
-                    orderedHba1c |= "HBA1C".equals(code);
-                    orderedLipid |= "LIPID".equals(code);
+                String codes = String.valueOf(order.getOrDefault("test_codes", order.get("test_code")));
+                if (java.util.Set.of("ORDERED", "COLLECTED", "RESULTED").contains(status)) {
+                    for (String code : codes.split(",\\s*")) {
+                        switch (code) {
+                            case "GLU_FASTING" -> orderedGlucose = true;
+                            case "HBA1C" -> orderedHba1c = true;
+                            case "CHOLESTEROL" -> orderedCholesterol = true;
+                            case "TRIGLYCERIDE" -> orderedTriglyceride = true;
+                            case "HDL_C" -> orderedHdlC = true;
+                            case "LDL_C" -> orderedLdlC = true;
+                            default -> { }
+                        }
+                    }
                 }
                 if (!java.util.Set.of("RESULTED", "REVIEWED", "CANCELLED").contains(status)) {
                     allReady = false;
@@ -602,7 +613,10 @@ public class MedicalRecordFormController extends HttpServlet {
         request.setAttribute("labReviewed", allReviewed);
         request.setAttribute("orderedGlucose", orderedGlucose);
         request.setAttribute("orderedHba1c", orderedHba1c);
-        request.setAttribute("orderedLipid", orderedLipid);
+        request.setAttribute("orderedCholesterol", orderedCholesterol);
+        request.setAttribute("orderedTriglyceride", orderedTriglyceride);
+        request.setAttribute("orderedHdlC", orderedHdlC);
+        request.setAttribute("orderedLdlC", orderedLdlC);
     }
 
     private double parseDouble(String value, String label) {
