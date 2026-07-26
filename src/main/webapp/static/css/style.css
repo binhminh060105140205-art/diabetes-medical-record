@@ -1405,6 +1405,9 @@ tbody tr:hover { background: #f7fbfc; }
 .intake-account-section > p { margin: 0 0 14px; font-size: 11px; }
 .intake-account-section .form-group { margin-bottom: 0; }
 .intake-form-footer { margin-top: 18px; }
+.patient-intake-form.is-submitting,
+.patient-intake-form.is-submitting * { pointer-events: auto; }
+.patient-intake-form.is-submitting { opacity: 1; }
 .patient-management-card { scroll-margin-top: 92px; }
 .patient-search-bar {
     display: flex;

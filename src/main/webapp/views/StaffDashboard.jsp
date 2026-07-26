@@ -48,7 +48,7 @@
             </div>
             <%-- Submit -> PatientFormController: kiểm tra trùng dữ liệu, tạo user PATIENT rồi tạo hồ sơ bệnh nhân. --%>
             <form action="${pageContext.request.contextPath}/PatientForm" method="post"
-                  data-validate="patient" class="patient-intake-form" novalidate>
+                  data-validate="patient" class="patient-intake-form" autocomplete="off" novalidate>
                 <div class="patient-intake-grid">
                     <div class="form-group">
                         <label class="required" for="intakeFullName">Họ và tên</label>

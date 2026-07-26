@@ -316,6 +316,7 @@ document.addEventListener('submit', function (event) {
     if (event.defaultPrevented || !event.target.checkValidity()) return;
     const form = event.target;
     const submitter = event.submitter;
+    if (form.matches('.patient-intake-form')) return;
     window.setTimeout(function () {
         if (event.defaultPrevented || !form.checkValidity()) return;
         form.classList.add('is-submitting');

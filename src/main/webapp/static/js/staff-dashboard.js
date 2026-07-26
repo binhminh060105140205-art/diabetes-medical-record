@@ -2,9 +2,20 @@
     const workspace = document.querySelector('.staff-patient-workspace');
     const intake = document.getElementById('new-patient');
     if (!workspace || !intake) return;
+    const intakeForm = intake.querySelector('.patient-intake-form');
+
+    function resetIntakeState() {
+        if (!intakeForm) return;
+        intakeForm.classList.remove('is-submitting');
+        intakeForm.style.pointerEvents = 'auto';
+        intakeForm.querySelectorAll('input, select, textarea').forEach(function (field) {
+            field.style.pointerEvents = 'auto';
+        });
+    }
 
     function openIntake(smooth) {
         intake.hidden = false;
+        resetIntakeState();
         intake.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
         const firstField = intake.querySelector('input,select,textarea');
         if (firstField) firstField.focus({ preventScroll: true });
@@ -24,6 +35,10 @@
             intake.hidden = true;
         });
     });
+
+    resetIntakeState();
+    window.addEventListener('pageshow', resetIntakeState);
+    intake.addEventListener('focusin', resetIntakeState);
 
     if (workspace.dataset.openIntake === 'true') intake.hidden = false;
     if (workspace.dataset.scrollIntake === 'true') {
