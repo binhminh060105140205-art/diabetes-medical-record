@@ -202,7 +202,7 @@
             </div>
             <div class="operations-toolbar">
                 <label class="table-filter"><span class="sr-only">Tìm lượt khám</span><input type="search" data-table-filter="encounterTable" placeholder="Tìm bệnh nhân, bác sĩ hoặc trạng thái"></label>
-                <c:if test="${sessionScope.user.role=='STAFF'}"><span class="data-count">Ưu tiên: Chờ tiếp nhận → Chờ khám</span></c:if>
+                <c:if test="${sessionScope.user.role=='STAFF' || sessionScope.user.role=='ADMIN'}"><span class="data-count">Ưu tiên: Chờ tiếp nhận → Chờ khám</span></c:if>
             </div>
             <div class="table-scroll">
                 <table id="encounterTable">
@@ -216,8 +216,8 @@
                             <td><span class="status-pill status-${e.status}">${e.status=='WAITING_TRIAGE'?'Chờ tiếp nhận':e.status=='WAITING_DOCTOR'?'Chờ khám':e.status=='IN_CONSULTATION'?'Đang khám':e.status=='WAITING_LAB'?'Chờ xét nghiệm':e.status=='LAB_COMPLETED'?'Chờ kết luận':'Chưa xác định'}</span></td>
                             <td><div class="table-actions">
                                 <c:choose>
-                                    <c:when test="${empty e.record_id}"><c:if test="${sessionScope.user.role=='STAFF'}"><a class="btn btn-primary btn-sm" href="${pageContext.request.contextPath}/MedicalRecordForm?patientId=${e.patient_id}&encounterId=${e.encounter_id}">Nhập thông tin & sinh hiệu</a></c:if></c:when>
-                                    <c:otherwise><a class="btn btn-light btn-sm" href="${pageContext.request.contextPath}/MedicalRecordForm?recordId=${e.record_id}&tab=4">${sessionScope.user.role=='ADMIN'?'Xem bệnh án':'Mở bệnh án'}</a></c:otherwise>
+                                    <c:when test="${empty e.record_id}"><c:if test="${sessionScope.user.role=='STAFF' || sessionScope.user.role=='ADMIN'}"><a class="btn btn-primary btn-sm" href="${pageContext.request.contextPath}/MedicalRecordForm?patientId=${e.patient_id}&encounterId=${e.encounter_id}">Nhập thông tin & sinh hiệu</a></c:if></c:when>
+                                    <c:otherwise><a class="btn btn-light btn-sm" href="${pageContext.request.contextPath}/MedicalRecordForm?recordId=${e.record_id}&tab=4">Mở bệnh án</a></c:otherwise>
                                 </c:choose>
                                 <c:if test="${sessionScope.user.role=='DOCTOR' && (e.status=='WAITING_DOCTOR'||e.status=='LAB_COMPLETED')}">
                                     <form method="post" action="${pageContext.request.contextPath}/ClinicWorkflow" class="inline-form">
