@@ -64,7 +64,7 @@ public class MedicalRecordFormController extends HttpServlet {
             request.setAttribute("clinicalDone", clinicalDone);
             setLabState(request, formData.labOrders());
         } else if (pidParam != null) {
-            if (!"STAFF".equals(user.getRole())) {
+            if (!ControllerSupport.hasRole(user, "STAFF", "ADMIN")) {
                 response.sendError(HttpServletResponse.SC_FORBIDDEN);
                 return;
             }
@@ -97,7 +97,7 @@ public class MedicalRecordFormController extends HttpServlet {
             request.setAttribute("appointmentTime", workflow.appointmentTimeForEncounter(encounterId));
         }
 
-        if ("STAFF".equals(user.getRole())) {
+        if (ControllerSupport.hasRole(user, "STAFF", "ADMIN")) {
             request.setAttribute("doctors", new DoctorDAO().getAll());
         }
         request.getRequestDispatcher("views/MedicalRecordForm.jsp").forward(request, response);
@@ -155,7 +155,7 @@ public class MedicalRecordFormController extends HttpServlet {
 
     private void saveBasic(HttpServletRequest request, HttpServletResponse response,
             User user, MedicalRecordDAO records) throws IOException {
-        if (!requireRole(request, response, user, "STAFF")) return;
+        if (!requireRole(request, response, user, "STAFF", "ADMIN")) return;
 
         MedicalRecord record = new MedicalRecord();
         record.setPatientId(ControllerSupport.positiveId(
@@ -201,7 +201,7 @@ public class MedicalRecordFormController extends HttpServlet {
     private void saveClinical(HttpServletRequest request, HttpServletResponse response,
             User user, MedicalRecordDAO records, String recordIdValue)
             throws ServletException, IOException {
-        if (!requireRole(request, response, user, "STAFF")) return;
+        if (!requireRole(request, response, user, "STAFF", "ADMIN")) return;
 
         int recordId = ControllerSupport.positiveId(recordIdValue, "Mã bệnh án");
         ensureDraftRecord(records.getById(recordId));
@@ -494,8 +494,8 @@ public class MedicalRecordFormController extends HttpServlet {
     }
 
     private boolean requireRole(HttpServletRequest request, HttpServletResponse response,
-            User user, String role) throws IOException {
-        if (ControllerSupport.hasRole(user, role)) return true;
+            User user, String... roles) throws IOException {
+        if (ControllerSupport.hasRole(user, roles)) return true;
         response.sendError(HttpServletResponse.SC_FORBIDDEN);
         return false;
     }
