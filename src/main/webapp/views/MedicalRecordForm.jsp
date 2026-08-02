@@ -26,6 +26,7 @@
 <div class="page-wrapper">
     <c:if test="${not empty sessionScope.recordFlash}"><div class="alert alert-danger"><c:out value="${sessionScope.recordFlash}"/></div><c:remove var="recordFlash" scope="session"/></c:if>
     <c:if test="${not empty sessionScope.recordSuccess}"><div class="alert alert-success"><c:out value="${sessionScope.recordSuccess}"/></div><c:remove var="recordSuccess" scope="session"/></c:if>
+    <c:set var="canIntake" value="${sessionScope.user.role=='STAFF' || sessionScope.user.role=='ADMIN'}"/>
     <div class="page-heading">
         <div><div class="eyebrow">HỒ SƠ LƯỢT KHÁM</div><h1 class="page-title">Bệnh án ${not empty record?'#'.concat(record.recordId):'mới'}</h1></div>
         <a class="btn btn-light" href="${pageContext.request.contextPath}/ClinicWorkflow?view=encounters">Quay lại lượt khám</a>
@@ -36,8 +37,8 @@
     </div>
 
     <div class="record-progress" aria-label="Tiến độ bệnh án">
-        <div class="record-step ${not empty record?'done':sessionScope.user.role=='STAFF'?'active':''}">1. Thông tin khám</div>
-        <div class="record-step ${clinicalDone?'done':not empty record&&sessionScope.user.role=='STAFF'?'active':''}">2. Sinh hiệu</div>
+        <div class="record-step ${not empty record?'done':canIntake?'active':''}">1. Thông tin khám</div>
+        <div class="record-step ${clinicalDone?'done':not empty record&&canIntake?'active':''}">2. Sinh hiệu</div>
         <div class="record-step ${labReviewed?'done':labResultsReady?'active':''}">3. Xét nghiệm</div>
         <div class="record-step ${record.status=='COMPLETED'?'done':sessionScope.user.role=='DOCTOR'?'active':''}">4. Kết luận</div>
     </div>
@@ -79,9 +80,9 @@
 
     <%-- Thanh chuyển bước --%>
     <div class="tab-bar">
-        <button type="button" class="tab-btn ${sessionScope.user.role!='STAFF'?'locked':''} ${not empty record?'done':''}"
+        <button type="button" class="tab-btn ${!canIntake?'locked':''} ${not empty record?'done':''}"
                 onclick="showTab(1)" id="btn1">1. Thông tin khám</button>
-        <button type="button" class="tab-btn ${sessionScope.user.role!='STAFF'?'locked':''} ${clinicalDone?'done':''}"
+        <button type="button" class="tab-btn ${!canIntake?'locked':''} ${clinicalDone?'done':''}"
                 onclick="showTab(2)" id="btn2">2. Sinh hiệu <small>(Nhân viên)</small></button>
         <button type="button" class="tab-btn ${labReviewed?'done':''}"
                 onclick="showTab(3)" id="btn3">3. Xét nghiệm</button>
@@ -92,7 +93,7 @@
     <%-- ══ TAB 1: THÔNG TIN KHÁM (STAFF) ══════════════════════════════ --%>
     <div class="tab-panel" id="tab1">
     <c:choose>
-    <c:when test="${sessionScope.user.role == 'STAFF' && (empty record || record.status!='COMPLETED')}">
+    <c:when test="${canIntake && (empty record || record.status!='COMPLETED')}">
         <div class="card">
             <div class="card-title">I. Thông tin khám ban đầu</div>
             <form action="${pageContext.request.contextPath}/MedicalRecordForm" method="post" class="medical-record-form">
@@ -175,7 +176,7 @@
     <%-- ══ TAB 2: LÂM SÀNG (STAFF) ════════════════════════════════════ --%>
     <div class="tab-panel" id="tab2">
     <c:choose>
-    <c:when test="${sessionScope.user.role == 'STAFF' && record.status!='COMPLETED'}">
+    <c:when test="${canIntake && record.status!='COMPLETED'}">
         <div class="card">
             <div class="card-title">II. Chỉ số lâm sàng <span class="role-inline-note">Nhân viên nhập</span></div>
             <form action="${pageContext.request.contextPath}/MedicalRecordForm" method="post" class="medical-record-form">
