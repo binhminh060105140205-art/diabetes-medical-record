@@ -51,7 +51,7 @@ Flyway tự tạo bảng, khóa, constraint và index từ:
 ```text
 src/main/resources/db/migration-sqlserver
 ```
-... 
+```
 .env :
 SERVER_PORT=8082
 DB_URL=jdbc:sqlserver://localhost:1433;databaseName=SWP_DiabetesMedicalRecordDB;encrypt=true;trustServerCertificate=true;loginTimeout=5
@@ -76,7 +76,8 @@ OPENAI_API_KEY=
 OPENAI_MODEL=gpt-5.6-terra
 OPENAI_TIMEOUT_SECONDS=20
 UPLOAD_DIR=./uploads
-...
+```
+```
 application.properties :
 spring.application.name=diabetes-medical-record
 spring.config.import=optional:file:.env[.properties]
@@ -113,7 +114,8 @@ app.openai.model=${OPENAI_MODEL:gpt-5.6-terra}
 app.openai.base-url=${OPENAI_BASE_URL:https://api.openai.com/v1/responses}
 app.openai.timeout-seconds=${OPENAI_TIMEOUT_SECONDS:20}
 ## Chạy ứng dụng
-
+```
+```
 ```powershell
 .\mvnw.cmd spring-boot:run
 ```
