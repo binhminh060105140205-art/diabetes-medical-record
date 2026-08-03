@@ -113,9 +113,9 @@ app.openai.api-key=${OPENAI_API_KEY:}
 app.openai.model=${OPENAI_MODEL:gpt-5.6-terra}
 app.openai.base-url=${OPENAI_BASE_URL:https://api.openai.com/v1/responses}
 app.openai.timeout-seconds=${OPENAI_TIMEOUT_SECONDS:20}
+```
+
 ## Chạy ứng dụng
-```
-```
 ```powershell
 .\mvnw.cmd spring-boot:run
 ```
